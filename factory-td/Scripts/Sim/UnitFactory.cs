@@ -24,7 +24,7 @@ public sealed class UnitFactory : Building
 
 	public override void Tick(World world)
 	{
-		if (Produces == UnitType.Builder && world.CountUnits(Owner, UnitType.Builder) >= UnitStats.MaxBuilders)
+		if (world.CountUnits(Owner, Produces) >= UnitStats.Cap(Produces))
 			return;
 		if (_crafter.Tick(Recipe, UnitStats.BuildTicks(Produces)))
 			world.SpawnUnit(Produces, Owner, X + Width / 2, Y + Height / 2);

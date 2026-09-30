@@ -220,7 +220,7 @@ public sealed class BotPlayer
 		var home = MapLayout.HomeZone(_player);
 		foreach (var unit in world.Units)
 		{
-			if (unit.Owner == _player || unit.Type == UnitType.Builder)
+			if (unit.Owner == _player || UnitStats.IsWorker(unit.Type))
 				continue;
 			var zone = world.Map.GetZone(unit.TileX, unit.TileY);
 			bool ourHalf = _mirror ? unit.TileX >= _width / 2 : unit.TileX < _width / 2;

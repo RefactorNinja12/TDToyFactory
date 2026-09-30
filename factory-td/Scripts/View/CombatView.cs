@@ -97,6 +97,11 @@ public partial class CombatView : Node2D
 
 	private void DrawHealth(Unit unit)
 	{
+		if (unit.CarryAmount > 0)
+		{
+			var at = Interpolate(unit.PrevX, unit.PrevY, unit.X, unit.Y);
+			DrawTextureRect(BuildingVisuals.GetItemTexture(unit.Carrying), new Rect2(at + new Vector2(-2, -30), new Vector2(22, 22)), tile: false);
+		}
 		int max = UnitStats.MaxHealth(unit.Type);
 		if (unit.Health >= max)
 			return;

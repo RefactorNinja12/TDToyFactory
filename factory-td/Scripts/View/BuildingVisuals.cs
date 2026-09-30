@@ -28,6 +28,7 @@ public static class BuildingVisuals
 		[BuildingType.Toolbox] = "res://Assets/Sprites/Buildings/toolbox.png",
 		[BuildingType.Warehouse] = "res://Assets/Sprites/Buildings/warehouse.png",
 		[BuildingType.CropField] = "res://Assets/Sprites/Farming/field_3_ripe.png",
+		[BuildingType.Farmhouse] = "res://Assets/Sprites/Buildings/farmhouse.png",
 		[BuildingType.GolemWorkshop] = "res://Assets/Sprites/Buildings/factory_golem.png",
 		[BuildingType.CarFactory] = "res://Assets/Sprites/Buildings/factory_car.png",
 	};
@@ -41,7 +42,7 @@ public static class BuildingVisuals
 			BuildingType.BrickExtractor, BuildingType.PlasticExtractor, BuildingType.BatteryExtractor,
 			BuildingType.Assembler, BuildingType.Toolbox, BuildingType.Warehouse,
 		}),
-		("Mat", new[] { BuildingType.CropField }),
+		("Mat", new[] { BuildingType.CropField, BuildingType.Farmhouse }),
 		("Armé", new[] { BuildingType.SoldierFactory, BuildingType.GolemWorkshop, BuildingType.CarFactory }),
 		("Försvar", new[] { BuildingType.FoamTower, BuildingType.Catapult, BuildingType.WaterTower, BuildingType.LaserTower }),
 	};
@@ -105,6 +106,7 @@ public static class BuildingVisuals
 		BuildingType.Toolbox => "Verktygslåda",
 		BuildingType.Warehouse => "Lager",
 		BuildingType.CropField => "Odlingslåda",
+		BuildingType.Farmhouse => "Bondgård",
 		BuildingType.GolemWorkshop => "Golemverkstad",
 		BuildingType.CarFactory => "Bilfabrik",
 		_ => type.ToString(),
@@ -126,6 +128,7 @@ public static class BuildingVisuals
 		BuildingType.Junction => "Låter två band korsa varandra. Allt åker rakt igenom, banden blandas aldrig.",
 		BuildingType.Warehouse => $"2x2. Leksakshylla som lagrar allt som körs in på band, i samma förråd som leksakslådan. Varje lager ger plats för {PlayerState.WarehouseCapacity} till av varje sort.",
 		BuildingType.CropField => $"Plastmorötter växer här på {CropField.GrowTicks / World.TicksPerSecond} s och ger {CropField.Yield} morötter. En bonde skördar, sedan växer den igen.",
+		BuildingType.Farmhouse => $"2x2. Leksaksladugård som vevar upp en bonde av 2 plast + 1 kloss. Bönder skördar mogna odlingslådor och bär morötterna till kök, lager eller leksakslådan. Max {UnitStats.MaxFarmers}.",
 		BuildingType.Toolbox => "2x2. Skruvar ihop en uppdragsrobot (byggare) av 2 plast + 2 klossar. Byggarna går själva till nya byggplatser och bygger dem. Max 20.",
 		BuildingType.LaserTower => "Ammo: batterier (1 batteri = 5 skott). Räckvidd 7. Dubbel skada mot klossgolems.",
 		BuildingType.GolemWorkshop => "2x2. Gör en klossgolem av 4 klossar + 2 kugghjul. Långsam och tålig, bryr sig inte om trupper, slår dubbelt så hårt på byggnader. Svag mot laser.",
@@ -193,6 +196,7 @@ public static class BuildingVisuals
 		UnitType.BrickGolem => "Klossgolem",
 		UnitType.RcCar => "Radiobil",
 		UnitType.Builder => "Byggare (uppdragsrobot)",
+		UnitType.Farmer => "Bonde",
 		_ => type.ToString(),
 	};
 

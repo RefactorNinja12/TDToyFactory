@@ -16,4 +16,6 @@ public sealed class Core : Building
 	}
 
 	public override bool TryAccept(ItemType item, Direction moving) => _player.TryStore(item);
+
+	public override bool CanTake(ItemType item) => _player.HasRoom(item);
 }

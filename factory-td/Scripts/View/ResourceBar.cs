@@ -82,7 +82,8 @@ public partial class ResourceBar : CanvasLayer
 		var own = _world.GetCore(_localPlayer);
 		var enemy = _world.GetCore(_world.EnemyOf(_localPlayer));
 		int builders = _world.CountUnits(_localPlayer, UnitType.Builder);
-		_health.Text = $"Din låda: {own?.Health}/{own?.MaxHealth}    Fiendens låda: {enemy?.Health}/{enemy?.MaxHealth}    Byggare: {builders}/{UnitStats.MaxBuilders}";
+		int farmers = _world.CountUnits(_localPlayer, UnitType.Farmer);
+		_health.Text = $"Din låda: {own?.Health}/{own?.MaxHealth}    Fiendens låda: {enemy?.Health}/{enemy?.MaxHealth}    Byggare: {builders}/{UnitStats.MaxBuilders}    Bönder: {farmers}/{UnitStats.MaxFarmers}";
 
 		if (_world.Winner >= 0)
 		{

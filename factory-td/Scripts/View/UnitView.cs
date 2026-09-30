@@ -22,6 +22,7 @@ public partial class UnitView : Node2D
 		[UnitType.BrickGolem] = ("res://Assets/Sprites/Units/golem.png", 60f),
 		[UnitType.RcCar] = ("res://Assets/Sprites/Units/rc_car.png", 44f),
 		[UnitType.Builder] = ("res://Assets/Sprites/Units/builder.png", 40f),
+		[UnitType.Farmer] = ("res://Assets/Sprites/Units/farmer.png", 40f),
 	};
 
 	private readonly Dictionary<UnitType, MultiMesh> _meshes = new();
