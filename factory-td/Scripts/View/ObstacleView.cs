@@ -13,7 +13,7 @@ public partial class ObstacleView : Node2D
 	private const float T = BuildingVisuals.TileSize;
 
 	private World _world;
-	private Texture2D _teddy, _blocks, _doll;
+	private Texture2D _teddy, _blocks, _doll, _sock;
 
 	public void Bind(World world)
 	{
@@ -21,6 +21,7 @@ public partial class ObstacleView : Node2D
 		_teddy = GD.Load<Texture2D>("res://Assets/Sprites/Obstacles/teddy.png");
 		_blocks = GD.Load<Texture2D>("res://Assets/Sprites/Obstacles/blocks.png");
 		_doll = GD.Load<Texture2D>("res://Assets/Sprites/Obstacles/doll.png");
+		_sock = GD.Load<Texture2D>("res://Assets/Sprites/Obstacles/sock.png");
 		ZIndex = 1;
 		TextureFilter = TextureFilterEnum.Nearest;
 		QueueRedraw();
@@ -36,6 +37,7 @@ public partial class ObstacleView : Node2D
 			{
 				ObstacleKind.TeddyBear => _teddy,
 				ObstacleKind.AbcBlocks => _blocks,
+				ObstacleKind.Sock => _sock,
 				_ => _doll,
 			};
 			// Footprint plus one tile of the toy's front/top showing above it.

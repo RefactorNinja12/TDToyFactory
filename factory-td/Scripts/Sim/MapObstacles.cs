@@ -8,13 +8,14 @@ public enum ObstacleKind : byte
 	TeddyBear,
 	AbcBlocks,
 	RagDoll,
+	Sock,
 }
 
 /// <summary>A big toy on the map: its footprint in tiles (TileType.Obstacle).</summary>
 public readonly record struct Obstacle(ObstacleKind Kind, int X, int Y, int Width, int Height);
 
 /// <summary>
-/// Obstacles: big toys (teddy bear, stacked ABC blocks, rag doll) that block walking and building like
+/// Obstacles: big toys (teddy bear, stacked ABC blocks, rag doll, a sock) that block walking and building like
 /// walls do (light passes them). Placed at random from a seed in the left room and mirrored to the right,
 /// never in the base area, on or next to deposits, in the door lane or the battery corner; each keeps a
 /// ring of floor around it and every floor tile has to stay reachable.
@@ -34,6 +35,7 @@ public sealed partial class MapLayout
 		(ObstacleKind.RagDoll, 3, 4),
 		(ObstacleKind.AbcBlocks, 3, 3),
 		(ObstacleKind.AbcBlocks, 3, 3),
+		(ObstacleKind.Sock, 5, 2), // last, so adding it didn't move the others
 	};
 
 	/// <summary>Areas of the left room (inclusive, interior x/y 1..60) where no toy may lie.</summary>
