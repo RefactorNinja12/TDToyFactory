@@ -39,15 +39,21 @@ public sealed class FlowField
 	/// Dijkstra outwards from every tile of <paramref name="target"/>, for <paramref name="owner"/>'s units:
 	/// enemy buildings cost extra (they have to be shot down), the owner's own buildings don't.
 	/// </summary>
-	public void Build(World world, Building target, int owner)
+	public void Build(World world, Building target, int owner) =>
+		Build(world, owner, (x, y) => x >= target.X && x < target.X + target.Width && y >= target.Y && y < target.Y + target.Height);
+
+	/// <summary>Same, from every tile where <paramref name="isTarget"/> holds (e.g. every powered tile).</summary>
+	public void Build(World world, int owner, System.Func<int, int, bool> isTarget)
 	{
 		System.Array.Fill(_distance, Unreachable);
 		var queue = new PriorityQueue<int, int>();
 
-		for (int y = target.Y; y < target.Y + target.Height; y++)
+		for (int y = 0; y < _height; y++)
 		{
-			for (int x = target.X; x < target.X + target.Width; x++)
+			for (int x = 0; x < _width; x++)
 			{
+				if (!isTarget(x, y))
+					continue;
 				_distance[y * _width + x] = 0;
 				queue.Enqueue(y * _width + x, 0);
 			}

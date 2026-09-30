@@ -340,3 +340,109 @@ public class PowerConsumerTests
 		Assert.Single(s.World.Units);
 	}
 }
+
+public class UnitChargeTests
+{
+	private static Scenario Real() => Scenario.Match().NoWorkers().Instant().Rich().RealPower();
+
+	[Fact]
+	public void GolemsAndCars_SpawnFull_SoldiersArentElectric()
+	{
+		var s = Real();
+		Assert.Equal(PowerStats.MaxCharge(UnitType.BrickGolem), s.Spawn(UnitType.BrickGolem, 30, 45).Charge);
+		Assert.Equal(PowerStats.MaxCharge(UnitType.RcCar), s.Spawn(UnitType.RcCar, 30, 46).Charge);
+		Assert.Equal(0, PowerStats.MaxCharge(UnitType.PlasticSoldier));
+		Assert.False(PowerStats.IsElectric(UnitType.Builder));
+	}
+
+	[Fact]
+	public void OffGrid_DrainsEveryTick_ButNotWithFreePower()
+	{
+		var s = Real();
+		var golem = s.Spawn(UnitType.BrickGolem, 30, 45);
+		s.World.Ticks(10);
+		Assert.Equal(PowerStats.MaxCharge(UnitType.BrickGolem) - 10 * PowerStats.DrainPerTick(UnitType.BrickGolem), golem.Charge);
+
+		var free = Scenario.Match().NoWorkers();
+		var other = free.Spawn(UnitType.BrickGolem, 30, 45);
+		free.World.Ticks(10);
+		Assert.Equal(PowerStats.MaxCharge(UnitType.BrickGolem), other.Charge);
+	}
+
+	[Fact]
+	public void LowCharge_TurnsBack_AndDoesntAttack()
+	{
+		var s = Real();
+		s.Place(BuildingType.Conveyor, 81, 30, owner: 1); // enemy belt right next to it, in the hall
+		var golem = s.Spawn(UnitType.BrickGolem, 80, 30);
+		golem.Charge = PowerStats.MaxCharge(UnitType.BrickGolem) * PowerStats.ReturnPercent / 100;
+		s.World.Ticks(40);
+		Assert.Equal(UnitPower.Returning, golem.PowerState);
+		Assert.Empty(s.World.Projectiles);
+		Assert.True(golem.X < 80 * UnitStats.SubTile, "walks back west towards its grid");
+	}
+
+	[Fact]
+	public void Empty_CrawlsToTheGrid_ChargesUp_ThenGoesBackToWork()
+	{
+		var s = Real();
+		s.Pylon(20, 45);
+		var charger = s.Charger(21, 45, energy: PowerStats.ChargerCapacity);
+		var golem = s.Spawn(UnitType.BrickGolem, 27, 45); // 2 tiles outside the pylon's radius
+		golem.Charge = 1;
+		s.World.Ticks(2);
+		Assert.Equal(UnitPower.Empty, golem.PowerState);
+		s.World.Until(() => golem.PowerState == UnitPower.Charging, 30, "charging on the grid");
+		int before = charger.Energy;
+		s.World.Until(() => golem.PowerState == UnitPower.Normal, 60, "charged up");
+		Assert.True(golem.Charge * 100 >= PowerStats.MaxCharge(UnitType.BrickGolem) * PowerStats.ChargedPercent);
+		Assert.True(charger.Energy < before);
+	}
+
+	[Fact]
+	public void Charging_DoesntAttack()
+	{
+		var s = Real();
+		s.Pylon(30, 20);
+		s.Charger(31, 20, energy: PowerStats.ChargerCapacity);
+		var car = s.Spawn(UnitType.RcCar, 30, 21);
+		car.Charge = 1;
+		s.Spawn(UnitType.PlasticSoldier, 31, 21, owner: 1);
+		s.World.Ticks(20);
+		Assert.Equal(UnitPower.Charging, car.PowerState);
+		Assert.DoesNotContain(s.World.Projectiles, p => p.Owner == 0);
+	}
+
+	[Fact]
+	public void Empty_CrawlsAtAQuarterSpeed()
+	{
+		var s = Real();
+		var golem = s.Spawn(UnitType.BrickGolem, 40, 45);
+		golem.Charge = 0;
+		s.World.Ticks(1);
+		int x = golem.X, y = golem.Y;
+		s.World.Ticks(20);
+		Assert.Equal(UnitPower.Empty, golem.PowerState);
+		int moved = IntMath.Sqrt((golem.X - x) * (golem.X - x) + (golem.Y - y) * (golem.Y - y));
+		Assert.InRange(moved, 20 * UnitStats.Speed(UnitType.BrickGolem) / 4 - 20, 20 * UnitStats.Speed(UnitType.BrickGolem) / 4 + 1);
+	}
+
+	/// <summary>How many tiles east of its grid a unit gets before it has to turn back.</summary>
+	private static int RangeOffGrid(UnitType type)
+	{
+		var s = Real();
+		s.Pylon(40, 30);
+		s.Charger(40, 31, energy: PowerStats.ChargerCapacity);
+		var unit = s.Spawn(type, 40, 30);
+		s.World.Until(() => unit.PowerState == UnitPower.Returning, 300, $"{type} turning back");
+		return unit.TileX - 40;
+	}
+
+	[Fact]
+	public void Cars_ReachAboutTwiceAsFarAsGolems()
+	{
+		int golem = RangeOffGrid(UnitType.BrickGolem), car = RangeOffGrid(UnitType.RcCar);
+		Assert.True(golem >= 15, $"golem only {golem} tiles");
+		Assert.True(car * 10 >= golem * 18, $"car {car} tiles vs golem {golem}");
+	}
+}

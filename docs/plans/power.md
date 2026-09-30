@@ -52,7 +52,7 @@ golem MaxCharge 600 EU drain 10 EU/s; car MaxCharge 600 EU drain 5 EU/s; ReturnP
 - [x] 5. Consumers: `Building.Powered`; factories/assemblers progress only when powered; towers need EU
       per shot. Tests: outside grid never produces, tower with ammo but no power silent, resume after
       shortage, starvation and power independent.
-- [ ] 6. Unit charge: UnitDef MaxCharge/Drain/ChargeRate, states, power flow field (multi-source
+- [x] 6. Unit charge: UnitDef MaxCharge/Drain/ChargeRate, states, power flow field (multi-source
       `FlowField.Build`). Tests: drain/recharge rates, no attack while Returning/Charging/Empty,
       returns to coverage in X s, Empty speed 25%, car range ≥ 1.8x golem.
 - [ ] 7. Determinism: checksum includes charger EU, unit charge + state. New real-power determinism test.
@@ -76,3 +76,4 @@ golem MaxCharge 600 EU drain 10 EU/s; car MaxCharge 600 EU drain 5 EU/s; ReturnP
 - Step 3: Sim/PowerGrid.cs (PowerNetwork: Owner/Nodes/Chargers/Energy; PowerGrid: NetworkAt(player,x,y), Networks, Cords = Kruskal spanning tree). World.Power rebuilds with the flow fields (_fieldsDirty). Chargers link but cover nothing. 130/130.
 - Step 4: BatteryCharger takes batteries (buffer 2), converts 1/tick while it fits. World.TryDrawPower(player,x,y,amount): all-or-nothing from the network at that tile, FreePower -> true. Order = tick order (buildings list, then units), no separate serving pass. 136/136.
 - Step 5: Building.NoPower; Crafter.CanWork; army UnitFactory (not workers) draws FactoryEnergyPerTick=2 while working, Assembler 1, Tower HasPower check + TowerShotEnergy=30 per shot. World.TryDrawPower(Building)/HasPower/NetworkOf. Rescaled: battery 6000 EU, charger cap 20000. Bot slow matches temporarily FreePower (TODO step 9). 143/143.
+- Step 6: PowerStats.MaxCharge/DrainPerTick (golem 12000/10, car 8000/10), UnitChargePerTick 40, ReturnPercent 35, ChargedPercent 90, EmptySpeedPercent 25. Unit.Charge/PowerState (UnitPower enum in Power.cs). World.TickCharge in TickUnit; low+on grid -> Charging too. FlowField.Build(world, owner, isTarget) multi-source; power fields LAZY per player (World.PowerField) - eager rebuild cost 8s->13s fast suite. 150/150.

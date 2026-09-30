@@ -23,6 +23,8 @@ public sealed class World
 	private readonly FlowField[] _fields;
 	private bool _fieldsDirty = true;
 	private readonly PowerGrid _power;
+	private readonly FlowField[] _powerFields; // per player: towards the nearest tile its grid powers
+	private readonly bool[] _powerFieldDirty;    // built only when a unit needs it (most ticks nobody does)
 	private int _nextUnitId;
 
 	public MapLayout Map { get; }
@@ -55,10 +57,13 @@ public sealed class World
 		_cores = new Core[playerCount];
 		_fields = new FlowField[playerCount];
 		_power = new PowerGrid(map.Width, map.Height, playerCount);
+		_powerFields = new FlowField[playerCount];
+		_powerFieldDirty = new bool[playerCount];
 		for (int i = 0; i < playerCount; i++)
 		{
 			_players[i] = new PlayerState(i);
 			_fields[i] = new FlowField(map.Width, map.Height);
+			_powerFields[i] = new FlowField(map.Width, map.Height);
 		}
 	}
 
@@ -708,6 +713,8 @@ public sealed class World
 			unit.AttackCooldown--;
 		if (Winner >= 0 || _cores[EnemyOf(unit.Owner)] == null)
 			return;
+		if (PowerStats.IsElectric(unit.Type) && !FreePower && TickCharge(unit))
+			return;
 
 		// Enemy buildings in the way are always within range, so they get shot before the unit walks on;
 		// its own buildings it just walks over.
@@ -747,8 +754,61 @@ public sealed class World
 		TryStep(unit, nextX * UnitStats.SubTile + half, nextY * UnitStats.SubTile + half);
 	}
 
+	/// <summary>
+	/// Battery upkeep for golems and cars (see <see cref="UnitPower"/>). On its own grid it charges from that
+	/// network; off it, it drains. Returns true when the battery decides what the unit does this tick
+	/// (returning, charging or empty: no fighting), false when it may fight as usual.
+	/// </summary>
+	private bool TickCharge(Unit unit)
+	{
+		int max = PowerStats.MaxCharge(unit.Type);
+		var network = Power.NetworkAt(unit.Owner, unit.TileX, unit.TileY);
+		if (network != null)
+		{
+			int want = System.Math.Min(PowerStats.UnitChargePerTick, max - unit.Charge);
+			if (want > 0 && Draw(network, want))
+				unit.Charge += want;
+			// Coming back, or low while passing through: stay and charge up before going out again.
+			if (unit.PowerState is UnitPower.Returning or UnitPower.Empty ||
+				(unit.PowerState == UnitPower.Normal && unit.Charge * 100L <= max * (long)PowerStats.ReturnPercent))
+				unit.PowerState = UnitPower.Charging;
+			if (unit.PowerState == UnitPower.Charging && unit.Charge * 100L >= max * (long)PowerStats.ChargedPercent)
+				unit.PowerState = UnitPower.Normal;
+			return unit.PowerState == UnitPower.Charging;
+		}
+
+		unit.Charge = System.Math.Max(0, unit.Charge - PowerStats.DrainPerTick(unit.Type));
+		if (unit.Charge == 0)
+			unit.PowerState = UnitPower.Empty;
+		else if (unit.PowerState == UnitPower.Charging ||
+			(unit.PowerState == UnitPower.Normal && unit.Charge * 100L <= max * (long)PowerStats.ReturnPercent))
+			unit.PowerState = UnitPower.Returning;
+		if (unit.PowerState == UnitPower.Normal)
+			return false;
+
+		var (nextX, nextY) = PowerField(unit.Owner).NextTile(unit.TileX, unit.TileY);
+		int speed = UnitStats.Speed(unit.Type);
+		if (unit.PowerState == UnitPower.Empty)
+			speed = speed * PowerStats.EmptySpeedPercent / 100;
+		const int half = UnitStats.SubTile / 2;
+		TryStep(unit, nextX * UnitStats.SubTile + half, nextY * UnitStats.SubTile + half, speed);
+		return true;
+	}
+
+	/// <summary>Distance to the nearest tile the player's grid powers (built on first use after a change).</summary>
+	internal FlowField PowerField(int player)
+	{
+		RebuildFieldsIfDirty();
+		if (_powerFieldDirty[player])
+		{
+			_powerFieldDirty[player] = false;
+			_powerFields[player].Build(this, player, (x, y) => _power.NetworkAt(player, x, y) != null);
+		}
+		return _powerFields[player];
+	}
+
 	/// <summary>Moves the unit up to its speed towards a point. Refuses (returns false) to step into a wall.</summary>
-	private bool TryStep(Unit unit, int goalX, int goalY)
+	private bool TryStep(Unit unit, int goalX, int goalY, int speed = -1)
 	{
 		int dx = goalX - unit.X;
 		int dy = goalY - unit.Y;
@@ -756,7 +816,8 @@ public sealed class World
 		if (length == 0)
 			return true;
 
-		int speed = UnitStats.Speed(unit.Type);
+		if (speed < 0)
+			speed = UnitStats.Speed(unit.Type);
 		if (length > speed)
 		{
 			dx = dx * speed / length;
@@ -924,6 +985,7 @@ public sealed class World
 			var target = _cores[EnemyOf(p)];
 			if (target != null)
 				_fields[p].Build(this, target, p);
+			_powerFieldDirty[p] = true;
 		}
 	}
 
