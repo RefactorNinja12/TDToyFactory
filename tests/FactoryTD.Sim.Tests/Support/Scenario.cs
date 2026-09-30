@@ -21,8 +21,18 @@ public sealed class Scenario
 
 	private Scenario(World world) => World = world;
 
-	/// <summary>A normal 1v1 match: both cores, starting stock, starting builders and farmer.</summary>
-	public static Scenario Match() => new(World.CreateMatch());
+	/// <summary>
+	/// A normal 1v1 match: both cores, starting stock, starting builders and farmer.
+	/// Power is free (everything powered, no unit drain) unless the test calls <see cref="RealPower"/>.
+	/// </summary>
+	public static Scenario Match() => new(World.CreateMatch()) { World = { FreePower = true } };
+
+	/// <summary>Use the real power grid: consumers need a charged network, golems/cars drain off-grid.</summary>
+	public Scenario RealPower()
+	{
+		World.FreePower = false;
+		return this;
+	}
 
 	/// <summary>Removes all units, including the starting builders and farmers.</summary>
 	public Scenario NoWorkers()

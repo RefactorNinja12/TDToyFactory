@@ -11,7 +11,7 @@ public class BotTests
 	/// <summary>A bot with plenty of resources, run until its plan has grown for a while.</summary>
 	private static (Scenario, BotPlayer) RichBot(int player, int seconds)
 	{
-		var s = Scenario.Match().Rich(5000).Give(ItemType.Food, 500, player);
+		var s = Scenario.Match().RealPower().Rich(5000).Give(ItemType.Food, 500, player);
 		var bot = new BotPlayer(player);
 		s.World.Seconds(seconds, bot);
 		return (s, bot);

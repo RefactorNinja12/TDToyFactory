@@ -57,6 +57,9 @@ Kompakt fabrik, max 3 nivåer i produktionskedjan, matcher 15–25 min.
   `Spawn`, `Feed`), `WorldRunner` kör tid (`Seconds`, `Until(villkor, maxSek, "vad")`).
   Långsamma helmatcher/balans har `[Trait("Speed","Slow")]` och skriver sina mätvärden.
 
+## Pågående plan
+- `docs/plans/power.md` (elnät, gren `power`): läs den först, fortsätt med första obockade steget.
+
 ## Arbetsflöde (tester är feedbackloopen)
 - `Taskfile.yaml` (go-task) samlar kommandona; `task` listar dem.
 - Kör `task test -- <Område>` (namnfilter, t.ex. `Farming`, `Bot`, `Tower`) före och efter en

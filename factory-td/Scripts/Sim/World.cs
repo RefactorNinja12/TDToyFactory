@@ -301,6 +301,12 @@ public sealed class World
 	/// <summary>Removes every unit (tests start from a clean slate with this).</summary>
 	internal void ClearUnits() => _units.Clear();
 
+	/// <summary>
+	/// Test switch: every consumer counts as powered and golems/cars never lose charge.
+	/// Lets tests of other systems ignore the power grid. Always false in real matches.
+	/// </summary>
+	internal bool FreePower { get; set; }
+
 	public int CountBuildings(int owner, BuildingType type)
 	{
 		int count = 0;
