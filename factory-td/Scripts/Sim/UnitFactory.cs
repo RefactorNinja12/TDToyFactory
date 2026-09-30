@@ -32,6 +32,10 @@ public sealed class UnitFactory : Building
 		if (Produces == UnitType.Farmer &&
 			world.CountUnits(Owner, UnitType.Farmer) * UnitStats.FieldsPerFarmer >= world.CountBuildings(Owner, BuildingType.CropField))
 			return;
+		// Scouts live in tents: a few per tent.
+		if (Produces == UnitType.Scout &&
+			world.CountUnits(Owner, UnitType.Scout) >= UnitStats.ScoutsPerTent * world.CountBuildings(Owner, BuildingType.Tent))
+			return;
 		// No food: no new soldiers. Workers still come, so a starving player can get farming going again.
 		if (world.Players[Owner].Starving && !UnitStats.IsWorker(Produces))
 			return;

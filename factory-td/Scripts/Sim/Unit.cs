@@ -9,6 +9,7 @@ public enum UnitType : byte
 	RcCar,
 	Builder,
 	Farmer,
+	Scout,
 }
 
 /// <summary>What a unit is made of; decides which tower hurts it most.</summary>
@@ -78,6 +79,17 @@ public static class UnitStats
 		TargetsUnits: false, BuildingDamagePercent: 0,
 		Recipe: new ItemStack[] { new(ItemType.Brick, 3) }, BuildTicks: 200);
 
+	// Wind-up toy explorer from a tent: doesn't fight, walks the edge of the fog to find the map (and runs away).
+	private static readonly UnitDef Scout = new(
+		ArmorClass.Plastic, MaxHealth: 18, Speed: 36, Damage: 0, AttackTicks: 20,
+		Range: 0, Sight: 0, ShotTravelTicks: 1,
+		TargetsUnits: false, BuildingDamagePercent: 0,
+		Recipe: new ItemStack[] { new(ItemType.Plastic, 3) }, BuildTicks: 160);
+
+	/// <summary>Most scouts a player can have, and how many each tent houses.</summary>
+	public const int MaxScouts = 6;
+	public const int ScoutsPerTent = 2;
+
 	public const int StartingFarmers = 1;
 	public const int MaxFarmers = 20;
 
@@ -102,13 +114,14 @@ public static class UnitStats
 	public const int StarveDamage = 1;
 
 	/// <summary>Worker units (builders, farmers) never fight and aren't counted as an army.</summary>
-	public static bool IsWorker(UnitType type) => type is UnitType.Builder or UnitType.Farmer;
+	public static bool IsWorker(UnitType type) => type is UnitType.Builder or UnitType.Farmer or UnitType.Scout;
 
 	/// <summary>The most of this unit type a player can have, or int.MaxValue.</summary>
 	public static int Cap(UnitType type) => type switch
 	{
 		UnitType.Builder => MaxBuilders,
 		UnitType.Farmer => MaxFarmers,
+		UnitType.Scout => MaxScouts,
 		_ => int.MaxValue,
 	};
 
@@ -121,6 +134,7 @@ public static class UnitStats
 		UnitType.RcCar => RcCar,
 		UnitType.Builder => Builder,
 		UnitType.Farmer => Farmer,
+		UnitType.Scout => Scout,
 		_ => PlasticSoldier,
 	};
 
@@ -160,6 +174,16 @@ public sealed class Unit
 	/// <summary>Battery charge (golems and cars only, see PowerStats).</summary>
 	public int Charge { get; internal set; }
 	public UnitPower PowerState { get; internal set; }
+
+	/// <summary>Direction index (Vision.DirectionIndex) it last moved or aimed in: where car headlights point.</summary>
+	public int LightDirection { get; internal set; } = -1;
+
+	// Scouts: the fog-edge tile it is heading for (-1 = none), and running away from an enemy.
+	public int ScoutTargetX { get; internal set; } = -1;
+	public int ScoutTargetY { get; internal set; } = -1;
+	internal int FleeTicks { get; set; }
+	internal int FleeX { get; set; }
+	internal int FleeY { get; set; }
 
 	// Workers: the building it is working on or walking to, and the tiles left to walk there.
 	public Building Job { get; internal set; }

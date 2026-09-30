@@ -27,6 +27,8 @@ public partial class Game : Node2D
 
 	private BotPlayer _bot;
 	private PowerView _power;
+	private FogView _fog;
+	private MinimapView _minimap;
 
 	// TODO: comes from the network session later.
 	private const int LocalPlayer = 0;
@@ -52,6 +54,15 @@ public partial class Game : Node2D
 		Resources.Bind(World, LocalPlayer);
 		Menu.Bind(World.Players[LocalPlayer]);
 		Info.Bind(World, Builder, LocalPlayer);
+
+		Buildings.LocalPlayer = Items.LocalPlayer = Units.LocalPlayer = Combat.LocalPlayer = LocalPlayer;
+		_fog = new FogView { Name = "Fog" };
+		AddChild(_fog);
+		_fog.Bind(World, LocalPlayer);
+		Builder.ZIndex = 4; // the placement ghost stays visible over the fog
+		_minimap = new MinimapView { Name = "Minimap" };
+		AddChild(_minimap);
+		_minimap.Bind(World, LocalPlayer, GetNode<Camera2D>("Camera"));
 
 		_power = new PowerView { Name = "Power" };
 		AddChild(_power);
@@ -81,6 +92,7 @@ public partial class Game : Node2D
 		Units.Alpha = alpha;
 		Combat.Alpha = alpha;
 		_power.Alpha = alpha;
+		_fog.Alpha = alpha;
 	}
 
 	public override void _UnhandledInput(InputEvent @event)

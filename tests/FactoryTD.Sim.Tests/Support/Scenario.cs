@@ -23,9 +23,17 @@ public sealed class Scenario
 
 	/// <summary>
 	/// A normal 1v1 match: both cores, starting stock, starting builders and farmer.
-	/// Power is free (everything powered, no unit drain) unless the test calls <see cref="RealPower"/>.
+	/// Power is free (everything powered, no unit drain) unless the test calls <see cref="RealPower"/>,
+	/// and there is no fog of war unless it calls <see cref="RealFog"/>.
 	/// </summary>
-	public static Scenario Match() => new(World.CreateMatch()) { World = { FreePower = true } };
+	public static Scenario Match() => new(World.CreateMatch()) { World = { FreePower = true, FullVision = true } };
+
+	/// <summary>Use the real fog of war: players only know what their light has explored.</summary>
+	public Scenario RealFog()
+	{
+		World.FullVision = false;
+		return this;
+	}
 
 	/// <summary>Use the real power grid: consumers need a charged network, golems/cars drain off-grid.</summary>
 	public Scenario RealPower()

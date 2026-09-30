@@ -7,7 +7,7 @@ namespace FactoryTD.Sim;
 /// Game state: the map, the players and everything built on it. Pure C#.
 /// Buildings can cover several tiles; every tile they cover points to the same Building.
 /// </summary>
-public sealed class World
+public sealed partial class World
 {
 	/// <summary>Fixed simulation rate. Everything in the sim counts in ticks, never in seconds.</summary>
 	public const int TicksPerSecond = 20;
@@ -23,6 +23,7 @@ public sealed class World
 	private readonly FlowField[] _fields;
 	private bool _fieldsDirty = true;
 	private readonly PowerGrid _power;
+	private readonly Vision _vision;
 	private readonly FlowField[] _powerFields; // per player: towards the nearest tile its grid powers
 	private readonly bool[] _powerFieldDirty;    // built only when a unit needs it (most ticks nobody does)
 	private int _nextUnitId;
@@ -57,6 +58,7 @@ public sealed class World
 		_cores = new Core[playerCount];
 		_fields = new FlowField[playerCount];
 		_power = new PowerGrid(map.Width, map.Height, playerCount);
+		_vision = new Vision(map.Width, map.Height, playerCount);
 		_powerFields = new FlowField[playerCount];
 		_powerFieldDirty = new bool[playerCount];
 		for (int i = 0; i < playerCount; i++)
@@ -159,6 +161,7 @@ public sealed class World
 			for (int i = 0; i < UnitStats.StartingFarmers; i++)
 				world.SpawnUnit(UnitType.Farmer, player.Id, x, core.Y + 2 + i);
 		}
+		world._vision.Recompute(world);
 		return world;
 	}
 
@@ -196,6 +199,9 @@ public sealed class World
 					return PlaceError.OutsideZone;
 				if (_grid[cy * Map.Width + cx] != null)
 					return PlaceError.Occupied;
+				// Checked first, so a ghost in the dark doesn't give away whether there is a deposit.
+				if (required != ResourceType.None && !IsExplored(owner, cx, cy))
+					return PlaceError.Unexplored;
 				if (required != ResourceType.None && Map.GetResource(cx, cy) != required)
 					return PlaceError.WrongResource;
 			}
@@ -275,11 +281,21 @@ public sealed class World
 				TickBuilder(unit);
 			else if (unit.Type == UnitType.Farmer)
 				TickFarmer(unit);
+			else if (unit.Type == UnitType.Scout)
+				TickScout(unit);
 			else
 				TickUnit(unit);
 		}
 		TickProjectiles();
 		TickUpkeep();
+		foreach (var unit in _units)
+		{
+			int direction = Vision.DirectionIndex(unit.MoveX, unit.MoveY);
+			if (direction >= 0)
+				unit.LightDirection = direction;
+		}
+		if (TickCount % VisionStats.VisionTicks == 0)
+			_vision.Recompute(this);
 		_units.RemoveAll(u => u.Health <= 0);
 
 		for (int p = 0; p < _cores.Length && Winner < 0; p++)
@@ -345,6 +361,7 @@ public sealed class World
 		hash.Add(TickCount); hash.Add(Winner); hash.Add(_nextUnitId);
 		foreach (var player in _players)
 			player.HashInto(ref hash);
+		_vision.HashInto(ref hash);
 		hash.Add(_buildings.Count);
 		foreach (var building in _buildings)
 			building.HashInto(ref hash);
@@ -355,7 +372,8 @@ public sealed class World
 			hash.Add(unit.X); hash.Add(unit.Y); hash.Add(unit.Health); hash.Add(unit.AttackCooldown);
 			hash.Add(unit.Job?.X ?? -1); hash.Add(unit.Job?.Y ?? -1);
 			hash.Add((int)unit.Carrying); hash.Add(unit.CarryAmount); hash.Add(unit.WorkTimer);
-			hash.Add(unit.Charge); hash.Add((int)unit.PowerState);
+			hash.Add(unit.Charge); hash.Add((int)unit.PowerState); hash.Add(unit.LightDirection);
+			hash.Add(unit.ScoutTargetX); hash.Add(unit.ScoutTargetY); hash.Add(unit.FleeTicks); hash.Add(unit.FleeX); hash.Add(unit.FleeY);
 		}
 		hash.Add(_projectiles.Count);
 		foreach (var shot in _projectiles)
@@ -376,6 +394,42 @@ public sealed class World
 	/// Lets tests of other systems ignore the power grid. Always false in real matches.
 	/// </summary>
 	internal bool FreePower { get; set; }
+
+	/// <summary>
+	/// Test switch: every tile counts as explored and visible for every player (no fog of war).
+	/// Lets tests of other systems ignore scouting. Always false in real matches.
+	/// </summary>
+	internal bool FullVision { get; set; }
+
+	/// <summary>Whether the player has ever lit this tile (fog of war).</summary>
+	public bool IsExplored(int player, int x, int y) => FullVision || _vision.IsExplored(player, x, y);
+
+	/// <summary>Whether the player knows where this unit is: its own, or standing in the player's light.</summary>
+	public bool CanSee(int player, Unit unit) => unit.Owner == player || IsVisible(player, unit.TileX, unit.TileY);
+
+	/// <summary>
+	/// Enemy buildings as the player last saw them (with full vision: all of them, as they are now).
+	/// Own buildings are always known and not listed.
+	/// </summary>
+	public IReadOnlyList<RememberedBuilding> RememberedBuildings(int player)
+	{
+		if (!FullVision)
+			return _vision.Remembered(player);
+		var all = new List<RememberedBuilding>();
+		foreach (var b in _buildings)
+			if (b.Owner != player)
+				all.Add(new RememberedBuilding(b.Type, b.X, b.Y, b.Width, b.Height, b.Owner, b.Facing));
+		return all;
+	}
+
+	/// <summary>Number of tiles the player has explored.</summary>
+	public int ExploredCount(int player) => _vision.ExploredCount(player);
+
+	/// <summary>Test helper: the player has seen the whole map (but still only sees what is lit now).</summary>
+	internal void ExploreAll(int player) => _vision.ExploreAll(player);
+
+	/// <summary>Whether the player's light reaches this tile right now.</summary>
+	public bool IsVisible(int player, int x, int y) => FullVision || _vision.IsVisible(player, x, y);
 
 	public int CountBuildings(int owner, BuildingType type)
 	{

@@ -1,4 +1,5 @@
 using FactoryTD.Sim;
+using FactoryTD.UI;
 using Godot;
 
 namespace FactoryTD.View;
@@ -18,6 +19,9 @@ public partial class ItemView : Node2D
 
 	public void Bind(World world) => _world = world;
 
+	/// <summary>Items on enemy belts are only drawn while this player can see the belt.</summary>
+	public int LocalPlayer { get; set; }
+
 	public override void _Process(double delta) => QueueRedraw();
 
 	public override void _Draw()
@@ -29,7 +33,7 @@ public partial class ItemView : Node2D
 		var size = new Vector2(ItemSize, ItemSize);
 		foreach (var building in _world.Buildings)
 		{
-			if (building is not Conveyor conveyor)
+			if (building is not Conveyor conveyor || !Knowledge.ShowBuilding(_world, LocalPlayer, building))
 				continue;
 			foreach (var item in conveyor.Items)
 			{

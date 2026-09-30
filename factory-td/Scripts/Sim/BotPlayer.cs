@@ -256,7 +256,7 @@ public sealed class BotPlayer
 		var home = MapLayout.HomeZone(_player);
 		foreach (var unit in world.Units)
 		{
-			if (unit.Owner == _player || UnitStats.IsWorker(unit.Type))
+			if (unit.Owner == _player || UnitStats.IsWorker(unit.Type) || !world.CanSee(_player, unit))
 				continue;
 			var zone = world.Map.GetZone(unit.TileX, unit.TileY);
 			bool ourHalf = _mirror ? unit.TileX >= _width / 2 : unit.TileX < _width / 2;
@@ -295,6 +295,12 @@ public sealed class BotPlayer
 			Place(BuildingType.PlasticExtractor, 11, 36, Direction.North);
 			Place(BuildingType.PlasticExtractor, 10, 36, Direction.North);
 		}));
+
+		// Scouts: extractors can only go where someone has been, so a tent early. It stands right next to a
+		// plastic melter, which fills it directly (a tent only takes a few pieces, the belt keeps the rest).
+		// Extractors on unexplored ground are simply skipped by the plan until the scouts (or the builders
+		// laying belts out there) have lit them.
+		_pending.Add(new Module("spejare", _ => true, _ => Place(BuildingType.Tent, 14, 36, Direction.East)));
 
 		// Food: a farmhouse (farmers cost bricks, so one brick extractor feeds it), a kitchen pointing
 		// straight into the toybox and four fields next to it, west of the core. Farmers carry the

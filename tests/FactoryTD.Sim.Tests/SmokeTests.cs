@@ -52,4 +52,12 @@ public class SmokeTests
 		Assert.True(Scenario.Match().World.FreePower);
 		Assert.False(Scenario.Match().RealPower().World.FreePower);
 	}
+
+	[Fact]
+	public void Scenario_FullVisionByDefault_RealFogOptIn()
+	{
+		Assert.False(World.CreateMatch().FullVision);
+		Assert.True(Scenario.Match().World.FullVision);
+		Assert.False(Scenario.Match().RealFog().World.FullVision);
+	}
 }

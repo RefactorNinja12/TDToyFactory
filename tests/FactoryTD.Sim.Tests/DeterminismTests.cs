@@ -95,6 +95,32 @@ public class DeterminismTests
 		h.Charger(30, 30, energy: 1);
 		i.Charger(30, 30);
 		Assert.NotEqual(h.World.Checksum(), i.World.Checksum()); // charger energy counts
+
+		var j = Scenario.Match().RealFog();
+		var k = Scenario.Match().RealFog();
+		j.World.ExploreAll(0);
+		Assert.NotEqual(j.World.Checksum(), k.World.Checksum()); // explored tiles count
+	}
+
+	[Fact]
+	public void RealFog_ScoutsFleeingAndExploring_IsDeterministic()
+	{
+		static List<ulong> Run()
+		{
+			var s = Scenario.Match().NoWorkers().Instant().Rich().RealFog();
+			s.Place(BuildingType.Lamp, 30, 42);
+			for (int k = 0; k < 3; k++) s.Spawn(UnitType.Scout, 9, 29 + k);
+			s.Spawn(UnitType.RcCar, 70, 30);
+			s.Spawn(UnitType.PlasticSoldier, 40, 20, owner: 1);
+			var sums = new List<ulong>();
+			for (int t = 0; t < 20 * 90; t++)
+			{
+				s.World.Tick();
+				sums.Add(s.World.Checksum());
+			}
+			return sums;
+		}
+		AssertSame(Run(), Run(), "tick");
 	}
 
 	[Fact]

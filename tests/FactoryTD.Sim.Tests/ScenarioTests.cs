@@ -17,7 +17,7 @@ public class ScenarioTests
 	[Fact]
 	public void Bot_BeatsAnIdlePlayer()
 	{
-		var s = Scenario.Match().RealPower();
+		var s = Scenario.Match().RealPower().RealFog();
 		var bot = new BotPlayer(1);
 		int ticks = s.World.Until(() => s.World.Winner >= 0, 20 * 60, "a winner", bot);
 		_out.WriteLine($"bot won after {ticks / WorldRunner.TicksPerSecond} s");
@@ -28,11 +28,12 @@ public class ScenarioTests
 	[Fact]
 	public void BotVsBot_FifteenMinutes_HealthyEconomy()
 	{
-		var s = Scenario.Match().RealPower();
+		var s = Scenario.Match().RealPower().RealFog();
 		var bots = new[] { new BotPlayer(0), new BotPlayer(1) };
 		int[] starvingTicks = new int[2];
 		int[] maxUnits = new int[2];
 		int[] maxCrops = new int[2];
+		int[] firstBatteryExtractor = { -1, -1 };
 		// Army factories/assemblers/towers without power, in the first 8 minutes (later a losing side's grid
 		// gets shot to pieces, which is fair).
 		int[] factoryTicks = new int[2], unpoweredTicks = new int[2];
@@ -49,6 +50,8 @@ public class ScenarioTests
 					factoryTicks[p]++;
 					if (b.NoPower) unpoweredTicks[p]++;
 				}
+				if (firstBatteryExtractor[p] < 0 && s.World.CountBuildings(p, BuildingType.BatteryExtractor) > 0)
+					firstBatteryExtractor[p] = (int)(s.World.TickCount / WorldRunner.TicksPerSecond);
 				maxCrops[p] = System.Math.Max(maxCrops[p], s.World.Players[p].GetCount(ItemType.Crop));
 				maxUnits[p] = System.Math.Max(maxUnits[p], s.World.Units.Count(u => u.Owner == p && !UnitStats.IsWorker(u.Type)));
 			}
@@ -56,7 +59,7 @@ public class ScenarioTests
 		for (int p = 0; p < 2; p++)
 			_out.WriteLine($"player {p}: starving {starvingTicks[p] / WorldRunner.TicksPerSecond} s, max stored crops {maxCrops[p]}, " +
 				$"kitchens {s.World.CountBuildings(p, BuildingType.Kitchen)}, max army {maxUnits[p]}, " +
-				$"consumers without power {unpoweredTicks[p] * 100 / System.Math.Max(1, factoryTicks[p])}% (first 8 min), " +
+				$"first battery extractor at {firstBatteryExtractor[p]} s, consumers without power {unpoweredTicks[p] * 100 / System.Math.Max(1, factoryTicks[p])}% (first 8 min), " +
 				$"modules {string.Join(",", bots[p].ModulesBuilt)}");
 		_out.WriteLine($"winner {s.World.Winner} at {s.World.TickCount / WorldRunner.TicksPerSecond} s");
 		for (int p = 0; p < 2; p++)
@@ -64,6 +67,7 @@ public class ScenarioTests
 			Assert.True(starvingTicks[p] <= 60 * WorldRunner.TicksPerSecond, $"player {p} starved {starvingTicks[p] / WorldRunner.TicksPerSecond} s");
 			Assert.True(maxUnits[p] >= 5, $"player {p} never had an army (max {maxUnits[p]})");
 			Assert.Contains("mat", bots[p].ModulesBuilt);
+			Assert.InRange(firstBatteryExtractor[p], 0, 5 * 60);
 			Assert.True(unpoweredTicks[p] * 100 <= factoryTicks[p] * 10, $"player {p}: consumers without power {unpoweredTicks[p] * 100 / System.Math.Max(1, factoryTicks[p])}% of the time");
 			Assert.True(maxCrops[p] <= 300, $"player {p} piled up {maxCrops[p]} crops (cap {PlayerState.CoreCapacity}): too few kitchens");
 		}
@@ -166,5 +170,27 @@ public class ScenarioTests
 		}
 		_out.WriteLine($"without power {unpowered * 100 / working}% of the time, used {s.P0.EnergyUsedLastMinute * 100 / PowerStats.EnergyPerBattery}% of a battery in the last minute, {charger.Energy} left");
 		Assert.True(unpowered * 100 <= working * 5, $"without power {unpowered * 100 / working}% of the time");
+	}
+
+	private static int SecondsToFindBatteries(int scouts, bool lamps)
+	{
+		var s = Scenario.Match().NoWorkers().Instant().Rich().RealFog();
+		if (lamps)
+		{
+			s.Place(BuildingType.Lamp, 22, 38);
+			s.Place(BuildingType.Lamp, 30, 42);
+		}
+		for (int i = 0; i < scouts; i++) s.Spawn(UnitType.Scout, 9, 30 + i);
+		return s.World.Until(() => s.World.IsExplored(0, 41, 47), 300, "the battery patch explored") / WorldRunner.TicksPerSecond;
+	}
+
+	[Fact]
+	public void Balance_Scouting_FindsTheBatteryPatch_FasterWithMoreScoutsOrLamps()
+	{
+		int one = SecondsToFindBatteries(1, false), two = SecondsToFindBatteries(2, false), lit = SecondsToFindBatteries(1, true);
+		_out.WriteLine($"battery patch found by 1 scout in {one} s, 2 scouts {two} s, 1 scout + 2 lamps {lit} s");
+		Assert.True(one <= 180, $"1 scout took {one} s (wide before deep: the patch is in the far corner)");
+		Assert.True(two < one, $"2 scouts {two} s, 1 scout {one} s");
+		Assert.True(lit < one, $"with lamps {lit} s, without {one} s");
 	}
 }

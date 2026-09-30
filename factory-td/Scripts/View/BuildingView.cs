@@ -15,6 +15,9 @@ public partial class BuildingView : Node2D
 	private readonly Dictionary<Building, Sprite2D> _icons = new(); // sorter filter / assembler product
 	private World _world;
 
+	/// <summary>Enemy buildings are only drawn while this player can see them (remembered ones: FogView).</summary>
+	public int LocalPlayer { get; set; }
+
 	public void Bind(World world)
 	{
 		_world = world;
@@ -65,6 +68,9 @@ public partial class BuildingView : Node2D
 	{
 		foreach (var (building, sprite) in _sprites)
 		{
+			sprite.Visible = Knowledge.ShowBuilding(_world, LocalPlayer, building);
+			if (_icons.TryGetValue(building, out var icon))
+				icon.Visible = sprite.Visible;
 			sprite.Modulate = building.IsBuilt ? Colors.White : UnderConstruction;
 			if (building is CropField field)
 				sprite.Texture = BuildingVisuals.CropFieldTexture(field.IsBuilt ? field.Stage : 0);

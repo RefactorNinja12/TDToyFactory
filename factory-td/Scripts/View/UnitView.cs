@@ -23,6 +23,7 @@ public partial class UnitView : Node2D
 		[UnitType.RcCar] = ("res://Assets/Sprites/Units/rc_car.png", 44f),
 		[UnitType.Builder] = ("res://Assets/Sprites/Units/builder.png", 40f),
 		[UnitType.Farmer] = ("res://Assets/Sprites/Units/farmer.png", 40f),
+		[UnitType.Scout] = ("res://Assets/Sprites/Units/scout.png", 40f),
 	};
 
 	private readonly Dictionary<UnitType, MultiMesh> _meshes = new();
@@ -31,6 +32,9 @@ public partial class UnitView : Node2D
 	private World _world;
 
 	public float Alpha { get; set; }
+
+	/// <summary>Enemy units are only drawn while this player can see them.</summary>
+	public int LocalPlayer { get; set; }
 
 	public void Bind(World world) => _world = world;
 
@@ -60,7 +64,8 @@ public partial class UnitView : Node2D
 		foreach (var type in _meshes.Keys)
 			_counts[type] = 0;
 		foreach (var unit in units)
-			_counts[unit.Type]++;
+			if (_world.CanSee(LocalPlayer, unit))
+				_counts[unit.Type]++;
 
 		foreach (var (type, mesh) in _meshes)
 		{
@@ -72,6 +77,8 @@ public partial class UnitView : Node2D
 
 		foreach (var unit in units)
 		{
+			if (!_world.CanSee(LocalPlayer, unit))
+				continue;
 			var position = new Vector2(
 				Mathf.Lerp(unit.PrevX, unit.X, Alpha),
 				Mathf.Lerp(unit.PrevY, unit.Y, Alpha)) * SubTileToPixels;

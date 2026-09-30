@@ -30,11 +30,11 @@ public static class PowerOverlay
 	}
 
 	/// <summary>Every cord of the player, as points along a hanging curve from one node's centre to the other's.</summary>
-	public static List<(float X, float Y)[]> Cords(World world, int player, int segments = 8)
+	public static List<(float X, float Y)[]> Cords(World world, int player, int segments = 8, System.Func<Building, bool> include = null)
 	{
 		var cords = new List<(float X, float Y)[]>();
 		foreach (var (a, b) in world.Power.Cords)
-			if (a.Owner == player)
+			if (a.Owner == player && (include == null || (include(a) && include(b))))
 				cords.Add(CordPoints(Center(a.CenterX), Center(a.CenterY), Center(b.CenterX), Center(b.CenterY), segments));
 		return cords;
 	}

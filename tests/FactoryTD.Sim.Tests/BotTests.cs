@@ -30,7 +30,7 @@ public class BotTests : IClassFixture<BotRuns>
 	/// <summary>A bot with plenty of resources, run until its plan has grown for a while.</summary>
 	internal static (Scenario, BotPlayer) RichBot(int player, int seconds)
 	{
-		var s = Scenario.Match().RealPower().Rich(5000).Give(ItemType.Food, 500, player);
+		var s = Scenario.Match().RealPower().RealFog().Rich(5000).Give(ItemType.Food, 500, player);
 		var bot = new BotPlayer(player);
 		s.World.Seconds(seconds, bot);
 		return (s, bot);
@@ -128,5 +128,15 @@ public class BotTests : IClassFixture<BotRuns>
 		Assert.True(outside.Count == 0, "outside the grid: " + string.Join(" ", outside));
 		Assert.True(s.World.Power.EnergyStored(1) > 0, "no energy stored");
 		Assert.Contains(bot.PlannedSteps, p => p.Type == BuildingType.Pylon && s.World.Map.GetZone(p.X, p.Y) == Zone.Hall);
+	}
+
+	[Fact]
+	public void BuildsATentEarly_AndFindsTheBatteries()
+	{
+		var (left, leftBot) = _runs.Left;
+		Assert.Contains(leftBot.PlannedSteps, p => p.Type == BuildingType.Tent);
+		Assert.True(left.World.CountUnits(0, UnitType.Scout) >= 1, "no scout after 2 minutes");
+		var (right, _) = _runs.Right;
+		Assert.True(right.World.CountBuildings(1, BuildingType.BatteryExtractor) >= 1, "no battery extractor after 4 minutes");
 	}
 }

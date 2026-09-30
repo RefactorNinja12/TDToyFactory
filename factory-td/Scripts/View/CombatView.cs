@@ -1,4 +1,5 @@
 using FactoryTD.Sim;
+using FactoryTD.UI;
 using Godot;
 
 namespace FactoryTD.View;
@@ -24,6 +25,9 @@ public partial class CombatView : Node2D
 
 	public void Bind(World world) => _world = world;
 
+	/// <summary>Only what this player can see is drawn.</summary>
+	public int LocalPlayer { get; set; }
+
 	public override void _Process(double delta) => QueueRedraw();
 
 	public override void _Draw()
@@ -33,16 +37,21 @@ public partial class CombatView : Node2D
 
 		foreach (var building in _world.Buildings)
 		{
+			if (!Knowledge.ShowBuilding(_world, LocalPlayer, building))
+				continue;
 			if (building is Tower tower)
 				DrawAmmo(tower);
 			DrawBuildingHealth(building);
 		}
 
 		foreach (var unit in _world.Units)
-			DrawHealth(unit);
+			if (_world.CanSee(LocalPlayer, unit))
+				DrawHealth(unit);
 
 		foreach (var shot in _world.Projectiles)
-			DrawProjectile(shot);
+			if (_world.IsVisible(LocalPlayer, shot.ToX / UnitStats.SubTile, shot.ToY / UnitStats.SubTile) ||
+				_world.IsVisible(LocalPlayer, shot.FromX / UnitStats.SubTile, shot.FromY / UnitStats.SubTile))
+				DrawProjectile(shot);
 	}
 
 	private void DrawAmmo(Tower tower)
