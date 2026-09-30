@@ -83,7 +83,7 @@ Constants in `Sim/Vision.cs` `VisionStats`.
       scout flees (distance to enemy grows for 3 s); nothing left → returns home.
 - [x] 8. Determinism: checksum hashes Explored/Visible (e.g. running hash of bit arrays), remembered
       buildings, scout target/flee state. Determinism tests with real fog + scouts.
-- [ ] 9. UI logic (`Scripts/UI`): `Minimap` (colour index per tile + camera rect ↔ tile mapping + click →
+- [x] 9. UI logic (`Scripts/UI`): `Minimap` (colour index per tile + camera rect ↔ tile mapping + click →
       tile), `FogLevels` (per tile 0/1/2 for the fog texture), `Knowledge` helpers (which enemy units /
       buildings / ghosts to draw), InfoRows: nothing for unseen enemies, placement error text.
       Tests in UiTests.
@@ -111,3 +111,4 @@ Constants in `Sim/Vision.cs` `VisionStats`.
 - Step 6: UnitType.Scout (worker: IsWorker, no power, eats 1; hp 18, speed 36, recipe 3 plastic, 160 ticks; light 7), MaxScouts 6, ScoutsPerTent 2 (UnitFactory rule). BuildingType.Tent 1x1 (5 brick 10 plastic) -> UnitFactory(Scout). World.TickScout stub (stands still). Texts names. View: no sprites for Tent/Scout yet (step 11). 188/188.
 - Step 7: Sim/Scouting.cs (World partial): target = frontier tile minimising homeDistance + manhattan(scout)/2 (pure nearest-home ping-ponged across the base: 717 tiles/60 s -> 2825/180 s), spread 6 tiles, retarget on vision ticks, flee 3 s from visible enemy units (5 directions tried), home when nothing left. World.HomeDistance (BFS over explored floor, cached per vision tick), IsFrontier, ExploredCount, ExploreAll (test). One scout finds the battery patch in 139 s (guard 180). 194/194.
 - Step 8: Vision.HashInto (explored/visible as 64-bit words, remembered list), unit hash + LightDirection, scout target/flee. Checksum_SeesSmallChanges covers explored; RealFog_ScoutsFleeingAndExploring_IsDeterministic (90 s). 195/195.
+- Step 9: UI/Fog.cs: Knowledge.ShowBuilding/Ghosts, FogLevels (0/1/2), Minimap (kind in low bits + LitBit; terrain, deposits, remembered enemy buildings, own buildings, visible units; CameraRect, ToTiles). Hover filter for unseen enemies is done in the view (InfoPanel.Hovered) in step 11. 200/200.
