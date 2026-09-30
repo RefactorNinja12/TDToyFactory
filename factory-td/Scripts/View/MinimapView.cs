@@ -16,7 +16,7 @@ public partial class MinimapView : CanvasLayer
 	private static readonly Color[] Colours =
 	{
 		new(0.02f, 0.02f, 0.05f),   // unknown
-		new(0.20f, 0.24f, 0.38f),   // wall (slate)
+		new(0.35f, 0.30f, 0.40f),   // wall
 		new(0.42f, 0.29f, 0.22f),   // floor (dark wood)
 		new(0.90f, 0.30f, 0.25f),   // bricks
 		new(0.30f, 0.65f, 0.95f),   // plastic

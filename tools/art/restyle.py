@@ -1,12 +1,12 @@
 """
 Restyles every sprite into one look: a shared muted night palette (fits the navy fog), near-black
-outlines, a little less saturated and "cartoony"; and generates the dark wooden floor tiles.
+outlines, a little less saturated and "cartoony"; and generates the dark wooden floor (big boards, as seen by a toy).
 
     python tools/art/restyle.py
 
 Reads the originals from tools/art/source/ (copied there from factory-td/Assets/Sprites on the first
 run) and writes factory-td/Assets/Sprites/, so it can be re-run with a tweaked palette without
-degrading the art. Tiles/floor_wood.png is generated from scratch (4 variants side by side).
+degrading the art. Tiles/floor_wood.png is generated from scratch (a 16x8 tile picture of big boards); the wall stays as drawn.
 """
 import os
 import random
@@ -108,39 +108,58 @@ def restyle(path_in, path_out, outline=True):
     out.save(path_out)
 
 
-def floor_tiles(path_out, variants=4, size=64):
-    """Dark wooden planks: four rows of planks per tile, staggered seams, grain, the odd knot."""
+FLOOR_TILES_X, FLOOR_TILES_Y = 16, 8  # the floor picture spans this many map tiles, then repeats
+
+
+def floor_tiles(path_out, tile=64):
+    """
+    Big dark floorboards, as a room looks to a toy: boards two tiles wide and 5-16 tiles long, in a picture
+    of FLOOR_TILES_X x FLOOR_TILES_Y tiles that repeats seamlessly (seams wrap around). The map picks the
+    part of the picture by tile position, so boards run on across tiles.
+    """
     rng = random.Random(1234)
-    woods = [(58, 40, 33), (66, 45, 36), (74, 50, 38), (62, 43, 36), (52, 37, 31)]
-    seam = (24, 17, 20)
-    img = Image.new("RGBA", (size * variants, size))
+    woods = [(58, 40, 33), (66, 45, 36), (74, 50, 38), (62, 43, 36), (52, 37, 31), (70, 47, 35)]
+    seam = (22, 15, 18)
+    width, height = FLOOR_TILES_X * tile, FLOOR_TILES_Y * tile
+    board = tile * 2
+    img = Image.new("RGBA", (width, height))
     px = img.load()
-    for v in range(variants):
-        row_h = size // 4
-        for row in range(4):
-            # where this row's planks end (staggered per row and variant)
-            cuts = sorted({0, size} | {rng.randrange(12, size - 12) for _ in range(rng.choice((1, 1, 2)))})
-            for a, b in zip(cuts, cuts[1:]):
-                base = rng.choice(woods)
-                shift = rng.randint(-4, 4)
-                grain = [rng.random() for _ in range(row_h)]
-                knot = (rng.randrange(a + 3, max(a + 4, b - 3)), row * row_h + rng.randrange(4, row_h - 4)) if rng.random() < 0.25 and b - a > 10 else None
-                for y in range(row * row_h, (row + 1) * row_h):
-                    ly = y - row * row_h
-                    for x in range(a, b):
-                        c = [ch + shift for ch in base]
-                        # long grain streaks with small breaks
-                        if grain[ly] > 0.72 and (x * 7 + ly * 3 + v) % 11 != 0:
-                            c = [ch - 7 for ch in c]
-                        elif grain[ly] < 0.12:
-                            c = [ch + 5 for ch in c]
-                        if ly == 1:
-                            c = [ch + 9 for ch in c]  # soft top light of each plank
-                        if knot and (x - knot[0]) ** 2 + ((y - knot[1]) * 2) ** 2 <= 5:
-                            c = [ch - 16 for ch in c]
-                        if ly == 0 or x == a:
-                            c = list(seam)  # gaps between planks
-                        px[v * size + x, y] = (*[max(0, min(255, int(ch))) for ch in c], 255)
+    for row in range(height // board):
+        # Board ends in this row, around a loop (the last board continues at the start of the row).
+        cuts = sorted(rng.sample(range(0, width, 8), rng.choice((1, 2, 2, 3))))
+        for k, start in enumerate(cuts):
+            end = cuts[k + 1] if k + 1 < len(cuts) else cuts[0] + width
+            base = rng.choice(woods)
+            shift = rng.randint(-3, 3)
+            # Grain: a few long wavy lines along the board, and faint streaks.
+            lines = [(rng.randrange(6, board - 6), rng.uniform(0.0, 6.28), rng.choice((-9, -6, 5))) for _ in range(rng.randint(5, 8))]
+            knots = [(start + rng.randrange(20, max(21, end - start - 20)), rng.randrange(18, board - 18))
+                     for _ in range(rng.choice((0, 0, 1, 2)))]
+            for gx in range(start, end):
+                x = gx % width
+                lx = gx - start
+                for ly in range(board):
+                    y = row * board + ly
+                    c = [ch + shift for ch in base]
+                    for gy, phase, dc in lines:
+                        wave = gy + 2.0 * __import__("math").sin(lx / 37.0 + phase)
+                        if abs(ly - wave) < 0.8 and (lx * 5 + gy) % 29 != 0:
+                            c = [ch + dc for ch in c]
+                    if (lx * 3 + ly * 17) % 53 == 0:
+                        c = [ch - 4 for ch in c]  # fine speckle
+                    for kx, ky in knots:
+                        d = ((gx - kx) / 2.2) ** 2 + (ly - ky) ** 2
+                        if d <= 9:
+                            c = [ch - 18 for ch in c]
+                        elif d <= 20:
+                            c = [ch - 7 for ch in c]  # ring around the knot
+                    if ly in (2, 3):
+                        c = [ch + 10 for ch in c]  # bevel: light on the top edge
+                    elif ly >= board - 3:
+                        c = [ch - 9 for ch in c]  # shadow on the bottom edge
+                    if ly < 2 or lx < 2:
+                        c = list(seam)  # gaps between boards
+                    px[x, y] = (*[max(0, min(255, int(ch))) for ch in c], 255)
     img.save(path_out)
 
 
@@ -183,12 +202,14 @@ def main():
                 continue
             src = os.path.join(folder, name)
             dst = os.path.join(SPRITES, rel, name)
-            if rel == "Tiles" and name in ("floor_wood.png", "wall.png"):
+            if rel == "Tiles" and name == "floor_wood.png":
+                continue
+            if rel == "Tiles" and name == "wall.png":
+                shutil.copyfile(src, dst)  # the wall keeps its original look
                 continue
             # Full-tile pictures (belts, walls, deposits on the floor) get no outline at their edges.
             restyle(src, dst, outline=rel not in ("Tiles", "Conveyors"))
     floor_tiles(os.path.join(SPRITES, "Tiles", "floor_wood.png"))
-    wall_tile(os.path.join(SPRITES, "Tiles", "wall.png"))
     print("restyled", sum(len(f) for _, _, f in os.walk(SOURCE)), "files")
 
 
