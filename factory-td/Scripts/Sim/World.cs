@@ -1,0 +1,587 @@
+using System;
+using System.Collections.Generic;
+
+namespace FactoryTD.Sim;
+
+/// <summary>
+/// Game state: the map, the players and everything built on it. Pure C#.
+/// Buildings can cover several tiles; every tile they cover points to the same Building.
+/// </summary>
+public sealed class World
+{
+	/// <summary>Fixed simulation rate. Everything in the sim counts in ticks, never in seconds.</summary>
+	public const int TicksPerSecond = 20;
+
+	private readonly Building[] _grid;
+	private readonly List<Building> _buildings = new();
+	private readonly PlayerState[] _players;
+	private readonly Core[] _cores;
+	private readonly List<Unit> _units = new();
+	private readonly List<Projectile> _projectiles = new();
+
+	// _fields[p] leads player p's units to the enemy core. Rebuilt lazily when buildings change.
+	private readonly FlowField[] _fields;
+	private bool _fieldsDirty = true;
+	private int _nextUnitId;
+
+	public MapLayout Map { get; }
+	public long TickCount { get; private set; }
+
+	/// <summary>In placement order, so iteration is deterministic.</summary>
+	public IReadOnlyList<Building> Buildings => _buildings;
+
+	public IReadOnlyList<PlayerState> Players => _players;
+
+	/// <summary>In spawn order. Dead units are removed at the end of the tick they die in.</summary>
+	public IReadOnlyList<Unit> Units => _units;
+
+	public IReadOnlyList<Projectile> Projectiles => _projectiles;
+
+	/// <summary>The winning player, or -1 while the match is on.</summary>
+	public int Winner { get; private set; } = -1;
+
+	public event Action<Building> BuildingPlaced;
+	public event Action<Building> BuildingRemoved;
+
+	/// <summary>A building's setting changed (sorter filter, assembler recipe).</summary>
+	public event Action<Building> BuildingChanged;
+
+	public World(MapLayout map, int playerCount)
+	{
+		Map = map;
+		_grid = new Building[map.Width * map.Height];
+		_players = new PlayerState[playerCount];
+		_cores = new Core[playerCount];
+		_fields = new FlowField[playerCount];
+		for (int i = 0; i < playerCount; i++)
+		{
+			_players[i] = new PlayerState(i);
+			_fields[i] = new FlowField(map.Width, map.Height);
+		}
+	}
+
+	public Core GetCore(int player) => _cores[player];
+
+	public int EnemyOf(int player) => (player + 1) % _players.Length;
+
+	public FlowField GetFlowField(int player)
+	{
+		RebuildFieldsIfDirty();
+		return _fields[player];
+	}
+
+	/// <summary>A new 1v1 match: the default map with each player's core at the back of their room.</summary>
+	public static World CreateMatch()
+	{
+		var world = new World(MapLayout.CreateDefault(), 2);
+		var (w, h) = BuildingRules.Size(BuildingType.Core);
+
+		// Player 0 in the left room, player 1 mirrored in the right room, both centred on the door.
+		const int coreX = 6;
+		int coreY = world.Map.Height / 2 - h / 2;
+		world.TryPlace(BuildingType.Core, coreX, coreY, Direction.East, owner: 0);
+		world.TryPlace(BuildingType.Core, world.Map.Width - coreX - w, coreY, Direction.West, owner: 1);
+
+		foreach (var player in world._players)
+		{
+			player.Refund(BuildingRules.StartingStock);
+			// Starting builders, lined up on the side of the core that faces the room.
+			var core = world._cores[player.Id];
+			int x = core.Facing == Direction.East ? core.X + core.Width : core.X - 1;
+			for (int i = 0; i < UnitStats.StartingBuilders; i++)
+				world.SpawnUnit(UnitType.Builder, player.Id, x, core.Y - 1 + i);
+		}
+		return world;
+	}
+
+	public Building GetBuilding(int x, int y) => Map.InBounds(x, y) ? _grid[y * Map.Width + x] : null;
+
+	public bool CanPlace(BuildingType type, int x, int y, int owner) => CheckPlace(type, x, y, owner) == PlaceError.None;
+
+	/// <summary>Why <paramref name="owner"/> can't build here (location first, then cost), or None if they can.</summary>
+	public PlaceError CheckPlace(BuildingType type, int x, int y, int owner)
+	{
+		var location = CheckLocation(type, x, y, owner);
+		if (location != PlaceError.None)
+			return location;
+		return _players[owner].CanAfford(BuildingRules.Cost(type)) ? PlaceError.None : PlaceError.NotEnoughResources;
+	}
+
+	/// <summary>
+	/// Whether <paramref name="owner"/> may put the building with its top-left corner on (x, y), ignoring cost:
+	/// floor only, in their own room or the hall, not on another building, extractors on their deposit.
+	/// </summary>
+	public PlaceError CheckLocation(BuildingType type, int x, int y, int owner)
+	{
+		var (w, h) = BuildingRules.Size(type);
+		var required = BuildingRules.RequiredResource(type);
+		var home = MapLayout.HomeZone(owner);
+
+		for (int cy = y; cy < y + h; cy++)
+		{
+			for (int cx = x; cx < x + w; cx++)
+			{
+				if (!Map.InBounds(cx, cy) || Map[cx, cy] != TileType.Floor)
+					return PlaceError.NotFloor;
+				var zone = Map.GetZone(cx, cy);
+				if (zone != home && zone != Zone.Hall)
+					return PlaceError.OutsideZone;
+				if (_grid[cy * Map.Width + cx] != null)
+					return PlaceError.Occupied;
+				if (required != ResourceType.None && Map.GetResource(cx, cy) != required)
+					return PlaceError.WrongResource;
+			}
+		}
+		return PlaceError.None;
+	}
+
+	public bool TryPlace(BuildingType type, int x, int y, Direction facing, int owner)
+	{
+		if (!CanPlace(type, x, y, owner))
+			return false;
+
+		_players[owner].TrySpend(BuildingRules.Cost(type));
+		var building = BuildingRules.Create(type, x, y, facing, owner, this);
+		SetFootprint(building, building);
+		_buildings.Add(building);
+		if (building is Core core)
+			_cores[owner] = core;
+		_fieldsDirty = true;
+		BuildingPlaced?.Invoke(building);
+		return true;
+	}
+
+	/// <summary>Cycles the setting of <paramref name="owner"/>'s building at (x, y), if it has one.</summary>
+	public bool TryConfigure(int x, int y, int owner)
+	{
+		var building = GetBuilding(x, y);
+		if (building == null || building.Owner != owner || !building.CycleSetting())
+			return false;
+		BuildingChanged?.Invoke(building);
+		return true;
+	}
+
+	/// <summary>Creates a unit in the middle of tile (tileX, tileY).</summary>
+	public Unit SpawnUnit(UnitType type, int owner, int tileX, int tileY)
+	{
+		const int half = UnitStats.SubTile / 2;
+		var unit = new Unit(_nextUnitId++, type, owner, tileX * UnitStats.SubTile + half, tileY * UnitStats.SubTile + half);
+		_units.Add(unit);
+		return unit;
+	}
+
+	/// <summary>
+	/// <paramref name="owner"/> tearing down one of their own buildings (full refund). Cores can't be removed.
+	/// Destruction by enemies should get its own method without the refund.
+	/// </summary>
+	public bool TryRemove(int x, int y, int owner)
+	{
+		var building = GetBuilding(x, y);
+		if (building == null || building.Owner != owner || building.Type == BuildingType.Core)
+			return false;
+
+		_players[building.Owner].Refund(BuildingRules.Cost(building.Type));
+		SetFootprint(building, null);
+		_buildings.Remove(building);
+		_fieldsDirty = true;
+		BuildingRemoved?.Invoke(building);
+		return true;
+	}
+
+	/// <summary>
+	/// Advances the simulation one tick: buildings in placement order (towers fire), units in spawn order,
+	/// then projectiles in firing order. Units killed this tick are removed last.
+	/// </summary>
+	public void Tick()
+	{
+		TickCount++;
+		RebuildFieldsIfDirty();
+
+		foreach (var building in _buildings)
+			if (building.IsBuilt)
+				building.Tick(this);
+		foreach (var unit in _units)
+		{
+			if (unit.Type == UnitType.Builder)
+				TickBuilder(unit);
+			else
+				TickUnit(unit);
+		}
+		TickProjectiles();
+		_units.RemoveAll(u => u.Health <= 0);
+
+		for (int p = 0; p < _cores.Length && Winner < 0; p++)
+			if (_cores[p] != null && _cores[p].Health == 0)
+				Winner = EnemyOf(p);
+	}
+
+	public int CountUnits(int owner, UnitType type)
+	{
+		int count = 0;
+		foreach (var unit in _units)
+			if (unit.Owner == owner && unit.Type == type && unit.Health > 0)
+				count++;
+		return count;
+	}
+
+	/// <summary>How many builders have picked this construction site.</summary>
+	public int BuildersOn(Building site)
+	{
+		int count = 0;
+		foreach (var unit in _units)
+			if (unit.Job == site && unit.Health > 0)
+				count++;
+		return count;
+	}
+
+	// ---------------------------------------------------------------------------------------------
+	// Builders: pick the nearest unfinished site (spreading out over several), walk there, build.
+
+	private const int CrowdPenalty = 12; // a site already being worked on counts as this many tiles further away
+
+	private void TickBuilder(Unit builder)
+	{
+		builder.PrevX = builder.X;
+		builder.PrevY = builder.Y;
+		builder.MoveX = builder.MoveY = 0;
+
+		var job = builder.Job;
+		if (job != null && (job.IsBuilt || GetBuilding(job.X, job.Y) != job))
+			builder.Job = job = null;
+		if (job == null)
+		{
+			builder.Job = job = ChooseSite(builder);
+			builder.Path = null;
+			if (job == null)
+				return; // nothing to build: wait where it is
+		}
+
+		if (IsAround(job, builder.TileX, builder.TileY))
+		{
+			job.AddWork(UnitStats.BuilderWorkPerTick);
+			builder.MoveX = job.CenterX - builder.X; // face the work
+			builder.MoveY = job.CenterY - builder.Y;
+			if (job.IsBuilt)
+				_fieldsDirty = true;
+			return;
+		}
+
+		if (builder.Path == null)
+		{
+			builder.Path = FindPathTo(builder.TileX, builder.TileY, job);
+			builder.PathIndex = 0;
+			if (builder.Path == null)
+			{
+				builder.Job = null; // can't get there; try something else next tick
+				return;
+			}
+		}
+
+		// Walk to the centre of the next tile on the path (a step never overshoots it).
+		if (builder.PathIndex < builder.Path.Count)
+		{
+			const int half = UnitStats.SubTile / 2;
+			var (tx, ty) = builder.Path[builder.PathIndex];
+			int goalX = tx * UnitStats.SubTile + half, goalY = ty * UnitStats.SubTile + half;
+			TryStep(builder, goalX, goalY);
+			if (builder.X == goalX && builder.Y == goalY)
+				builder.PathIndex++;
+		}
+	}
+
+	/// <summary>The nearest unfinished site of the builder's owner, preferring ones nobody works on yet.</summary>
+	private Building ChooseSite(Unit builder)
+	{
+		Building best = null;
+		int bestScore = int.MaxValue;
+		foreach (var building in _buildings)
+		{
+			if (building.Owner != builder.Owner || building.IsBuilt)
+				continue;
+			int distance = System.Math.Abs(building.X - builder.TileX) + System.Math.Abs(building.Y - builder.TileY);
+			int score = distance + CrowdPenalty * BuildersOn(building);
+			if (score < bestScore)
+			{
+				best = building;
+				bestScore = score;
+			}
+		}
+		return best;
+	}
+
+	/// <summary>Whether tile (x, y) is on the building or next to it (diagonals count).</summary>
+	private static bool IsAround(Building building, int x, int y) =>
+		x >= building.X - 1 && x <= building.X + building.Width &&
+		y >= building.Y - 1 && y <= building.Y + building.Height;
+
+	private static readonly (int dx, int dy)[] Steps = { (1, 0), (0, 1), (-1, 0), (0, -1) };
+
+	/// <summary>
+	/// Breadth-first path over floor (buildings don't block builders) to any tile around the building.
+	/// The start tile is not included. Null if unreachable.
+	/// </summary>
+	private List<(int X, int Y)> FindPathTo(int fromX, int fromY, Building target)
+	{
+		if (IsAround(target, fromX, fromY))
+			return new List<(int X, int Y)>();
+
+		var previous = new Dictionary<(int, int), (int, int)> { [(fromX, fromY)] = (fromX, fromY) };
+		var queue = new Queue<(int X, int Y)>();
+		queue.Enqueue((fromX, fromY));
+		while (queue.Count > 0)
+		{
+			var tile = queue.Dequeue();
+			foreach (var (dx, dy) in Steps)
+			{
+				var next = (X: tile.X + dx, Y: tile.Y + dy);
+				if (previous.ContainsKey(next) || !Map.InBounds(next.X, next.Y) || Map[next.X, next.Y] != TileType.Floor)
+					continue;
+				previous[next] = tile;
+				if (IsAround(target, next.X, next.Y))
+				{
+					var path = new List<(int X, int Y)>();
+					for (var at = next; at != (fromX, fromY); at = previous[at])
+						path.Add(at);
+					path.Reverse();
+					return path;
+				}
+				queue.Enqueue(next);
+			}
+		}
+		return null;
+	}
+
+	private void TickUnit(Unit unit)
+	{
+		unit.PrevX = unit.X;
+		unit.PrevY = unit.Y;
+		unit.MoveX = unit.MoveY = 0;
+		if (unit.AttackCooldown > 0)
+			unit.AttackCooldown--;
+		if (Winner >= 0 || _cores[EnemyOf(unit.Owner)] == null)
+			return;
+
+		// Enemy buildings in the way are always within range, so they get shot before the unit walks on;
+		// its own buildings it just walks over.
+		var (targetUnit, targetBuilding) = SelectTarget(unit, UnitStats.Range(unit.Type), includeCore: true);
+		if (targetUnit != null || targetBuilding != null)
+		{
+			// Stand still and shoot.
+			int aimX = targetUnit?.X ?? targetBuilding.CenterX;
+			int aimY = targetUnit?.Y ?? targetBuilding.CenterY;
+			unit.MoveX = aimX - unit.X;
+			unit.MoveY = aimY - unit.Y;
+			if (unit.AttackCooldown == 0)
+			{
+				var def = UnitStats.Def(unit.Type);
+				int damage = targetBuilding != null ? def.Damage * def.BuildingDamagePercent / 100 : def.Damage;
+				var kind = def.TargetsUnits ? DamageKind.Bullet : DamageKind.Punch;
+				Fire(new Projectile(kind, unit.Owner, damage, 0, def.ShotTravelTicks, unit.X, unit.Y, targetUnit, targetBuilding));
+				unit.AttackCooldown = def.AttackTicks;
+			}
+			return;
+		}
+
+		// Nothing in range: go for anything it can see (except the core) before heading on to the core.
+		var (seenUnit, seenBuilding) = SelectTarget(unit, UnitStats.Sight(unit.Type), includeCore: false);
+		if (seenUnit != null || seenBuilding != null)
+		{
+			int goalX = seenUnit?.X ?? seenBuilding.CenterX;
+			int goalY = seenUnit?.Y ?? seenBuilding.CenterY;
+			if (TryStep(unit, goalX, goalY))
+				return;
+			// A wall is in the way of the straight line; fall back to the flow field.
+		}
+
+		// Head for the centre of the next tile downhill in the flow field.
+		var (nextX, nextY) = _fields[unit.Owner].NextTile(unit.TileX, unit.TileY);
+		const int half = UnitStats.SubTile / 2;
+		TryStep(unit, nextX * UnitStats.SubTile + half, nextY * UnitStats.SubTile + half);
+	}
+
+	/// <summary>Moves the unit up to its speed towards a point. Refuses (returns false) to step into a wall.</summary>
+	private bool TryStep(Unit unit, int goalX, int goalY)
+	{
+		int dx = goalX - unit.X;
+		int dy = goalY - unit.Y;
+		int length = IntMath.Sqrt(dx * dx + dy * dy);
+		if (length == 0)
+			return true;
+
+		int speed = UnitStats.Speed(unit.Type);
+		if (length > speed)
+		{
+			dx = dx * speed / length;
+			dy = dy * speed / length;
+		}
+
+		int tileX = (unit.X + dx) / UnitStats.SubTile, tileY = (unit.Y + dy) / UnitStats.SubTile;
+		if (!Map.InBounds(tileX, tileY) || Map[tileX, tileY] != TileType.Floor)
+			return false;
+
+		unit.X += dx;
+		unit.Y += dy;
+		unit.MoveX = dx;
+		unit.MoveY = dy;
+		return true;
+	}
+
+	/// <summary>
+	/// The closest living unit not owned by <paramref name="owner"/> within <paramref name="range"/>
+	/// (sub-tile units) of the point. Ties go to the oldest unit, so the result is deterministic.
+	/// </summary>
+	public Unit FindNearestEnemy(int owner, int x, int y, int range)
+	{
+		Unit best = null;
+		long bestDistance = (long)range * range;
+		foreach (var unit in _units)
+		{
+			if (unit.Owner == owner || unit.Health <= 0)
+				continue;
+			long dx = unit.X - x, dy = unit.Y - y;
+			long distance = dx * dx + dy * dy;
+			if (distance <= bestDistance && (best == null || distance < bestDistance))
+			{
+				best = unit;
+				bestDistance = distance;
+			}
+		}
+		return best;
+	}
+
+	/// <summary>
+	/// The best target within <paramref name="range"/>, in priority order:
+	/// 1. enemy units, 2. enemy towers, 3. any other enemy building, 4. the enemy core last (if included).
+	/// So an attack tears down the base around the core first. Nearest wins within a tier;
+	/// ties go to the oldest unit / earliest-built building (deterministic).
+	/// </summary>
+	private (Unit, Building) SelectTarget(Unit unit, int range, bool includeCore)
+	{
+		long range2 = (long)range * range;
+
+		if (UnitStats.Def(unit.Type).TargetsUnits)
+		{
+			var enemyUnit = FindNearestEnemy(unit.Owner, unit.X, unit.Y, range);
+			if (enemyUnit != null)
+				return (enemyUnit, null);
+		}
+
+		Building tower = null, other = null, core = null;
+		long towerDistance = range2, otherDistance = range2;
+		foreach (var building in _buildings)
+		{
+			if (building.Owner == unit.Owner)
+				continue;
+			long distance = DistanceSquaredTo(building, unit.X, unit.Y);
+			if (distance > range2)
+				continue;
+
+			if (building is Tower)
+			{
+				if (tower == null || distance < towerDistance)
+					(tower, towerDistance) = (building, distance);
+			}
+			else if (building is Core)
+			{
+				if (includeCore)
+					core = building;
+			}
+			else if (other == null || distance < otherDistance)
+			{
+				(other, otherDistance) = (building, distance);
+			}
+		}
+		return (null, tower ?? other ?? core);
+	}
+
+	/// <summary>Squared distance from a point to the nearest edge of the building's footprint (0 if inside).</summary>
+	private static long DistanceSquaredTo(Building building, int x, int y)
+	{
+		int left = building.X * UnitStats.SubTile, right = (building.X + building.Width) * UnitStats.SubTile;
+		int top = building.Y * UnitStats.SubTile, bottom = (building.Y + building.Height) * UnitStats.SubTile;
+		long dx = x < left ? left - x : x > right ? x - right : 0;
+		long dy = y < top ? top - y : y > bottom ? y - bottom : 0;
+		return dx * dx + dy * dy;
+	}
+
+	public void Fire(Projectile projectile) => _projectiles.Add(projectile);
+
+	private void TickProjectiles()
+	{
+		for (int i = 0; i < _projectiles.Count; i++)
+		{
+			var shot = _projectiles[i];
+			var unit = shot.TargetUnit != null && shot.TargetUnit.Health > 0 ? shot.TargetUnit : null;
+			var building = shot.TargetBuilding != null && IsStanding(shot.TargetBuilding) ? shot.TargetBuilding : null;
+
+			// Single-target shots home in on a unit while it lives.
+			if (unit != null && shot.Kind != DamageKind.Area)
+			{
+				shot.ToX = unit.X;
+				shot.ToY = unit.Y;
+			}
+
+			if (--shot.TicksLeft > 0)
+				continue;
+
+			if (shot.Kind == DamageKind.Area)
+			{
+				long radius2 = (long)shot.AreaRadius * shot.AreaRadius;
+				foreach (var victim in _units)
+				{
+					long dx = victim.X - shot.ToX, dy = victim.Y - shot.ToY;
+					if (victim.Owner != shot.Owner && victim.Health > 0 && dx * dx + dy * dy <= radius2)
+						Hit(victim, shot);
+				}
+			}
+			else if (unit != null)
+			{
+				Hit(unit, shot);
+			}
+			else if (building != null)
+			{
+				building.TakeDamage(shot.Damage);
+				if (building.Health == 0 && building.Type != BuildingType.Core)
+					Destroy(building);
+			}
+		}
+		_projectiles.RemoveAll(p => p.TicksLeft <= 0);
+	}
+
+	private static void Hit(Unit unit, Projectile shot)
+	{
+		int percent = Combat.DamagePercent(shot.Kind, UnitStats.Armor(unit.Type));
+		unit.Health -= shot.Damage * percent / 100;
+	}
+
+	private bool IsStanding(Building building) => GetBuilding(building.X, building.Y) == building;
+
+	/// <summary>A building shot to pieces: gone, no refund.</summary>
+	private void Destroy(Building building)
+	{
+		SetFootprint(building, null);
+		_buildings.Remove(building);
+		_fieldsDirty = true;
+		BuildingRemoved?.Invoke(building);
+	}
+
+	private void RebuildFieldsIfDirty()
+	{
+		if (!_fieldsDirty)
+			return;
+		_fieldsDirty = false;
+		for (int p = 0; p < _players.Length; p++)
+		{
+			var target = _cores[EnemyOf(p)];
+			if (target != null)
+				_fields[p].Build(this, target, p);
+		}
+	}
+
+	private void SetFootprint(Building building, Building value)
+	{
+		for (int cy = building.Y; cy < building.Y + building.Height; cy++)
+			for (int cx = building.X; cx < building.X + building.Width; cx++)
+				_grid[cy * Map.Width + cx] = value;
+	}
+}

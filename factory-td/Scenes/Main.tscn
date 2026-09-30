@@ -1,0 +1,66 @@
+[gd_scene format=3]
+
+[ext_resource type="TileSet" path="res://Assets/TileSets/RoomTiles.tres" id="1_tiles"]
+[ext_resource type="Script" path="res://Scripts/View/MapView.cs" id="2_map"]
+[ext_resource type="Script" path="res://Scripts/View/CameraController.cs" id="3_cam"]
+[ext_resource type="TileSet" path="res://Assets/TileSets/ResourceTiles.tres" id="4_res"]
+[ext_resource type="Script" path="res://Scripts/View/Game.cs" id="5_game"]
+[ext_resource type="Script" path="res://Scripts/View/BuildingView.cs" id="6_buildings"]
+[ext_resource type="Script" path="res://Scripts/View/BuildController.cs" id="7_builder"]
+[ext_resource type="Script" path="res://Scripts/View/BuildMenu.cs" id="8_menu"]
+[ext_resource type="Script" path="res://Scripts/View/ItemView.cs" id="9_items"]
+[ext_resource type="Script" path="res://Scripts/View/ResourceBar.cs" id="10_resbar"]
+[ext_resource type="Script" path="res://Scripts/View/UnitView.cs" id="11_units"]
+[ext_resource type="Script" path="res://Scripts/View/CombatView.cs" id="12_combat"]
+[ext_resource type="Script" path="res://Scripts/View/InfoPanel.cs" id="13_info"]
+
+[node name="Main" type="Node2D" node_paths=PackedStringArray("Map", "Buildings", "Items", "Units", "Builder", "Menu", "Resources", "Combat", "Info")]
+texture_filter = 1
+script = ExtResource("5_game")
+Map = NodePath("Map")
+Buildings = NodePath("Buildings")
+Items = NodePath("Items")
+Units = NodePath("Units")
+Builder = NodePath("Builder")
+Menu = NodePath("UI")
+Resources = NodePath("ResourceBar")
+Combat = NodePath("Combat")
+Info = NodePath("InfoPanel")
+
+[node name="Map" type="TileMapLayer" parent="." node_paths=PackedStringArray("ResourceLayer")]
+tile_set = ExtResource("1_tiles")
+script = ExtResource("2_map")
+ResourceLayer = NodePath("../Resources")
+
+[node name="Resources" type="TileMapLayer" parent="."]
+tile_set = ExtResource("4_res")
+
+[node name="Buildings" type="Node2D" parent="."]
+script = ExtResource("6_buildings")
+
+[node name="Items" type="Node2D" parent="."]
+script = ExtResource("9_items")
+
+[node name="Units" type="Node2D" parent="."]
+script = ExtResource("11_units")
+
+[node name="Combat" type="Node2D" parent="."]
+script = ExtResource("12_combat")
+
+[node name="Builder" type="Node2D" parent="."]
+script = ExtResource("7_builder")
+
+[node name="Camera" type="Camera2D" parent="."]
+position = Vector2(1984, 1984)
+zoom = Vector2(0.2, 0.2)
+script = ExtResource("3_cam")
+
+[node name="UI" type="CanvasLayer" parent="."]
+script = ExtResource("8_menu")
+
+[node name="ResourceBar" type="CanvasLayer" parent="."]
+script = ExtResource("10_resbar")
+
+[node name="InfoPanel" type="CanvasLayer" parent="."]
+layer = 2
+script = ExtResource("13_info")
