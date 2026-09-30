@@ -14,6 +14,10 @@ public enum ItemType : byte
 	Gear,
 	Spring,
 	CircuitBoard,
+
+	// Food chain: crops from fields, food cooked from crops (units eat food)
+	Crop,
+	Food,
 }
 
 /// <summary>An amount of one item type, e.g. a building cost.</summary>
@@ -26,6 +30,7 @@ public static class Items
 	{
 		ItemType.Brick, ItemType.Plastic, ItemType.Battery,
 		ItemType.Gear, ItemType.Spring, ItemType.CircuitBoard,
+		ItemType.Crop, ItemType.Food,
 	};
 
 	public static ItemType FromResource(ResourceType resource) => resource switch

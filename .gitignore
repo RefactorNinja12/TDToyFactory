@@ -29,3 +29,7 @@ obj/
 Thumbs.db
 Desktop.ini
 .DS_Store
+
+# Local headless test probes (never committed)
+/factory-td/Scripts/_Test/
+/factory-td/Scenes/_Probe.tscn*

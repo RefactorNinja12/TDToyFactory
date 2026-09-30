@@ -144,8 +144,35 @@ public partial class InfoPanel : CanvasLayer
 				Text("Klicka för att byta sort.", Dim);
 				break;
 
+			case Kitchen kitchen:
+				Item(ItemType.Food, "Gör: 1 matlåda");
+				Text("Behöver per styck:", Dim);
+				Needs(Kitchen.Recipe, kitchen.Crafter);
+				Progress(kitchen.Crafter.Progress, Kitchen.CookTicks);
+				Text($"Klar mat som väntar på att komma ut: {kitchen.Finished}", kitchen.Finished >= 5 ? Missing : Dim);
+				Text("Bönder lämnar morötter här. Maten går ut åt pilens håll.", Dim);
+				break;
+
+			case CropField field:
+				if (field.IsRipe)
+					Item(ItemType.Crop, $"Mogen! {BuildingVisuals.ItemCount(ItemType.Crop, CropField.Yield)} väntar på en bonde", Good);
+				else
+				{
+					int left = (CropField.GrowTicks - field.Growth + World.TicksPerSecond - 1) / World.TicksPerSecond;
+					Item(ItemType.Crop, $"Växer: {field.Growth * 100 / CropField.GrowTicks}%, mogen om {left} s");
+					Progress(field.Growth, CropField.GrowTicks);
+				}
+				Text("Bönder skördar och bär morötterna till ett kök eller lager.", Dim);
+				break;
+
 			case Core:
 				Text("Tar emot allt från banden. Det betalar dina byggen.", Dim);
+				Storage(building.Owner);
+				break;
+
+			case Warehouse:
+				Text($"Lagrar allt från banden, +{PlayerState.WarehouseCapacity} plats per sort.", Dim);
+				Storage(building.Owner);
 				break;
 
 			default:
@@ -153,6 +180,20 @@ public partial class InfoPanel : CanvasLayer
 				if (description.Length > 0)
 					Text(description, Dim);
 				break;
+		}
+	}
+
+	/// <summary>The shared stock of toybox + warehouses: what's stored and how much room there is.</summary>
+	private void Storage(int owner)
+	{
+		var player = _world.Players[owner];
+		Text($"Förråd (leksakslåda + {player.Warehouses} lager):", Dim);
+		foreach (var item in Items.All)
+		{
+			int count = player.GetCount(item), capacity = player.Capacity(item);
+			if (count == 0 && item is not (ItemType.Brick or ItemType.Plastic or ItemType.Battery))
+				continue;
+			Item(item, $"{count}/{capacity}", count >= capacity ? Missing : Colors.White);
 		}
 	}
 

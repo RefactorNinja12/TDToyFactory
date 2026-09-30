@@ -8,6 +8,7 @@ public enum UnitType : byte
 	BrickGolem,
 	RcCar,
 	Builder,
+	Farmer,
 }
 
 /// <summary>What a unit is made of; decides which tower hurts it most.</summary>
@@ -70,6 +71,47 @@ public static class UnitStats
 	public const int StartingBuilders = 3;
 	public const int MaxBuilders = 20;
 
+	// Wind-up farmer figurine: doesn't fight, harvests crop fields and carries the crops home.
+	private static readonly UnitDef Farmer = new(
+		ArmorClass.Plastic, MaxHealth: 20, Speed: 28, Damage: 0, AttackTicks: 20,
+		Range: 0, Sight: 0, ShotTravelTicks: 1,
+		TargetsUnits: false, BuildingDamagePercent: 0,
+		Recipe: new ItemStack[] { new(ItemType.Brick, 3) }, BuildTicks: 200);
+
+	public const int StartingFarmers = 1;
+	public const int MaxFarmers = 20;
+
+	/// <summary>A farmhouse makes another farmer only while there are more than this many fields per farmer.</summary>
+	public const int FieldsPerFarmer = 3;
+
+	/// <summary>Ticks a farmer spends picking a ripe field.</summary>
+	public const int HarvestTicks = World.TicksPerSecond * 2;
+
+	// ---- Balance: upkeep ----
+	/// <summary>Food each unit eats per minute.</summary>
+	public static int FoodPerMinute(UnitType type) => type switch
+	{
+		UnitType.PlasticSoldier => 1,
+		UnitType.BrickGolem => 2,
+		UnitType.RcCar => 2,
+		_ => 1, // builders, farmers
+	};
+
+	/// <summary>While starving, every unit loses StarveDamage health this often.</summary>
+	public const int StarveTicks = World.TicksPerSecond * 3;
+	public const int StarveDamage = 1;
+
+	/// <summary>Worker units (builders, farmers) never fight and aren't counted as an army.</summary>
+	public static bool IsWorker(UnitType type) => type is UnitType.Builder or UnitType.Farmer;
+
+	/// <summary>The most of this unit type a player can have, or int.MaxValue.</summary>
+	public static int Cap(UnitType type) => type switch
+	{
+		UnitType.Builder => MaxBuilders,
+		UnitType.Farmer => MaxFarmers,
+		_ => int.MaxValue,
+	};
+
 	/// <summary>Work one builder puts into a construction site per tick.</summary>
 	public const int BuilderWorkPerTick = 1;
 
@@ -78,6 +120,7 @@ public static class UnitStats
 		UnitType.BrickGolem => BrickGolem,
 		UnitType.RcCar => RcCar,
 		UnitType.Builder => Builder,
+		UnitType.Farmer => Farmer,
 		_ => PlasticSoldier,
 	};
 
@@ -114,10 +157,16 @@ public sealed class Unit
 	public int Health { get; internal set; }
 	internal int AttackCooldown { get; set; }
 
-	// Builders only: the site it is working on and the tiles left to walk there.
+	// Workers: the building it is working on or walking to, and the tiles left to walk there.
 	public Building Job { get; internal set; }
 	internal List<(int X, int Y)> Path { get; set; }
+	internal Building PathTarget { get; set; }
 	internal int PathIndex { get; set; }
+	internal int WorkTimer { get; set; }
+
+	// Farmers: what they are carrying home.
+	public ItemType Carrying { get; internal set; }
+	public int CarryAmount { get; internal set; }
 
 	public int TileX => X / UnitStats.SubTile;
 	public int TileY => Y / UnitStats.SubTile;

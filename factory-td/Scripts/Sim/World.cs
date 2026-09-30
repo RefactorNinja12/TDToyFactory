@@ -90,6 +90,8 @@ public sealed class World
 			int x = core.Facing == Direction.East ? core.X + core.Width : core.X - 1;
 			for (int i = 0; i < UnitStats.StartingBuilders; i++)
 				world.SpawnUnit(UnitType.Builder, player.Id, x, core.Y - 1 + i);
+			for (int i = 0; i < UnitStats.StartingFarmers; i++)
+				world.SpawnUnit(UnitType.Farmer, player.Id, x, core.Y + 2 + i);
 		}
 		return world;
 	}
@@ -196,6 +198,7 @@ public sealed class World
 	{
 		TickCount++;
 		RebuildFieldsIfDirty();
+		UpdateStorage();
 
 		foreach (var building in _buildings)
 			if (building.IsBuilt)
@@ -204,15 +207,75 @@ public sealed class World
 		{
 			if (unit.Type == UnitType.Builder)
 				TickBuilder(unit);
+			else if (unit.Type == UnitType.Farmer)
+				TickFarmer(unit);
 			else
 				TickUnit(unit);
 		}
 		TickProjectiles();
+		TickUpkeep();
 		_units.RemoveAll(u => u.Health <= 0);
 
 		for (int p = 0; p < _cores.Length && Winner < 0; p++)
 			if (_cores[p] != null && _cores[p].Health == 0)
 				Winner = EnemyOf(p);
+	}
+
+	private const int TicksPerMinute = TicksPerSecond * 60;
+
+	/// <summary>Units eat: see PlayerState.Hunger. Starving units lose health every StarveTicks.</summary>
+	private void TickUpkeep()
+	{
+		foreach (var player in _players)
+			player.FoodUpkeepPerMinute = 0;
+		foreach (var unit in _units)
+		{
+			if (unit.Health <= 0)
+				continue;
+			int perMinute = UnitStats.FoodPerMinute(unit.Type);
+			_players[unit.Owner].Hunger += perMinute;
+			_players[unit.Owner].FoodUpkeepPerMinute += perMinute;
+		}
+		if (TickCount % TicksPerSecond == 0)
+			foreach (var player in _players)
+				player.NextSecond();
+
+		var foodOnly = new ItemStack[] { new(ItemType.Food, 1) };
+		foreach (var player in _players)
+		{
+			while (player.Hunger >= TicksPerMinute && player.TrySpend(foodOnly))
+			{
+				player.Hunger -= TicksPerMinute;
+				player.FoodEaten();
+			}
+			player.Starving = player.Hunger >= TicksPerMinute;
+			if (player.Starving)
+				player.Hunger = TicksPerMinute; // no debt: back to normal as soon as there is food
+		}
+
+		if (TickCount % UnitStats.StarveTicks == 0)
+			foreach (var unit in _units)
+				if (_players[unit.Owner].Starving)
+					unit.Health -= UnitStats.StarveDamage;
+	}
+
+	/// <summary>Counts each player's finished warehouses, which set how much they can store.</summary>
+	private void UpdateStorage()
+	{
+		foreach (var player in _players)
+			player.Warehouses = 0;
+		foreach (var building in _buildings)
+			if (building.Type == BuildingType.Warehouse && building.IsBuilt)
+				_players[building.Owner].Warehouses++;
+	}
+
+	public int CountBuildings(int owner, BuildingType type)
+	{
+		int count = 0;
+		foreach (var building in _buildings)
+			if (building.Owner == owner && building.Type == type)
+				count++;
+		return count;
 	}
 
 	public int CountUnits(int owner, UnitType type)
@@ -256,38 +319,225 @@ public sealed class World
 				return; // nothing to build: wait where it is
 		}
 
-		if (IsAround(job, builder.TileX, builder.TileY))
+		switch (WalkTo(builder, job))
 		{
-			job.AddWork(UnitStats.BuilderWorkPerTick);
-			builder.MoveX = job.CenterX - builder.X; // face the work
-			builder.MoveY = job.CenterY - builder.Y;
-			if (job.IsBuilt)
-				_fieldsDirty = true;
+			case Walk.Arrived:
+				job.AddWork(UnitStats.BuilderWorkPerTick);
+				Face(builder, job);
+				if (job.IsBuilt)
+					_fieldsDirty = true;
+				break;
+			case Walk.Unreachable:
+				builder.Job = null; // try something else next tick
+				break;
+		}
+	}
+
+	// ---------------------------------------------------------------------------------------------
+	// Farmers: harvest the nearest ripe field (one farmer per field), carry the crops to the nearest
+	// kitchen with room, or else to the toybox / a warehouse, and repeat.
+
+	private const int FieldTakenPenalty = 1000; // a field someone else is already going for
+
+	private void TickFarmer(Unit farmer)
+	{
+		farmer.PrevX = farmer.X;
+		farmer.PrevY = farmer.Y;
+		farmer.MoveX = farmer.MoveY = 0;
+
+		if (farmer.CarryAmount > 0)
+			DeliverCrops(farmer);
+		else
+			GoHarvest(farmer);
+	}
+
+	private void GoHarvest(Unit farmer)
+	{
+		// Fetching crops from storage for a kitchen (set up below when nothing is ripe).
+		if (farmer.Job is Core or Warehouse)
+		{
+			FetchStoredCrops(farmer);
 			return;
 		}
 
-		if (builder.Path == null)
+		if (farmer.Job is not CropField field || !IsStanding(field) || !field.IsRipe)
 		{
-			builder.Path = FindPathTo(builder.TileX, builder.TileY, job);
-			builder.PathIndex = 0;
-			if (builder.Path == null)
+			farmer.Job = field = ChooseField(farmer);
+			farmer.WorkTimer = 0;
+			if (field == null)
 			{
-				builder.Job = null; // can't get there; try something else next tick
+				// Nothing ripe: bring stored crops to a kitchen that has room, if there are any.
+				if (_players[farmer.Owner].GetCount(ItemType.Crop) > 0 && KitchenWithRoom(farmer) != null)
+					farmer.Job = NearestStorage(farmer);
 				return;
 			}
 		}
 
-		// Walk to the centre of the next tile on the path (a step never overshoots it).
-		if (builder.PathIndex < builder.Path.Count)
+		switch (WalkTo(farmer, field))
 		{
-			const int half = UnitStats.SubTile / 2;
-			var (tx, ty) = builder.Path[builder.PathIndex];
-			int goalX = tx * UnitStats.SubTile + half, goalY = ty * UnitStats.SubTile + half;
-			TryStep(builder, goalX, goalY);
-			if (builder.X == goalX && builder.Y == goalY)
-				builder.PathIndex++;
+			case Walk.Arrived:
+				Face(farmer, field);
+				if (++farmer.WorkTimer < UnitStats.HarvestTicks)
+					return;
+				farmer.Carrying = ItemType.Crop;
+				farmer.CarryAmount = field.Harvest();
+				farmer.WorkTimer = 0;
+				farmer.Job = null;
+				break;
+			case Walk.Unreachable:
+				farmer.Job = null;
+				break;
 		}
 	}
+
+	private void DeliverCrops(Unit farmer)
+	{
+		if (farmer.Job == null || !IsStanding(farmer.Job) || !farmer.Job.CanTake(farmer.Carrying))
+		{
+			farmer.Job = ChooseDropOff(farmer);
+			if (farmer.Job == null)
+				return; // everything full: wait with the crops
+		}
+
+		switch (WalkTo(farmer, farmer.Job))
+		{
+			case Walk.Arrived:
+				Face(farmer, farmer.Job);
+				while (farmer.CarryAmount > 0 && farmer.Job.Offer(farmer.Carrying, Direction.East))
+					farmer.CarryAmount--;
+				if (farmer.CarryAmount == 0)
+					farmer.Carrying = ItemType.None;
+				farmer.Job = null; // done, or this one is full: look again next tick
+				break;
+			case Walk.Unreachable:
+				farmer.Job = null;
+				break;
+		}
+	}
+
+	/// <summary>Walks to the toybox/warehouse and picks up stored crops (then DeliverCrops takes over).</summary>
+	private void FetchStoredCrops(Unit farmer)
+	{
+		var player = _players[farmer.Owner];
+		if (!IsStanding(farmer.Job) || player.GetCount(ItemType.Crop) == 0 || KitchenWithRoom(farmer) == null)
+		{
+			farmer.Job = null;
+			return;
+		}
+		switch (WalkTo(farmer, farmer.Job))
+		{
+			case Walk.Arrived:
+				int take = System.Math.Min(CropField.Yield, player.GetCount(ItemType.Crop));
+				player.TrySpend(new[] { new ItemStack(ItemType.Crop, take) });
+				farmer.Carrying = ItemType.Crop;
+				farmer.CarryAmount = take;
+				farmer.Job = null; // DeliverCrops picks the kitchen
+				break;
+			case Walk.Unreachable:
+				farmer.Job = null;
+				break;
+		}
+	}
+
+	private Building KitchenWithRoom(Unit farmer)
+	{
+		foreach (var building in _buildings)
+			if (building is Kitchen && building.Owner == farmer.Owner && building.CanTake(ItemType.Crop))
+				return building;
+		return null;
+	}
+
+	private Building NearestStorage(Unit farmer)
+	{
+		Building best = null;
+		int bestDistance = int.MaxValue;
+		foreach (var building in _buildings)
+		{
+			if (building.Owner != farmer.Owner || !building.IsBuilt || building is not (Core or Warehouse))
+				continue;
+			int distance = TileDistance(farmer, building);
+			if (distance < bestDistance)
+				(best, bestDistance) = (building, distance);
+		}
+		return best;
+	}
+
+	private CropField ChooseField(Unit farmer)
+	{
+		CropField best = null;
+		int bestScore = int.MaxValue;
+		foreach (var building in _buildings)
+		{
+			if (building is not CropField field || field.Owner != farmer.Owner || !field.IsBuilt || !field.IsRipe)
+				continue;
+			int score = TileDistance(farmer, field);
+			foreach (var other in _units)
+				if (other != farmer && other.Job == field && other.Health > 0)
+					score += FieldTakenPenalty;
+			if (score < bestScore)
+				(best, bestScore) = (field, score);
+		}
+		return best;
+	}
+
+	/// <summary>The nearest finished kitchen with room for the load, else the nearest toybox/warehouse with room.</summary>
+	private Building ChooseDropOff(Unit farmer)
+	{
+		Building best = null;
+		int bestScore = int.MaxValue;
+		foreach (var building in _buildings)
+		{
+			if (building.Owner != farmer.Owner || !building.IsBuilt || !building.CanTake(farmer.Carrying))
+				continue;
+			bool storage = building is Core or Warehouse;
+			int score = TileDistance(farmer, building) + (storage ? 1000 : 0); // kitchens first
+			if (score < bestScore)
+				(best, bestScore) = (building, score);
+		}
+		return best;
+	}
+
+	// ---------------------------------------------------------------------------------------------
+	// Walking for builders and farmers.
+
+	private enum Walk { Walking, Arrived, Unreachable }
+
+	/// <summary>One step along the unit's path to the building; Arrived once it stands next to it.</summary>
+	private Walk WalkTo(Unit unit, Building target)
+	{
+		if (IsAround(target, unit.TileX, unit.TileY))
+			return Walk.Arrived;
+
+		if (unit.Path == null || unit.PathTarget != target)
+		{
+			unit.Path = FindPathTo(unit.TileX, unit.TileY, target);
+			unit.PathIndex = 0;
+			unit.PathTarget = target;
+			if (unit.Path == null)
+				return Walk.Unreachable;
+		}
+
+		// Walk to the centre of the next tile on the path (a step never overshoots it).
+		if (unit.PathIndex < unit.Path.Count)
+		{
+			const int half = UnitStats.SubTile / 2;
+			var (tx, ty) = unit.Path[unit.PathIndex];
+			int goalX = tx * UnitStats.SubTile + half, goalY = ty * UnitStats.SubTile + half;
+			TryStep(unit, goalX, goalY);
+			if (unit.X == goalX && unit.Y == goalY)
+				unit.PathIndex++;
+		}
+		return Walk.Walking;
+	}
+
+	private static void Face(Unit unit, Building building)
+	{
+		unit.MoveX = building.CenterX - unit.X;
+		unit.MoveY = building.CenterY - unit.Y;
+	}
+
+	private static int TileDistance(Unit unit, Building building) =>
+		System.Math.Abs(building.X - unit.TileX) + System.Math.Abs(building.Y - unit.TileY);
 
 	/// <summary>The nearest unfinished site of the builder's owner, preferring ones nobody works on yet.</summary>
 	private Building ChooseSite(Unit builder)

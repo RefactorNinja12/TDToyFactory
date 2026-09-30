@@ -24,7 +24,14 @@ public sealed class UnitFactory : Building
 
 	public override void Tick(World world)
 	{
-		if (Produces == UnitType.Builder && world.CountUnits(Owner, UnitType.Builder) >= UnitStats.MaxBuilders)
+		if (world.CountUnits(Owner, Produces) >= UnitStats.Cap(Produces))
+			return;
+		// Farmers: only as many as the fields need.
+		if (Produces == UnitType.Farmer &&
+			world.CountUnits(Owner, UnitType.Farmer) * UnitStats.FieldsPerFarmer >= world.CountBuildings(Owner, BuildingType.CropField))
+			return;
+		// No food: no new soldiers. Workers still come, so a starving player can get farming going again.
+		if (world.Players[Owner].Starving && !UnitStats.IsWorker(Produces))
 			return;
 		if (_crafter.Tick(Recipe, UnitStats.BuildTicks(Produces)))
 			world.SpawnUnit(Produces, Owner, X + Width / 2, Y + Height / 2);

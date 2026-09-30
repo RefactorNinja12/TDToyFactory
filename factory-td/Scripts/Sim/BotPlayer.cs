@@ -143,6 +143,36 @@ public sealed class BotPlayer
 
 	private bool Built(string module) => ModulesBuilt.Contains(module);
 
+	private long _lastFarmTick = -Minute;
+
+	/// <summary>
+	/// Eating more than the kitchens bring in, it's been a while since the last new fields, and the
+	/// shortage is really crops (if crops are piling up in storage, the kitchens are the bottleneck instead).
+	/// </summary>
+	private bool NeedsMoreFood(World world)
+	{
+		var player = world.Players[_player];
+		return player.FoodUpkeepPerMinute > player.FoodProducedLastMinute &&
+			player.GetCount(ItemType.Crop) < 20 &&
+			world.TickCount >= _lastFarmTick + Minute * 3 / 4;
+	}
+
+	/// <summary>About to run out (or out already): food jumps the queue.</summary>
+	private bool FoodCrisis(World world)
+	{
+		var player = world.Players[_player];
+		return player.Starving || player.GetCount(ItemType.Food) < player.FoodUpkeepPerMinute;
+	}
+
+	private bool StorageNearlyFull(World world)
+	{
+		var player = world.Players[_player];
+		foreach (var item in Items.All)
+			if (player.GetCount(item) * 100 >= player.Capacity(item) * 85)
+				return true;
+		return false;
+	}
+
 	public int StepsStanding(World world)
 	{
 		int count = 0;
@@ -220,7 +250,7 @@ public sealed class BotPlayer
 		var home = MapLayout.HomeZone(_player);
 		foreach (var unit in world.Units)
 		{
-			if (unit.Owner == _player || unit.Type == UnitType.Builder)
+			if (unit.Owner == _player || UnitStats.IsWorker(unit.Type))
 				continue;
 			var zone = world.Map.GetZone(unit.TileX, unit.TileY);
 			bool ourHalf = _mirror ? unit.TileX >= _width / 2 : unit.TileX < _width / 2;
@@ -259,6 +289,52 @@ public sealed class BotPlayer
 			Place(BuildingType.PlasticExtractor, 11, 36, Direction.North);
 			Place(BuildingType.PlasticExtractor, 10, 36, Direction.North);
 		}));
+
+		// Food: a farmhouse (farmers cost bricks, so one brick extractor feeds it), a kitchen pointing
+		// straight into the toybox and four fields next to it, west of the core. Farmers carry the
+		// crops to the kitchen; the kitchen's food goes straight into the toybox.
+		_pending.Add(new Module("mat", _ => true, w =>
+		{
+			var kitchen = Place(BuildingType.Kitchen, 6, 32, Direction.North);
+			for (int x = 2; x <= 5; x++)
+				Place(BuildingType.CropField, x, 34, Direction.East);
+			var farmhouse = Place(BuildingType.Farmhouse, 4, 24, Direction.East);
+			var bricks = Place(BuildingType.BrickExtractor, 10, 23, Direction.West);
+			Route(w, bricks, farmhouse);
+			_lastFarmTick = w.TickCount;
+		},
+		Emergency: FoodCrisis));
+
+		// More fields, a row of four at a time, while the army eats more than the kitchen brings in.
+		for (int row = 35; row <= 40; row++)
+		{
+			int y = row;
+			_pending.Add(new Module($"åkrar {row - 34}",
+				w => Built("mat") && NeedsMoreFood(w),
+				w =>
+				{
+					for (int x = 2; x <= 5; x++)
+						Place(BuildingType.CropField, x, y, Direction.East);
+					// Every other row of fields gets another kitchen pointing into the toybox (one cooks ~20 food/min).
+					if (y == 36) Place(BuildingType.Kitchen, 7, 32, Direction.North);
+					if (y == 38) Place(BuildingType.Kitchen, 5, 31, Direction.East);
+					if (y == 40) Place(BuildingType.Kitchen, 5, 30, Direction.East);
+					_lastFarmTick = w.TickCount;
+				},
+				Emergency: w => Built("mat") && FoodCrisis(w) && w.TickCount >= _lastFarmTick + Minute / 2));
+		}
+
+		// Crops piling up in storage means the kitchens can't keep up: cook more (north side of the toybox).
+		bool CropsPilingUp(World w) => Built("mat") && w.Players[_player].GetCount(ItemType.Crop) >= 40;
+		_pending.Add(new Module("fler kök 1", CropsPilingUp, _ => Place(BuildingType.Kitchen, 6, 29, Direction.South), Emergency: CropsPilingUp));
+		_pending.Add(new Module("fler kök 2", w => Built("fler kök 1") && CropsPilingUp(w),
+			_ => Place(BuildingType.Kitchen, 7, 29, Direction.South),
+			Emergency: w => Built("fler kök 1") && CropsPilingUp(w) && w.TickCount >= _lastFarmTick + Minute / 2));
+
+		// Warehouses when the stock is nearly full (they add room even without a belt of their own).
+		_pending.Add(new Module("lager 1", StorageNearlyFull, _ => Place(BuildingType.Warehouse, 2, 27, Direction.East)));
+		_pending.Add(new Module("lager 2", w => Built("lager 1") && StorageNearlyFull(w),
+			_ => Place(BuildingType.Warehouse, 2, 21, Direction.East)));
 
 		// More builders: a toolbox fed bricks and plastic by short belts from its own extractors.
 		_pending.Add(new Module("verktygslåda", _ => true, w =>
@@ -302,7 +378,7 @@ public sealed class BotPlayer
 			Emergency: _ => SoldiersSeen + GolemsSeen + CarsSeen >= 10));
 
 		// Soldiers: melter -> assembler (springs) -> factory, melter -> belt -> factory (plastic).
-		_pending.Add(new Module("soldater", w => w.TickCount >= _armyDelayTicks, _ =>
+		_pending.Add(new Module("soldater", w => w.TickCount >= _armyDelayTicks && !FoodCrisis(w), _ =>
 		{
 			Place(BuildingType.SoldierFactory, 15, 37, Direction.East);
 			Place(BuildingType.Assembler, 14, 38, Direction.East, ItemType.Spring);
@@ -323,7 +399,7 @@ public sealed class BotPlayer
 
 		// Golems by the brick patch: bricks -> gear assembler -> workshop, bricks -> belt -> workshop,
 		// and plastic routed from the plastic patch into the gear assembler.
-		_pending.Add(new Module("golems", w => Built("soldater") && w.TickCount >= _armyDelayTicks + 3 * Minute, w =>
+		_pending.Add(new Module("golems", w => Built("soldater") && !FoodCrisis(w) && w.TickCount >= _armyDelayTicks + 3 * Minute, w =>
 		{
 			Place(BuildingType.GolemWorkshop, 15, 22, Direction.East);
 			var gears = Place(BuildingType.Assembler, 14, 23, Direction.East, ItemType.Gear);
@@ -347,7 +423,7 @@ public sealed class BotPlayer
 
 		// Radio cars by the battery patch: batteries -> circuit assembler -> factory, batteries -> belt ->
 		// factory, and plastic/bricks routed in for circuits and gears.
-		_pending.Add(new Module("radiobilar", w => Built("batterier") && w.TickCount >= _armyDelayTicks + 5 * Minute, w =>
+		_pending.Add(new Module("radiobilar", w => Built("batterier") && !FoodCrisis(w) && w.TickCount >= _armyDelayTicks + 5 * Minute, w =>
 		{
 			Place(BuildingType.CarFactory, 44, 46, Direction.East);
 			var circuits = Place(BuildingType.Assembler, 43, 46, Direction.East, ItemType.CircuitBoard);

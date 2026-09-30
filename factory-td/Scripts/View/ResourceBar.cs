@@ -5,12 +5,18 @@ using Godot;
 namespace FactoryTD.View;
 
 /// <summary>
-/// Top-left panel: the local player's stock and both cores' health.
+/// Top-left panel: the local player's stock, the food meter and both cores' health.
 /// Also shows the result when the match ends.
 /// </summary>
 public partial class ResourceBar : CanvasLayer
 {
-	private static readonly ItemType[] Shown = { ItemType.Brick, ItemType.Plastic, ItemType.Battery };
+	private static readonly ItemType[] Shown = { ItemType.Brick, ItemType.Plastic, ItemType.Battery, ItemType.Crop, ItemType.Food };
+
+	private static readonly Color Good = new(0.55f, 1f, 0.55f);
+	private static readonly Color Warn = new(1f, 0.85f, 0.4f);
+	private static readonly Color Bad = new(1f, 0.45f, 0.4f);
+
+	private Label _food;
 
 	private readonly Dictionary<ItemType, Label> _counts = new();
 	private World _world;
@@ -57,6 +63,10 @@ public partial class ResourceBar : CanvasLayer
 			_counts[type] = count;
 		}
 
+		// Food meter: what comes in, what is eaten, and how long the stock lasts.
+		_food = new Label { TooltipText = "Mat in: matlådor som kommit till förrådet senaste minuten. Äts: vad dina enheter äter per minut nu." };
+		column.AddChild(_food);
+
 		_health = new Label();
 		column.AddChild(_health);
 
@@ -78,16 +88,44 @@ public partial class ResourceBar : CanvasLayer
 		var player = _world.Players[_localPlayer];
 		foreach (var (type, label) in _counts)
 			label.Text = player.GetCount(type).ToString();
+		UpdateFoodMeter(player);
 
 		var own = _world.GetCore(_localPlayer);
 		var enemy = _world.GetCore(_world.EnemyOf(_localPlayer));
 		int builders = _world.CountUnits(_localPlayer, UnitType.Builder);
-		_health.Text = $"Din låda: {own?.Health}/{own?.MaxHealth}    Fiendens låda: {enemy?.Health}/{enemy?.MaxHealth}    Byggare: {builders}/{UnitStats.MaxBuilders}";
+		int farmers = _world.CountUnits(_localPlayer, UnitType.Farmer);
+		_health.Text = $"Din låda: {own?.Health}/{own?.MaxHealth}    Fiendens låda: {enemy?.Health}/{enemy?.MaxHealth}    Byggare: {builders}/{UnitStats.MaxBuilders}    Bönder: {farmers}/{UnitStats.MaxFarmers}";
 
 		if (_world.Winner >= 0)
 		{
 			_result.Visible = true;
 			_result.Text = _world.Winner == _localPlayer ? "Du vann!" : "Du förlorade!";
 		}
+	}
+
+	private void UpdateFoodMeter(PlayerState player)
+	{
+		int produced = player.FoodProducedLastMinute;
+		int eaten = player.FoodUpkeepPerMinute;
+		int net = produced - eaten;
+		int stock = player.GetCount(ItemType.Food);
+
+		string text = $"Mat: +{produced}/min in   −{eaten}/min äts   netto {(net >= 0 ? "+" : "")}{net}/min";
+		if (player.Starving)
+		{
+			text += "   ⚠ SVÄLT! Fabrikerna står still och enheterna tappar hälsa";
+			_food.Modulate = Bad;
+		}
+		else if (net < 0)
+		{
+			int minutes = stock / -net;
+			text += minutes < 1 ? "   ⚠ maten tar slut inom en minut" : $"   räcker ~{minutes} min";
+			_food.Modulate = minutes < 2 ? Bad : Warn;
+		}
+		else
+		{
+			_food.Modulate = Good;
+		}
+		_food.Text = text;
 	}
 }
