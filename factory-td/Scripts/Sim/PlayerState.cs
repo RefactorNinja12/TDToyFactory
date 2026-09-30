@@ -92,6 +92,12 @@ public sealed class PlayerState
 		_foodOutPerSecond[_second] = 0;
 	}
 
+	internal void HashInto(ref StateHash hash)
+	{
+		foreach (int count in _items) hash.Add(count);
+		hash.Add(Warehouses); hash.Add(Hunger); hash.Add(Starving);
+	}
+
 	/// <summary>Adds without checking room (starting stock, test setup).</summary>
 	public void Add(ItemType type, int amount = 1) => _items[(int)type] += amount;
 

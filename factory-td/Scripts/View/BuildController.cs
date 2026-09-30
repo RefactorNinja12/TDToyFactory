@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using FactoryTD.Sim;
+using FactoryTD.UI;
 using Godot;
 
 namespace FactoryTD.View;
@@ -156,17 +157,13 @@ public partial class BuildController : Node2D
 	private void ContinueDrag()
 	{
 		var target = MouseCell();
-		while (_dragCell != target)
+		foreach (var (x, y, moving) in DragPath.Walk(_dragCell.X, _dragCell.Y, target.X, target.Y))
 		{
-			var step = _dragCell.X != target.X
-				? new Vector2I(Math.Sign(target.X - _dragCell.X), 0)
-				: new Vector2I(0, Math.Sign(target.Y - _dragCell.Y));
 			var previous = _dragCell;
-			_dragCell += step;
-
+			_dragCell = new Vector2I(x, y);
 			if (_selected == BuildingType.Conveyor)
 			{
-				_facing = DirectionOf(step);
+				_facing = moving;
 				if (_dragPlacedLast)
 				{
 					// Re-place the conveyor we just built so it points at the new one.
@@ -177,14 +174,6 @@ public partial class BuildController : Node2D
 			_dragPlacedLast = _world.TryPlace(_selected.Value, _dragCell.X, _dragCell.Y, _facing, LocalPlayer);
 		}
 	}
-
-	private static Direction DirectionOf(Vector2I step) => step switch
-	{
-		{ X: > 0 } => Direction.East,
-		{ X: < 0 } => Direction.West,
-		{ Y: > 0 } => Direction.South,
-		_ => Direction.North,
-	};
 
 	private void RemoveAtMouse()
 	{
@@ -214,7 +203,7 @@ public partial class BuildController : Node2D
 		_ghost.Position = new Vector2((cell.X + w / 2f) * BuildingVisuals.TileSize, (cell.Y + h / 2f) * BuildingVisuals.TileSize);
 		_ghost.Rotation = BuildingVisuals.Rotation(_facing);
 		_ghost.Modulate = error == PlaceError.None ? ValidColor : InvalidColor;
-		SetStatus(BuildingVisuals.ErrorText(type, error));
+		SetStatus(Texts.ErrorText(type, error));
 	}
 
 	private void SetStatus(string status)

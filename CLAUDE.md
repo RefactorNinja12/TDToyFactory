@@ -50,8 +50,23 @@ Kompakt fabrik, max 3 nivåer i produktionskedjan, matcher 15–25 min.
   i vänster rum (speglas), band dras automatiskt (BFS, korsningar vid behov). Bygger upp det som
   förstörs, lägger till laser/vattenpistol när den ser golems/radiobilar, odlar mer när den äter mer
   än den producerar. Svårighet: `armyDelayTicks` (0 = normal, högre = lättare).
-- Tester: lokala headless-probes i `Scripts/_Test/` + `Scenes/_Probe.tscn` (gitignorerade), körs med
-  `Godot_..._console.exe --headless --path factory-td Scenes/_Probe.tscn`.
+- `Scripts/UI/` ren C# utan Godot-typer: texter (`Texts`), bandkurvor (`ConveyorLook`), dragväg
+  (`DragPath`), matmätaren (`FoodMeter`), hoverpanelens rader (`InfoRows`). View ritar bara det.
+- `tests/FactoryTD.Sim.Tests/` xUnit, kompilerar `Scripts/Sim` + `Scripts/UI` direkt (internals syns).
+  `Support/Scenario.cs` bygger scenarier (`Match().NoWorkers().Instant().Rich()`, `Place`, `Belt`,
+  `Spawn`, `Feed`), `WorldRunner` kör tid (`Seconds`, `Until(villkor, maxSek, "vad")`).
+  Långsamma helmatcher/balans har `[Trait("Speed","Slow")]` och skriver sina mätvärden.
+
+## Arbetsflöde (tester är feedbackloopen)
+- Kör `bash tests/run.sh <Område>` (namnfilter, t.ex. `Farming`, `Bot`, `Tower`) före och efter en
+  ändring. Utskriften är kort: FAIL-block med meddelande + rad, sedan `PASS n/n`.
+- `bash tests/run.sh` = alla snabba (~8 s). `-Slow` = helmatcher + balans (~17 s, visar mätvärden).
+  `-All` före varje commit.
+- Buggfix: skriv först ett test som fallerar, sedan fixen. Ny funktion: tester i samma ändring.
+- Ny logik hamnar i `Scripts/Sim` eller `Scripts/UI` (testbart), inte i View.
+- Balansändring: kör `-Slow` och uppdatera trösklarna medvetet om designen ändrats.
+- Godot bara för det visuella: `Scripts/_Test/VisualProbe.cs` + skärmdump (headless `--write-movie`).
+  `Scenes/_Probe*.tscn` är gitignorerade.
 
 ## Assets
 PixelLab MCP för sprites. Stilprompt: "top-down view, cute toy aesthetic,

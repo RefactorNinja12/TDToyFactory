@@ -1,0 +1,26 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!--
+    Unit tests for the pure C# simulation (factory-td/Scripts/Sim). The sim sources are compiled
+    straight into this assembly, so no Godot is needed and internal members are visible to the tests.
+    Lives outside factory-td/ because the Godot project compiles every .cs file under its folder.
+  -->
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>disable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <IsPackable>false</IsPackable>
+    <RootNamespace>FactoryTD.Sim.Tests</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="../../factory-td/Scripts/Sim/**/*.cs" Link="Sim/%(RecursiveDir)%(Filename)%(Extension)" />
+    <!-- Godot-free UI logic (texts, conveyor look, drag path, food meter, hover panel rows). -->
+    <Compile Include="../../factory-td/Scripts/UI/**/*.cs" Link="UI/%(RecursiveDir)%(Filename)%(Extension)" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.11.1" />
+    <PackageReference Include="xunit" Version="2.9.2" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="2.8.2" />
+  </ItemGroup>
+</Project>

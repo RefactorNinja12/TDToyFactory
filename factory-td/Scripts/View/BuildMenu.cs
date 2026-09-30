@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using FactoryTD.Sim;
+using FactoryTD.UI;
 using Godot;
 
 namespace FactoryTD.View;
@@ -63,8 +64,8 @@ public partial class BuildMenu : CanvasLayer
 					FocusMode = Control.FocusModeEnum.None, // keep Space/Enter away from the buttons
 					Icon = BuildingVisuals.GetTexture(type),
 					ExpandIcon = true,
-					Text = BuildingVisuals.DisplayName(type) + "\n" + BuildingVisuals.CostText(type, "\n"),
-					TooltipText = BuildingVisuals.Description(type),
+					Text = Texts.DisplayName(type) + "\n" + Texts.CostText(type, "\n"),
+					TooltipText = Texts.Description(type),
 					IconAlignment = HorizontalAlignment.Center,
 					VerticalIconAlignment = VerticalAlignment.Top,
 					CustomMinimumSize = new Vector2(112, 128),

@@ -1,0 +1,89 @@
+using System.Collections.Generic;
+using System.Linq;
+using FactoryTD.Sim;
+using FactoryTD.Sim.Tests.Support;
+using Xunit;
+
+namespace FactoryTD.Sim.Tests;
+
+public class BotTests
+{
+	/// <summary>A bot with plenty of resources, run until its plan has grown for a while.</summary>
+	private static (Scenario, BotPlayer) RichBot(int player, int seconds)
+	{
+		var s = Scenario.Match().Rich(5000).Give(ItemType.Food, 500, player);
+		var bot = new BotPlayer(player);
+		s.World.Seconds(seconds, bot);
+		return (s, bot);
+	}
+
+	private static bool IsBelt(BuildingType t) => t == BuildingType.Conveyor || t == BuildingType.Junction;
+
+	[Fact]
+	public void BeltsNeverCoverDeposits()
+	{
+		var (s, bot) = RichBot(0, 60);
+		var onDeposit = bot.PlannedSteps
+			.Where(p => IsBelt(p.Type) && s.World.Map.GetResource(p.X, p.Y) != ResourceType.None)
+			.ToList();
+		Assert.True(onDeposit.Count == 0, "belts on deposits: " + string.Join(" ", onDeposit.Select(p => $"({p.X},{p.Y})")));
+	}
+
+	[Fact]
+	public void PlannedTiles_DontOverlap()
+	{
+		var (_, bot) = RichBot(0, 60);
+		var seen = new Dictionary<(int, int), BuildingType>();
+		foreach (var p in bot.PlannedSteps)
+		{
+			var (w, h) = BuildingRules.Size(p.Type);
+			for (int y = p.Y; y < p.Y + h; y++)
+				for (int x = p.X; x < p.X + w; x++)
+				{
+					if (seen.TryGetValue((x, y), out var other))
+						Assert.True(p.Type == BuildingType.Junction && other == BuildingType.Conveyor,
+							$"{p.Type} and {other} both planned on ({x},{y})");
+					seen[(x, y)] = p.Type;
+				}
+		}
+	}
+
+	[Fact]
+	public void Player1_PlanIsTheMirrorOfPlayer0()
+	{
+		var (s0, bot0) = RichBot(0, 30);
+		var (s1, bot1) = RichBot(1, 30);
+		int width = s0.World.Map.Width;
+		// Module buildings sit on mirrored spots; belts are pathfound per side and may differ.
+		var left = bot0.PlannedSteps.Where(p => !IsBelt(p.Type)).ToList();
+		var right = bot1.PlannedSteps.Where(p => !IsBelt(p.Type)).ToList();
+		Assert.Contains(left, p => BuildingRules.Size(p.Type).Item1 > 1);
+		Assert.Equal(left.Count, right.Count);
+		for (int i = 0; i < left.Count; i++)
+		{
+			var (w, _) = BuildingRules.Size(left[i].Type);
+			Assert.Equal(left[i].Type, right[i].Type);
+			Assert.Equal(left[i].Y, right[i].Y);
+			Assert.Equal(width - left[i].X - w, right[i].X);
+		}
+	}
+
+	[Fact]
+	public void BuildsItsPlan_AndRebuildsWhatIsDestroyed()
+	{
+		var (s, bot) = RichBot(0, 90);
+		Assert.True(bot.StepsStanding(s.World) >= 10, $"only {bot.StepsStanding(s.World)} steps standing");
+		var extractor = s.World.Buildings.First(b => b.Owner == 0 && b is Extractor);
+		var (x, y) = (extractor.X, extractor.Y);
+		Assert.True(s.World.TryRemove(x, y, 0));
+		s.World.Until(() => s.World.GetBuilding(x, y) is Extractor, 30, "the extractor rebuilt", bot);
+	}
+
+	[Fact]
+	public void OnlyBuildsInsideItsZones()
+	{
+		var (s, _) = RichBot(1, 90);
+		foreach (var b in s.World.Buildings.Where(b => b.Owner == 1))
+			Assert.NotEqual(Zone.LeftRoom, s.World.Map.GetZone(b.X, b.Y));
+	}
+}

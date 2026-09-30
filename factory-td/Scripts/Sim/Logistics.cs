@@ -16,6 +16,11 @@ public sealed class Splitter : Building
 
 	public override bool OutputsToward(Direction direction) => true;
 
+	protected override void HashState(ref StateHash hash)
+	{
+		hash.Add((int)_held); hash.Add((int)_heldMoving); hash.Add(_next);
+	}
+
 	public override bool TryAccept(ItemType item, Direction moving)
 	{
 		if (_held != ItemType.None)
@@ -81,6 +86,12 @@ public sealed class Junction : Building
 		return true;
 	}
 
+	protected override void HashState(ref StateHash hash)
+	{
+		hash.Add((int)_horizontal); hash.Add((int)_horizontalMoving);
+		hash.Add((int)_vertical); hash.Add((int)_verticalMoving);
+	}
+
 	public override void Tick(World world)
 	{
 		if (_horizontal != ItemType.None && TryPush(world, _horizontal, _horizontalMoving))
@@ -107,6 +118,11 @@ public sealed class Sorter : Building
 		: base(BuildingType.Sorter, x, y, facing, owner) { }
 
 	public override bool OutputsToward(Direction direction) => true;
+
+	protected override void HashState(ref StateHash hash)
+	{
+		hash.Add((int)_held); hash.Add((int)_heldMoving); hash.Add(_leftNext); hash.Add((int)Filter);
+	}
 
 	public override bool CycleSetting()
 	{

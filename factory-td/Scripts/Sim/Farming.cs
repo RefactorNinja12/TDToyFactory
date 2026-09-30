@@ -28,6 +28,8 @@ public sealed class CropField : Building
 			Growth++;
 	}
 
+	protected override void HashState(ref StateHash hash) => hash.Add(Growth);
+
 	/// <summary>Picks a ripe field: returns the crops and replants. 0 if it isn't ripe.</summary>
 	public int Harvest()
 	{
@@ -66,6 +68,12 @@ public sealed class Kitchen : Building
 	public override bool TryAccept(ItemType item, Direction moving) => _crafter.TryAccept(Recipe, item);
 
 	public override bool CanTake(ItemType item) => IsBuilt && _crafter.HasRoom(Recipe, item);
+
+	protected override void HashState(ref StateHash hash)
+	{
+		hash.Add(_output);
+		_crafter.HashInto(ref hash);
+	}
 
 	public override void Tick(World world)
 	{

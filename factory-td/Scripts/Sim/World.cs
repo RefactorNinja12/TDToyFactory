@@ -269,6 +269,38 @@ public sealed class World
 				_players[building.Owner].Warehouses++;
 	}
 
+	/// <summary>
+	/// A hash of the whole game state. Identical inputs must give identical checksums on every machine
+	/// and every run; comparing them catches non-determinism (and, later, lockstep desyncs).
+	/// </summary>
+	public ulong Checksum()
+	{
+		var hash = StateHash.Start();
+		hash.Add(TickCount); hash.Add(Winner); hash.Add(_nextUnitId);
+		foreach (var player in _players)
+			player.HashInto(ref hash);
+		hash.Add(_buildings.Count);
+		foreach (var building in _buildings)
+			building.HashInto(ref hash);
+		hash.Add(_units.Count);
+		foreach (var unit in _units)
+		{
+			hash.Add(unit.Id); hash.Add((int)unit.Type); hash.Add(unit.Owner);
+			hash.Add(unit.X); hash.Add(unit.Y); hash.Add(unit.Health); hash.Add(unit.AttackCooldown);
+			hash.Add(unit.Job?.X ?? -1); hash.Add(unit.Job?.Y ?? -1);
+			hash.Add((int)unit.Carrying); hash.Add(unit.CarryAmount); hash.Add(unit.WorkTimer);
+		}
+		hash.Add(_projectiles.Count);
+		foreach (var shot in _projectiles)
+		{
+			hash.Add((int)shot.Kind); hash.Add(shot.Owner); hash.Add(shot.ToX); hash.Add(shot.ToY); hash.Add(shot.TicksLeft);
+		}
+		return hash.Value;
+	}
+
+	/// <summary>Removes every unit (tests start from a clean slate with this).</summary>
+	internal void ClearUnits() => _units.Clear();
+
 	public int CountBuildings(int owner, BuildingType type)
 	{
 		int count = 0;
@@ -705,7 +737,7 @@ public sealed class World
 	/// So an attack tears down the base around the core first. Nearest wins within a tier;
 	/// ties go to the oldest unit / earliest-built building (deterministic).
 	/// </summary>
-	private (Unit, Building) SelectTarget(Unit unit, int range, bool includeCore)
+	internal (Unit, Building) SelectTarget(Unit unit, int range, bool includeCore)
 	{
 		long range2 = (long)range * range;
 

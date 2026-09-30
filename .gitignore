@@ -33,3 +33,6 @@ Desktop.ini
 # Local headless test probes (never committed)
 /factory-td/Scripts/_Test/
 /factory-td/Scenes/_Probe.tscn*
+
+# Test run output
+TestResults/

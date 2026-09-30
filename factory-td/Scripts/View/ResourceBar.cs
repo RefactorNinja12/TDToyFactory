@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using FactoryTD.Sim;
+using FactoryTD.UI;
 using Godot;
 
 namespace FactoryTD.View;
@@ -48,7 +49,7 @@ public partial class ResourceBar : CanvasLayer
 
 		foreach (var type in Shown)
 		{
-			var entry = new HBoxContainer { TooltipText = BuildingVisuals.ItemName(type) };
+			var entry = new HBoxContainer { TooltipText = Texts.ItemName(type) };
 			entry.AddChild(new TextureRect
 			{
 				Texture = BuildingVisuals.GetItemTexture(type),
@@ -105,27 +106,8 @@ public partial class ResourceBar : CanvasLayer
 
 	private void UpdateFoodMeter(PlayerState player)
 	{
-		int produced = player.FoodProducedLastMinute;
-		int eaten = player.FoodUpkeepPerMinute;
-		int net = produced - eaten;
-		int stock = player.GetCount(ItemType.Food);
-
-		string text = $"Mat: +{produced}/min in   −{eaten}/min äts   netto {(net >= 0 ? "+" : "")}{net}/min";
-		if (player.Starving)
-		{
-			text += "   ⚠ SVÄLT! Fabrikerna står still och enheterna tappar hälsa";
-			_food.Modulate = Bad;
-		}
-		else if (net < 0)
-		{
-			int minutes = stock / -net;
-			text += minutes < 1 ? "   ⚠ maten tar slut inom en minut" : $"   räcker ~{minutes} min";
-			_food.Modulate = minutes < 2 ? Bad : Warn;
-		}
-		else
-		{
-			_food.Modulate = Good;
-		}
+		var (text, mood) = FoodMeter.Describe(player);
 		_food.Text = text;
+		_food.Modulate = mood switch { Mood.Bad => Bad, Mood.Warn => Warn, _ => Good };
 	}
 }

@@ -125,6 +125,17 @@ public abstract class Building
 	/// </summary>
 	public virtual bool TryAccept(ItemType item, Direction moving) => false;
 
+	/// <summary>Adds everything that can change about this building to the world checksum.</summary>
+	internal void HashInto(ref StateHash hash)
+	{
+		hash.Add((int)Type); hash.Add(X); hash.Add(Y); hash.Add((int)Facing); hash.Add(Owner);
+		hash.Add(Health); hash.Add(BuildWork);
+		HashState(ref hash);
+	}
+
+	/// <summary>Subclasses add their own changing state (items held, timers, ...).</summary>
+	protected virtual void HashState(ref StateHash hash) { }
+
 	/// <summary>Buildings with a setting (sorter filter, assembler recipe) cycle it here. Returns false if there is none.</summary>
 	public virtual bool CycleSetting() => false;
 

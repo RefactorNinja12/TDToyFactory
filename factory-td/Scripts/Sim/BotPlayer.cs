@@ -60,6 +60,12 @@ public sealed class BotPlayer
 
 	public int StepsTotal => _plan.Count;
 
+	/// <summary>The planned buildings in priority order (for tests).</summary>
+	internal IEnumerable<(BuildingType Type, int X, int Y, Direction Facing)> PlannedSteps
+	{
+		get { foreach (var s in _plan) yield return (s.Type, s.X, s.Y, s.Facing); }
+	}
+
 	/// <param name="armyDelayTicks">
 	/// Extra wait before the bot starts on its army (the later modules are timed from it too).
 	/// Default 0: it builds soldiers as soon as its economy and first defences stand. Raise it for an

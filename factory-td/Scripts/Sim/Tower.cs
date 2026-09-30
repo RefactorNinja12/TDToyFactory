@@ -70,6 +70,11 @@ public sealed class Tower : Building
 		AimY = facing.DY();
 	}
 
+	protected override void HashState(ref StateHash hash)
+	{
+		hash.Add(Shots); hash.Add(_cooldown); hash.Add(AimX); hash.Add(AimY);
+	}
+
 	public override bool TryAccept(ItemType item, Direction moving)
 	{
 		if (item != Stats.Ammo || Shots + Stats.ShotsPerItem > Stats.MaxShots)
