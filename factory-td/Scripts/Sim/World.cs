@@ -269,6 +269,9 @@ public sealed class World
 				_players[building.Owner].Warehouses++;
 	}
 
+	/// <summary>Removes every unit (tests start from a clean slate with this).</summary>
+	internal void ClearUnits() => _units.Clear();
+
 	public int CountBuildings(int owner, BuildingType type)
 	{
 		int count = 0;
