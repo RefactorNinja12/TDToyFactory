@@ -183,6 +183,7 @@ public static class BuildingRules
 	{
 		new(ItemType.Brick, 50),
 		new(ItemType.Plastic, 50),
+		new(ItemType.Food, 20), // the starting workers eat 4/min: about five minutes to get farming going
 	};
 
 	private static readonly ItemStack[] Free = { };

@@ -24,6 +24,15 @@ public sealed class PlayerState
 	/// <summary>Finished warehouses; kept up to date by World every tick.</summary>
 	public int Warehouses { get; internal set; }
 
+	/// <summary>
+	/// Upkeep counter: every tick each unit adds its food-per-minute; each TicksPerMinute points eat one
+	/// food. Integer-only, so the same on every machine.
+	/// </summary>
+	internal int Hunger { get; set; }
+
+	/// <summary>Out of food with mouths to feed: army factories pause and units lose health.</summary>
+	public bool Starving { get; internal set; }
+
 	public PlayerState(int id) => Id = id;
 
 	public int GetCount(ItemType type) => _items[(int)type];
@@ -39,8 +48,16 @@ public sealed class PlayerState
 		if (!HasRoom(type))
 			return false;
 		_items[(int)type]++;
+		if (type == ItemType.Food)
+			FoodStoredTotal++;
 		return true;
 	}
+
+	/// <summary>All food ever stored / eaten, for the food meter.</summary>
+	public int FoodStoredTotal { get; private set; }
+	public int FoodEatenTotal { get; private set; }
+
+	internal void FoodEaten() => FoodEatenTotal++;
 
 	/// <summary>Adds without checking room (starting stock, test setup).</summary>
 	public void Add(ItemType type, int amount = 1) => _items[(int)type] += amount;

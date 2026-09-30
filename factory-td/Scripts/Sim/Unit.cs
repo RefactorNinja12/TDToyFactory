@@ -84,6 +84,20 @@ public static class UnitStats
 	/// <summary>Ticks a farmer spends picking a ripe field.</summary>
 	public const int HarvestTicks = World.TicksPerSecond * 2;
 
+	// ---- Balance: upkeep ----
+	/// <summary>Food each unit eats per minute.</summary>
+	public static int FoodPerMinute(UnitType type) => type switch
+	{
+		UnitType.PlasticSoldier => 2,
+		UnitType.BrickGolem => 4,
+		UnitType.RcCar => 3,
+		_ => 1, // builders, farmers
+	};
+
+	/// <summary>While starving, every unit loses StarveDamage health this often.</summary>
+	public const int StarveTicks = World.TicksPerSecond * 3;
+	public const int StarveDamage = 1;
+
 	/// <summary>Worker units (builders, farmers) never fight and aren't counted as an army.</summary>
 	public static bool IsWorker(UnitType type) => type is UnitType.Builder or UnitType.Farmer;
 

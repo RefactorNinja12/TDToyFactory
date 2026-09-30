@@ -213,11 +213,40 @@ public sealed class World
 				TickUnit(unit);
 		}
 		TickProjectiles();
+		TickUpkeep();
 		_units.RemoveAll(u => u.Health <= 0);
 
 		for (int p = 0; p < _cores.Length && Winner < 0; p++)
 			if (_cores[p] != null && _cores[p].Health == 0)
 				Winner = EnemyOf(p);
+	}
+
+	private const int TicksPerMinute = TicksPerSecond * 60;
+
+	/// <summary>Units eat: see PlayerState.Hunger. Starving units lose health every StarveTicks.</summary>
+	private void TickUpkeep()
+	{
+		foreach (var unit in _units)
+			if (unit.Health > 0)
+				_players[unit.Owner].Hunger += UnitStats.FoodPerMinute(unit.Type);
+
+		var foodOnly = new ItemStack[] { new(ItemType.Food, 1) };
+		foreach (var player in _players)
+		{
+			while (player.Hunger >= TicksPerMinute && player.TrySpend(foodOnly))
+			{
+				player.Hunger -= TicksPerMinute;
+				player.FoodEaten();
+			}
+			player.Starving = player.Hunger >= TicksPerMinute;
+			if (player.Starving)
+				player.Hunger = TicksPerMinute; // no debt: back to normal as soon as there is food
+		}
+
+		if (TickCount % UnitStats.StarveTicks == 0)
+			foreach (var unit in _units)
+				if (_players[unit.Owner].Starving)
+					unit.Health -= UnitStats.StarveDamage;
 	}
 
 	/// <summary>Counts each player's finished warehouses, which set how much they can store.</summary>

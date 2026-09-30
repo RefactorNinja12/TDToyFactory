@@ -26,6 +26,9 @@ public sealed class UnitFactory : Building
 	{
 		if (world.CountUnits(Owner, Produces) >= UnitStats.Cap(Produces))
 			return;
+		// No food: no new soldiers. Workers still come, so a starving player can get farming going again.
+		if (world.Players[Owner].Starving && !UnitStats.IsWorker(Produces))
+			return;
 		if (_crafter.Tick(Recipe, UnitStats.BuildTicks(Produces)))
 			world.SpawnUnit(Produces, Owner, X + Width / 2, Y + Height / 2);
 	}
