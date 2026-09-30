@@ -22,6 +22,8 @@ public sealed class UnitFactory : Building
 
 	public override bool TryAccept(ItemType item, Direction moving) => _crafter.TryAccept(Recipe, item);
 
+	protected override void HashState(ref StateHash hash) => _crafter.HashInto(ref hash);
+
 	public override void Tick(World world)
 	{
 		if (world.CountUnits(Owner, Produces) >= UnitStats.Cap(Produces))

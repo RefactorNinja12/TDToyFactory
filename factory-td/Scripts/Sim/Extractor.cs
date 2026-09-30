@@ -35,4 +35,9 @@ public sealed class Extractor : Building
 	}
 
 	public override bool OutputsToward(Direction direction) => true;
+
+	protected override void HashState(ref StateHash hash)
+	{
+		hash.Add(Stored); hash.Add(Progress);
+	}
 }

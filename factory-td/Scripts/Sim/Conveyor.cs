@@ -56,6 +56,15 @@ public sealed class Conveyor : Building
 		}
 	}
 
+	protected override void HashState(ref StateHash hash)
+	{
+		hash.Add(_items.Count);
+		foreach (var item in _items)
+		{
+			hash.Add((int)item.Type); hash.Add(item.Progress); hash.Add((int)item.EntryDirection);
+		}
+	}
+
 	public override bool TryAccept(ItemType item, Direction moving)
 	{
 		// Never take items from the tile we are pointing at (two belts facing each other).

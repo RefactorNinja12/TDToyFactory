@@ -46,6 +46,12 @@ public sealed class Assembler : Building
 
 	public override bool TryAccept(ItemType item, Direction moving) => _crafter.TryAccept(Recipe.Inputs, item);
 
+	protected override void HashState(ref StateHash hash)
+	{
+		hash.Add(_recipeIndex); hash.Add(_output);
+		_crafter.HashInto(ref hash);
+	}
+
 	public override void Tick(World world)
 	{
 		if (_output < MaxOutput && _crafter.Tick(Recipe.Inputs, Recipe.Ticks))
@@ -79,6 +85,12 @@ public sealed class Crafter
 		System.Array.Clear(_stock);
 		_progress = 0;
 		_crafting = false;
+	}
+
+	internal void HashInto(ref StateHash hash)
+	{
+		foreach (int count in _stock) hash.Add(count);
+		hash.Add(_progress); hash.Add(_crafting);
 	}
 
 	/// <summary>Whether TryAccept would take this item right now.</summary>
