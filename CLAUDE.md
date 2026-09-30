@@ -58,13 +58,23 @@ Kompakt fabrik, max 3 nivåer i produktionskedjan, matcher 15–25 min.
   Långsamma helmatcher/balans har `[Trait("Speed","Slow")]` och skriver sina mätvärden.
 
 ## Arbetsflöde (tester är feedbackloopen)
-- Kör `bash tests/run.sh <Område>` (namnfilter, t.ex. `Farming`, `Bot`, `Tower`) före och efter en
+- `Taskfile.yaml` (go-task) samlar kommandona; `task` listar dem.
+- Kör `task test -- <Område>` (namnfilter, t.ex. `Farming`, `Bot`, `Tower`) före och efter en
   ändring. Utskriften är kort: FAIL-block med meddelande + rad, sedan `PASS n/n`.
-- `bash tests/run.sh` = alla snabba (~8 s). `-Slow` = helmatcher + balans (~17 s, visar mätvärden).
-  `-All` före varje commit.
+  (Samma sak utan task: `bash tests/run.sh <Område>`.)
+- `task test` = alla snabba (~8 s). `task test:slow` = helmatcher + balans (~17 s).
+  `task test:report` = samma + balansmätvärdena (~330 tokens), bara vid balansarbete.
+- Allt skriver bara problem + en sammanfattningsrad (grön körning ≈ 10 tokens). Fel med samma
+  meddelande grupperas, lint grupperas per fil/regel, max ~10 rader. Läs inte råutdata från
+  `dotnet test/format/build` (en CRLF-fil = ~34k tokens rått).
+- `task check` (lint + alla tester) före varje commit. `task fmt` fixar formatering.
+- Lint = `dotnet format` mot `.editorconfig` (tabbar, LF) + analyzers; 0 varningar är normalläget.
+  `.gitattributes` håller `.cs` i LF trots `core.autocrlf=true`.
 - Buggfix: skriv först ett test som fallerar, sedan fixen. Ny funktion: tester i samma ändring.
 - Ny logik hamnar i `Scripts/Sim` eller `Scripts/UI` (testbart), inte i View.
-- Balansändring: kör `-Slow` och uppdatera trösklarna medvetet om designen ändrats.
+- Balansändring: kör `task test:report` och uppdatera trösklarna medvetet om designen ändrats.
+- Lint FAIL med ENDOFLINE/WHITESPACE → `task fmt`, sedan `task lint`. Analyzer-varningar (t.ex.
+  xUnit2013) fixas för hand. `task build` bara för View-ändringar (testerna bygger inte View).
 - Godot bara för det visuella: `Scripts/_Test/VisualProbe.cs` + skärmdump (headless `--write-movie`).
   `Scenes/_Probe*.tscn` är gitignorerade.
 

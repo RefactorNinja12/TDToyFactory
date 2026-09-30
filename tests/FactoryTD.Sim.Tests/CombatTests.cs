@@ -15,7 +15,7 @@ public class FlowFieldTests
 		var enemyCore = s.World.GetCore(1);
 		Assert.Equal(0, field.Distance(enemyCore.X, enemyCore.Y));
 		Assert.Equal(FlowField.Unreachable, field.Distance(0, 0)); // wall
-		// Walking downhill from the own room reaches the enemy core.
+																   // Walking downhill from the own room reaches the enemy core.
 		int x = 20, y = 10, steps = 0;
 		while (field.Distance(x, y) > 0 && steps++ < 1000)
 			(x, y) = field.NextTile(x, y);
@@ -112,7 +112,7 @@ public class TowerTests
 		Assert.Empty(s.World.Projectiles);
 		s.Feed(tower, ItemType.Plastic, 2);
 		s.World.Ticks(5);
-		Assert.Empty(s.World.Projectiles.Where(p => p.TargetUnit == far)); // out of range
+		Assert.DoesNotContain(s.World.Projectiles, p => p.TargetUnit == far); // out of range
 	}
 
 	[Fact]

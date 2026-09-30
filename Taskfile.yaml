@@ -1,0 +1,59 @@
+# Local dev tasks. Run `task` for the list.
+#   task test               fast tests (~8 s)
+#   task test -- Farming    fast tests whose name contains "Farming"
+#   task check              lint + all tests (run before committing)
+# Every task prints only problems plus one summary line (PASS/FAIL, LINT OK/FAIL, BUILD OK/FAIL),
+# so the output stays small enough to paste into or read from an AI session.
+version: "3"
+
+silent: true
+
+vars:
+  PS: powershell -NoProfile -ExecutionPolicy Bypass -File
+
+tasks:
+  default:
+    desc: List the tasks
+    cmds:
+      - task --list
+
+  test:
+    desc: "Fast tests (filter: task test -- Farming)"
+    cmds:
+      - "{{.PS}} tests/run.ps1 {{.CLI_ARGS}}"
+
+  test:slow:
+    desc: Slow tests (whole matches, balance)
+    cmds:
+      - "{{.PS}} tests/run.ps1 -Slow {{.CLI_ARGS}}"
+
+  test:report:
+    desc: Slow tests plus the balance numbers each one measured
+    cmds:
+      - "{{.PS}} tests/run.ps1 -Slow -Report {{.CLI_ARGS}}"
+
+  test:all:
+    desc: Every test
+    cmds:
+      - "{{.PS}} tests/run.ps1 -All {{.CLI_ARGS}}"
+
+  build:
+    desc: Build the Godot C# project
+    cmds:
+      - "{{.PS}} tests/build.ps1"
+
+  lint:
+    desc: Formatting (.editorconfig), code style and analyzers, check only
+    cmds:
+      - "{{.PS}} tests/lint.ps1"
+
+  fmt:
+    desc: Apply the automatic lint fixes
+    cmds:
+      - "{{.PS}} tests/lint.ps1 -Fix"
+
+  check:
+    desc: Lint, then all tests (before committing)
+    cmds:
+      - task: lint
+      - task: test:all
