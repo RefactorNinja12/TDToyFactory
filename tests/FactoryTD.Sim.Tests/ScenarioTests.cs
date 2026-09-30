@@ -31,17 +31,20 @@ public class ScenarioTests
 		var bots = new[] { new BotPlayer(0), new BotPlayer(1) };
 		int[] starvingTicks = new int[2];
 		int[] maxUnits = new int[2];
+		int[] maxCrops = new int[2];
 		for (int t = 0; t < 15 * WorldRunner.TicksPerMinute && s.World.Winner < 0; t++)
 		{
 			s.World.Ticks(1, bots);
 			for (int p = 0; p < 2; p++)
 			{
 				if (s.World.Players[p].Starving) starvingTicks[p]++;
+				maxCrops[p] = System.Math.Max(maxCrops[p], s.World.Players[p].GetCount(ItemType.Crop));
 				maxUnits[p] = System.Math.Max(maxUnits[p], s.World.Units.Count(u => u.Owner == p && !UnitStats.IsWorker(u.Type)));
 			}
 		}
 		for (int p = 0; p < 2; p++)
-			_out.WriteLine($"player {p}: starving {starvingTicks[p] / WorldRunner.TicksPerSecond} s, max army {maxUnits[p]}, " +
+			_out.WriteLine($"player {p}: starving {starvingTicks[p] / WorldRunner.TicksPerSecond} s, max stored crops {maxCrops[p]}, " +
+				$"kitchens {s.World.CountBuildings(p, BuildingType.Kitchen)}, max army {maxUnits[p]}, " +
 				$"modules {string.Join(",", bots[p].ModulesBuilt)}");
 		_out.WriteLine($"winner {s.World.Winner} at {s.World.TickCount / WorldRunner.TicksPerSecond} s");
 		for (int p = 0; p < 2; p++)
@@ -49,6 +52,7 @@ public class ScenarioTests
 			Assert.True(starvingTicks[p] <= 60 * WorldRunner.TicksPerSecond, $"player {p} starved {starvingTicks[p] / WorldRunner.TicksPerSecond} s");
 			Assert.True(maxUnits[p] >= 5, $"player {p} never had an army (max {maxUnits[p]})");
 			Assert.Contains("mat", bots[p].ModulesBuilt);
+			Assert.True(maxCrops[p] <= 300, $"player {p} piled up {maxCrops[p]} crops (cap {PlayerState.CoreCapacity}): too few kitchens");
 		}
 	}
 

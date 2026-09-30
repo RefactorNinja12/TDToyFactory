@@ -153,6 +153,19 @@ public class ConstructionTests
 		s.Belt(13, 26, 13, 29).Belt(13, 30, 8, 30);
 		s.World.Until(() => System.Linq.Enumerable.All(s.World.Buildings, b => b.IsBuilt), 20, "all built");
 	}
+
+	[Fact]
+	public void FirstMinute_ExtractorChainDeliversBricks()
+	{
+		var s = Scenario.Match();
+		int bricks = s.P0.GetCount(ItemType.Brick);
+		s.Place(BuildingType.BrickExtractor, 13, 25, Direction.South);
+		s.Belt(13, 26, 13, 29).Belt(13, 30, 8, 30);
+		int spent = bricks - s.P0.GetCount(ItemType.Brick);
+		s.World.Minutes(1); // includes building time and the walk there
+		int delivered = s.P0.GetCount(ItemType.Brick) - (bricks - spent);
+		Assert.True(delivered >= 20, $"only {delivered} bricks in the first minute");
+	}
 }
 
 public class StorageTests
