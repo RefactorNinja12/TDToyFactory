@@ -81,7 +81,7 @@ Constants in `Sim/Vision.cs` `VisionStats`.
       frontier target is the nearest to home (wide before deep); two scouts pick targets ≥6 apart;
       explored area grows faster with two; lamps near the fog shorten the time to the battery patch;
       scout flees (distance to enemy grows for 3 s); nothing left → returns home.
-- [ ] 8. Determinism: checksum hashes Explored/Visible (e.g. running hash of bit arrays), remembered
+- [x] 8. Determinism: checksum hashes Explored/Visible (e.g. running hash of bit arrays), remembered
       buildings, scout target/flee state. Determinism tests with real fog + scouts.
 - [ ] 9. UI logic (`Scripts/UI`): `Minimap` (colour index per tile + camera rect ↔ tile mapping + click →
       tile), `FogLevels` (per tile 0/1/2 for the fog texture), `Knowledge` helpers (which enemy units /
@@ -110,3 +110,4 @@ Constants in `Sim/Vision.cs` `VisionStats`.
 - Step 5: BuildingType.Lamp (class Lamp in Vision.cs), cost 3 brick + 3 plastic, hp 40, build 30, radius 9 when built. View has NO texture/menu for Lamp yet (step 11). 186/186.
 - Step 6: UnitType.Scout (worker: IsWorker, no power, eats 1; hp 18, speed 36, recipe 3 plastic, 160 ticks; light 7), MaxScouts 6, ScoutsPerTent 2 (UnitFactory rule). BuildingType.Tent 1x1 (5 brick 10 plastic) -> UnitFactory(Scout). World.TickScout stub (stands still). Texts names. View: no sprites for Tent/Scout yet (step 11). 188/188.
 - Step 7: Sim/Scouting.cs (World partial): target = frontier tile minimising homeDistance + manhattan(scout)/2 (pure nearest-home ping-ponged across the base: 717 tiles/60 s -> 2825/180 s), spread 6 tiles, retarget on vision ticks, flee 3 s from visible enemy units (5 directions tried), home when nothing left. World.HomeDistance (BFS over explored floor, cached per vision tick), IsFrontier, ExploredCount, ExploreAll (test). One scout finds the battery patch in 139 s (guard 180). 194/194.
+- Step 8: Vision.HashInto (explored/visible as 64-bit words, remembered list), unit hash + LightDirection, scout target/flee. Checksum_SeesSmallChanges covers explored; RealFog_ScoutsFleeingAndExploring_IsDeterministic (90 s). 195/195.

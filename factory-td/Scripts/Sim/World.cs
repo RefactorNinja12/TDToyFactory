@@ -361,6 +361,7 @@ public sealed partial class World
 		hash.Add(TickCount); hash.Add(Winner); hash.Add(_nextUnitId);
 		foreach (var player in _players)
 			player.HashInto(ref hash);
+		_vision.HashInto(ref hash);
 		hash.Add(_buildings.Count);
 		foreach (var building in _buildings)
 			building.HashInto(ref hash);
@@ -371,7 +372,8 @@ public sealed partial class World
 			hash.Add(unit.X); hash.Add(unit.Y); hash.Add(unit.Health); hash.Add(unit.AttackCooldown);
 			hash.Add(unit.Job?.X ?? -1); hash.Add(unit.Job?.Y ?? -1);
 			hash.Add((int)unit.Carrying); hash.Add(unit.CarryAmount); hash.Add(unit.WorkTimer);
-			hash.Add(unit.Charge); hash.Add((int)unit.PowerState);
+			hash.Add(unit.Charge); hash.Add((int)unit.PowerState); hash.Add(unit.LightDirection);
+			hash.Add(unit.ScoutTargetX); hash.Add(unit.ScoutTargetY); hash.Add(unit.FleeTicks); hash.Add(unit.FleeX); hash.Add(unit.FleeY);
 		}
 		hash.Add(_projectiles.Count);
 		foreach (var shot in _projectiles)

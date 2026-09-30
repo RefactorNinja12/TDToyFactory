@@ -108,6 +108,36 @@ public sealed class Vision
 	public bool IsVisible(int player, int x, int y) =>
 		x >= 0 && y >= 0 && x < _width && y < _height && _visible[player][y * _width + x];
 
+	internal void HashInto(ref StateHash hash)
+	{
+		for (int p = 0; p < _explored.Length; p++)
+		{
+			HashBits(ref hash, _explored[p]);
+			HashBits(ref hash, _visible[p]);
+			hash.Add(_remembered[p].Count);
+			foreach (var r in _remembered[p])
+			{
+				hash.Add((int)r.Type); hash.Add(r.X); hash.Add(r.Y); hash.Add(r.Owner);
+			}
+		}
+	}
+
+	/// <summary>64 tiles per hashed word.</summary>
+	private static void HashBits(ref StateHash hash, bool[] bits)
+	{
+		long word = 0;
+		for (int i = 0; i < bits.Length; i++)
+		{
+			if (bits[i])
+				word |= 1L << (i & 63);
+			if ((i & 63) == 63 || i == bits.Length - 1)
+			{
+				hash.Add(word);
+				word = 0;
+			}
+		}
+	}
+
 	/// <summary>Number of tiles the player has explored.</summary>
 	public int ExploredCount(int player)
 	{
