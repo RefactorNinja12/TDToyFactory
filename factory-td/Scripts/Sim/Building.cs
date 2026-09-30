@@ -54,6 +54,8 @@ public enum PlaceError : byte
 	WrongResource,
 	NotEnoughResources,
 	OutsideZone,
+	/// <summary>Extractors need discovered ground: the deposit has to have been seen.</summary>
+	Unexplored,
 }
 
 /// <summary>

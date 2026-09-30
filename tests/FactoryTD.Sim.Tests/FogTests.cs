@@ -103,3 +103,32 @@ public class VisionTests
 	public void DirectionIndex_NearestOfEight(int dx, int dy, int expected) =>
 		Assert.Equal(expected, Vision.DirectionIndex(dx, dy));
 }
+
+public class FogPlacementTests
+{
+	[Fact]
+	public void BatteryPatch_NotBuildableUntilSomeoneHasBeenThere()
+	{
+		var s = Scenario.Match().NoWorkers().Rich().RealFog();
+		Assert.Equal(PlaceError.Unexplored, s.World.CheckPlace(BuildingType.BatteryExtractor, 41, 47, 0));
+		Assert.Equal(PlaceError.Unexplored, s.World.CheckPlace(BuildingType.BrickExtractor, 41, 47, 0)); // doesn't leak "wrong resource"
+		s.Spawn(UnitType.PlasticSoldier, 41, 45);
+		s.World.Ticks(VisionStats.VisionTicks);
+		Assert.Equal(PlaceError.None, s.World.CheckPlace(BuildingType.BatteryExtractor, 41, 47, 0));
+		Assert.Equal(PlaceError.WrongResource, s.World.CheckPlace(BuildingType.BrickExtractor, 41, 47, 0));
+	}
+
+	[Fact]
+	public void FullVision_IgnoresTheFog() =>
+		Assert.Equal(PlaceError.None, Scenario.Match().Rich().World.CheckPlace(BuildingType.BatteryExtractor, 41, 47, 0));
+
+	[Fact]
+	public void OtherBuildings_GoInTheDark_AndTheBuilderLightsTheWay()
+	{
+		var s = Scenario.Match().Rich().RealFog(); // with the starting builders
+		Assert.False(s.World.IsExplored(0, 40, 45));
+		Assert.Equal(PlaceError.None, s.World.CheckPlace(BuildingType.Conveyor, 40, 45, 0));
+		s.Place(BuildingType.Conveyor, 40, 45);
+		s.World.Until(() => s.World.IsExplored(0, 41, 47), 60, "the builder walking there lights the battery patch");
+	}
+}

@@ -199,6 +199,9 @@ public sealed class World
 					return PlaceError.OutsideZone;
 				if (_grid[cy * Map.Width + cx] != null)
 					return PlaceError.Occupied;
+				// Checked first, so a ghost in the dark doesn't give away whether there is a deposit.
+				if (required != ResourceType.None && !IsExplored(owner, cx, cy))
+					return PlaceError.Unexplored;
 				if (required != ResourceType.None && Map.GetResource(cx, cy) != required)
 					return PlaceError.WrongResource;
 			}

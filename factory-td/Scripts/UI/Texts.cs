@@ -65,6 +65,7 @@ public static class Texts
 	{
 		PlaceError.NotFloor => "Kan bara byggas på golv.",
 		PlaceError.Occupied => "Det står redan något här.",
+		PlaceError.Unexplored => "Outforskat område: skicka en spejare (eller vilken enhet som helst) dit först.",
 		PlaceError.WrongResource => $"{DisplayName(type)} måste stå på {ResourceName(BuildingRules.RequiredResource(type))} (gröna rutor).",
 		PlaceError.OutsideZone => "Du kan bara bygga i ditt eget rum och i hallen.",
 		PlaceError.NotEnoughResources => $"Inte tillräckligt med resurser. {DisplayName(type)} kostar {CostText(type)}.",

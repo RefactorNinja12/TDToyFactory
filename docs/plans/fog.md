@@ -64,7 +64,7 @@ Constants in `Sim/Vision.cs` `VisionStats`.
       room wall doesn't light the hall/other side; light passes the door), walking unit explores its path,
       Visible drops when it leaves but Explored stays, car cone sees 10 ahead but not 10 behind,
       construction site radius 1.
-- [ ] 3. Placement: `PlaceError.Unexplored` for extractors only (checked before WrongResource), Texts error.
+- [x] 3. Placement: `PlaceError.Unexplored` for extractors only (checked before WrongResource), Texts error.
       Tests: battery patch not buildable at start, buildable after a unit walked past, FullVision ignores it,
       a belt/lamp can be placed in the dark, the builder walking there explores the site.
 - [ ] 4. Knowledge: `World.CanSee(player, unit)`, remembered enemy buildings (`Vision.Remembered`:
@@ -105,3 +105,4 @@ Constants in `Sim/Vision.cs` `VisionStats`.
 (one line per finished step: what changed, test count, anything surprising)
 - Step 1: branch fog; World.FullVision (internal) + Scenario.Match() full vision by default, .RealFog() opt-in. Bot matches still full vision until step 10 (World.CreateMatch in DeterminismTests is real). 165/165.
 - Step 2: Sim/Vision.cs (VisionStats; Vision with Explored/Visible bool[] per player; precomputed Bresenham rays per disc radius and 8 cones, walls stop rays, wall tile lit). World.IsExplored/IsVisible (FullVision -> true), recompute every 4 ticks + at CreateMatch. Unit.LightDirection from MoveX/Y (Vision.DirectionIndex, 22.5 deg sectors). Building source tile = X+W/2,Y+H/2. 179/179.
+- Step 3: PlaceError.Unexplored (appended to enum) for extractors only, checked before WrongResource (no leak); Texts message. Walls/Occupied still "leak" in the dark (accepted). 182/182.
