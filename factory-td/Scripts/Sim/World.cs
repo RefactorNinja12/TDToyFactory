@@ -114,10 +114,11 @@ public sealed class World
 		return null;
 	}
 
-	private static bool Draw(PowerNetwork network, int amount)
+	private bool Draw(PowerNetwork network, int amount)
 	{
 		if (network == null || network.Energy < amount)
 			return false;
+		_players[network.Owner].EnergyUsed(amount);
 		foreach (var charger in network.Chargers)
 		{
 			int take = System.Math.Min(amount, charger.Energy);

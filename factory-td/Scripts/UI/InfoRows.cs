@@ -115,12 +115,65 @@ public sealed class InfoRows
 				Storage(building.Owner);
 				break;
 
+			case BatteryCharger charger:
+				Item(ItemType.Battery, $"Batterier som väntar: {charger.Batteries}/{PowerStats.ChargerBatteryBuffer}", charger.Batteries > 0 ? Tone.Good : Tone.Missing);
+				Text($"Laddning: {PowerMeter.Bolts(charger.Energy)}/{PowerMeter.Bolts(PowerStats.ChargerCapacity)}⚡  (1 batteri = {PowerMeter.Bolts(PowerStats.EnergyPerBattery)}⚡)");
+				Progress(charger.Energy, PowerStats.ChargerCapacity);
+				Network(building);
+				break;
+
+			case Pylon:
+				Text($"Ger ström inom {PowerStats.PylonRadius} rutor, sladd till master/laddare inom {PowerStats.LinkRange}.", Tone.Dim);
+				Network(building);
+				break;
+
 			default:
 				var description = Texts.Description(building.Type);
 				if (description.Length > 0)
 					Text(description, Tone.Dim);
 				break;
 		}
+
+		if (NeedsPower(building))
+			PowerStatus(building);
+	}
+
+	/// <summary>Army factories, assemblers and towers run on the grid.</summary>
+	private static bool NeedsPower(Building building) => building switch
+	{
+		UnitFactory factory => !UnitStats.IsWorker(factory.Produces),
+		Assembler or Tower => true,
+		_ => false,
+	};
+
+	private void PowerStatus(Building building)
+	{
+		var network = _world.NetworkOf(building);
+		if (network == null)
+			Text("⚡ Ingen ström här: bygg en leksaksmast i närheten.", Tone.Missing);
+		else if (building.NoPower || network.Energy == 0)
+			Text("⚡ Nätet är tomt: mata en batteriladdare med batterier.", Tone.Missing);
+		else
+			Text($"⚡ Ström: ok ({PowerMeter.Bolts(network.Energy)}⚡ i nätet)", Tone.Good);
+	}
+
+	/// <summary>The network a pylon or charger belongs to.</summary>
+	private void Network(Building building)
+	{
+		PowerNetwork network = null;
+		foreach (var n in _world.Power.Networks)
+			if (n.Nodes.Contains(building))
+				network = n;
+		if (network == null)
+			return;
+		int pylons = 0;
+		foreach (var node in network.Nodes)
+			if (node is Pylon)
+				pylons++;
+		Text($"Nätet: {PowerMeter.Bolts(network.Energy)}⚡ lagrat, {pylons} master, {network.Chargers.Count} laddare",
+			network.Chargers.Count == 0 || network.Energy == 0 ? Tone.Missing : Tone.Dim);
+		if (network.Chargers.Count == 0)
+			Text("Ingen batteriladdare i det här nätet.", Tone.Missing);
 	}
 
 	/// <summary>The shared stock of toybox + warehouses: what's stored and how much room there is.</summary>

@@ -114,6 +114,7 @@ public sealed class BatteryCharger : Building
 		{
 			Batteries--;
 			Energy += PowerStats.EnergyPerBattery;
+			world.Players[Owner].EnergyCharged(PowerStats.EnergyPerBattery);
 		}
 	}
 

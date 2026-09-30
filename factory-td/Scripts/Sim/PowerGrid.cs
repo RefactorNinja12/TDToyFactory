@@ -57,6 +57,16 @@ public sealed class PowerGrid
 	public PowerNetwork NetworkAt(int player, int x, int y) =>
 		x >= 0 && y >= 0 && x < _width && y < _height ? _coverage[player][y * _width + x] : null;
 
+	/// <summary>Energy stored in all of the player's networks.</summary>
+	public int EnergyStored(int player)
+	{
+		int sum = 0;
+		foreach (var network in _networks)
+			if (network.Owner == player)
+				sum += network.Energy;
+		return sum;
+	}
+
 	public static bool IsNode(Building b) => b is Pylon or BatteryCharger or Core;
 
 	/// <summary>Tiles a node powers around its centre (0 for chargers).</summary>

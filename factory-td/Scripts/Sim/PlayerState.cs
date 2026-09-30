@@ -82,7 +82,29 @@ public sealed class PlayerState
 		FoodEatenLastMinute++;
 	}
 
-	/// <summary>Moves the food meter on by one second (called by World once a second).</summary>
+	// Power meter: energy chargers made from batteries, and energy consumers used, per second (same ring).
+	private readonly int[] _energyInPerSecond = new int[60];
+	private readonly int[] _energyOutPerSecond = new int[60];
+
+	/// <summary>Energy the player's chargers made from batteries during the last minute.</summary>
+	public int EnergyChargedLastMinute { get; private set; }
+
+	/// <summary>Energy the player's factories, towers and units used during the last minute.</summary>
+	public int EnergyUsedLastMinute { get; private set; }
+
+	internal void EnergyCharged(int amount)
+	{
+		_energyInPerSecond[_second] += amount;
+		EnergyChargedLastMinute += amount;
+	}
+
+	internal void EnergyUsed(int amount)
+	{
+		_energyOutPerSecond[_second] += amount;
+		EnergyUsedLastMinute += amount;
+	}
+
+	/// <summary>Moves the food and power meters on by one second (called by World once a second).</summary>
 	internal void NextSecond()
 	{
 		_second = (_second + 1) % _foodInPerSecond.Length;
@@ -90,6 +112,10 @@ public sealed class PlayerState
 		FoodEatenLastMinute -= _foodOutPerSecond[_second];
 		_foodInPerSecond[_second] = 0;
 		_foodOutPerSecond[_second] = 0;
+		EnergyChargedLastMinute -= _energyInPerSecond[_second];
+		EnergyUsedLastMinute -= _energyOutPerSecond[_second];
+		_energyInPerSecond[_second] = 0;
+		_energyOutPerSecond[_second] = 0;
 	}
 
 	internal void HashInto(ref StateHash hash)

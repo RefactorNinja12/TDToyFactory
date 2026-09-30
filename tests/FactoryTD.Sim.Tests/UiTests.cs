@@ -229,3 +229,114 @@ public class TextsTests
 	public void ItemCount_Singular(ItemType item, int amount, string expected) =>
 		Assert.Equal(expected, Texts.ItemCount(item, amount));
 }
+
+public class PowerUiTests
+{
+	private static Scenario Real() => Scenario.Match().NoWorkers().Instant().Rich().RealPower();
+
+	[Fact]
+	public void Meter_CountsChargedAndUsed_LastMinute()
+	{
+		var s = Real();
+		s.Pylon(30, 20);
+		var charger = s.Charger(31, 20);
+		s.Feed(charger, ItemType.Battery, 1);
+		s.World.Tick();
+		s.World.TryDrawPower(0, 30, 20, 1000);
+		var (text, mood) = Meter(s);
+		Assert.Contains($"+{PowerMeter.Bolts(PowerStats.EnergyPerBattery)}⚡/min laddas", text);
+		Assert.Contains("−10⚡/min används", text);
+		Assert.Contains($"lagrat {PowerMeter.Bolts(PowerStats.EnergyPerBattery - 1000)}⚡", text);
+		Assert.Equal(Mood.Good, mood);
+		s.World.Seconds(61);
+		Assert.Contains("+0⚡/min", Meter(s).Text);
+	}
+
+	private static (string Text, Mood Mood) Meter(Scenario s) => PowerMeter.Describe(s.World, 0);
+
+	[Fact]
+	public void Meter_WarnsAboutUnpoweredBuildings()
+	{
+		var s = Real();
+		var factory = s.Place<UnitFactory>(BuildingType.SoldierFactory, 30, 20);
+		foreach (var input in factory.Recipe) s.Feed(factory, input.Type, input.Amount);
+		s.World.Tick();
+		var (text, mood) = PowerMeter.Describe(s.World, 0);
+		Assert.Contains("1 byggnad utan ström", text);
+		Assert.Equal(Mood.Bad, mood);
+	}
+
+	[Fact]
+	public void InfoRows_Consumer_SaysWhatIsMissing()
+	{
+		var s = Real();
+		var tower = s.Place<Tower>(BuildingType.FoamTower, 30, 20);
+		Assert.Contains(InfoRows.For(s.World, tower, 0), r => r.Text.StartsWith("⚡ Ingen ström här") && r.Tone == Tone.Missing);
+		s.Pylon(31, 20);
+		Assert.Contains(InfoRows.For(s.World, tower, 0), r => r.Text.StartsWith("⚡ Nätet är tomt") && r.Tone == Tone.Missing);
+		s.Charger(32, 20, energy: 5000);
+		Assert.Contains(InfoRows.For(s.World, tower, 0), r => r.Text == "⚡ Ström: ok (50⚡ i nätet)" && r.Tone == Tone.Good);
+		Assert.DoesNotContain(InfoRows.For(s.World, s.World.GetCore(0), 0), r => r.Text != null && r.Text.StartsWith("⚡"));
+	}
+
+	[Fact]
+	public void InfoRows_ChargerAndPylon_DescribeTheirNetwork()
+	{
+		var s = Real();
+		var pylon = s.Pylon(30, 20);
+		Assert.Contains(InfoRows.For(s.World, pylon, 0), r => r.Text == "Ingen batteriladdare i det här nätet.");
+		var charger = s.Charger(32, 20, energy: 3000);
+		s.Feed(charger, ItemType.Battery, 1);
+		var rows = InfoRows.For(s.World, charger, 0);
+		Assert.Contains(rows, r => r.Item == ItemType.Battery && r.Text == $"Batterier som väntar: 1/{PowerStats.ChargerBatteryBuffer}");
+		Assert.Contains(rows, r => r.Kind == RowKind.Progress && r.Done == 3000 && r.Total == PowerStats.ChargerCapacity);
+		Assert.Contains(rows, r => r.Text == "Nätet: 30⚡ lagrat, 1 master, 1 laddare");
+	}
+
+	[Fact]
+	public void Overlay_CirclesForPylonsAndToybox_ChargedFlag()
+	{
+		var s = Real();
+		s.Pylon(30, 20);
+		var circles = PowerOverlay.Circles(s.World, 0);
+		Assert.Contains(circles, c => c.X == 30.5f && c.Y == 20.5f && c.Radius == PowerStats.PylonRadius && !c.Charged);
+		Assert.Contains(circles, c => c.X == 7f && c.Y == 31f && c.Radius == PowerStats.CoreRadius);
+		s.Charger(31, 20, energy: 1);
+		Assert.Contains(PowerOverlay.Circles(s.World, 0), c => c.X == 30.5f && c.Charged);
+		Assert.DoesNotContain(PowerOverlay.Circles(s.World, 1), c => c.X == 30.5f);
+	}
+
+	[Fact]
+	public void CordPoints_HangBetweenTheEnds()
+	{
+		var points = PowerOverlay.CordPoints(0, 0, 10, 0, 8);
+		Assert.Equal(9, points.Length);
+		Assert.Equal((0f, 0f), points[0]);
+		Assert.Equal((10f, 0f), points[8]);
+		Assert.Equal(5f, points[4].X);
+		Assert.Equal(10 * PowerOverlay.SagPerLength, points[4].Y, 3);
+	}
+
+	[Fact]
+	public void Cords_OnePerLink_OnlyTheirOwner()
+	{
+		var s = Real();
+		s.Pylon(30, 20);
+		s.Pylon(35, 20);
+		Assert.Single(PowerOverlay.Cords(s.World, 0), c => c[0].X > 29);
+		Assert.Empty(PowerOverlay.Cords(s.World, 1));
+	}
+
+	[Fact]
+	public void PreviewLinks_NearestFirst_OnlyFinishedOwnNodes()
+	{
+		var s = Real();
+		var far = s.Pylon(30, 20);
+		var near = s.Pylon(36, 20);
+		s.Pylon(38, 22); // further than the one at (36, 20)
+		var links = PowerOverlay.PreviewLinks(s.World, 0, 37, 20);
+		Assert.Equal(near, links[0]);
+		Assert.Contains(far, links);
+		Assert.Empty(PowerOverlay.PreviewLinks(s.World, 1, 37, 20));
+	}
+}

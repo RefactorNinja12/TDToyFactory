@@ -56,7 +56,7 @@ golem MaxCharge 600 EU drain 10 EU/s; car MaxCharge 600 EU drain 5 EU/s; ReturnP
       `FlowField.Build`). Tests: drain/recharge rates, no attack while Returning/Charging/Empty,
       returns to coverage in X s, Empty speed 25%, car range ≥ 1.8x golem.
 - [x] 7. Determinism: checksum includes charger EU, unit charge + state. New real-power determinism test.
-- [ ] 8. UI logic (`Scripts/UI`): `PowerMeter` (like FoodMeter), InfoRows for charger/pylon/consumers,
+- [x] 8. UI logic (`Scripts/UI`): `PowerMeter` (like FoodMeter), InfoRows for charger/pylon/consumers,
       `PowerOverlay` (circles, cord pairs + sag points). Tests in UiTests.
 - [ ] 9. Bot (FIRST: ScenarioTests bot matches back to .RealPower(), see TODO): "ström" module (charger on battery belt, pylons over base, forward pylon chain in hall
       before golems/cars), rebuild. Tests: plan has charger+pylons, factories powered after N min;
@@ -78,3 +78,4 @@ golem MaxCharge 600 EU drain 10 EU/s; car MaxCharge 600 EU drain 5 EU/s; ReturnP
 - Step 5: Building.NoPower; Crafter.CanWork; army UnitFactory (not workers) draws FactoryEnergyPerTick=2 while working, Assembler 1, Tower HasPower check + TowerShotEnergy=30 per shot. World.TryDrawPower(Building)/HasPower/NetworkOf. Rescaled: battery 6000 EU, charger cap 20000. Bot slow matches temporarily FreePower (TODO step 9). 143/143.
 - Step 6: PowerStats.MaxCharge/DrainPerTick (golem 12000/10, car 8000/10), UnitChargePerTick 40, ReturnPercent 35, ChargedPercent 90, EmptySpeedPercent 25. Unit.Charge/PowerState (UnitPower enum in Power.cs). World.TickCharge in TickUnit; low+on grid -> Charging too. FlowField.Build(world, owner, isTarget) multi-source; power fields LAZY per player (World.PowerField) - eager rebuild cost 8s->13s fast suite. 150/150.
 - Step 7: checksum hashes unit Charge + PowerState (charger Energy/Batteries in step 2/4). Determinism: Checksum_SeesSmallChanges covers charge + charger energy; RealPower_ChargingAndReturning_IsDeterministic (90 s). 151/151.
+- Step 8: PlayerState EnergyCharged/UsedLastMinute (same 60 s ring as food); PowerGrid.EnergyStored. UI: PowerMeter (1 bolt = 100 EU, battery = 60), InfoRows power rows (consumers: Ingen ström/Nätet tomt/ok; charger + pylon network rows), PowerOverlay Circles/Cords/CordPoints (sag 12%)/PreviewLinks. 159/159.
