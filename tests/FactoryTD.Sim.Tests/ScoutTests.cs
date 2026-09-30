@@ -32,19 +32,6 @@ public class ScoutTests
 {
 	private static Scenario Fog() => Scenario.Match().NoWorkers().Instant().Rich().RealFog();
 
-	private static int SecondsToFindBatteries(Scenario s, int scouts)
-	{
-		for (int i = 0; i < scouts; i++) s.Spawn(UnitType.Scout, 9, 30 + i);
-		return s.World.Until(() => s.World.IsExplored(0, 41, 47), 300, "the battery patch explored") / WorldRunner.TicksPerSecond;
-	}
-
-	[Fact]
-	public void OneScout_FindsTheBatteryPatch()
-	{
-		int seconds = SecondsToFindBatteries(Fog(), 1);
-		Assert.True(seconds <= 180, $"took {seconds} s"); // the patch is in the far corner: wide before deep finds it late
-	}
-
 	[Fact]
 	public void Target_IsTheFogEdgeNearestHome_WideBeforeDeep()
 	{
@@ -79,17 +66,6 @@ public class ScoutTests
 		two.World.Seconds(40);
 		Assert.True(two.World.ExploredCount(0) > one.World.ExploredCount(0) * 11 / 10,
 			$"two scouts {two.World.ExploredCount(0)} tiles, one {one.World.ExploredCount(0)}");
-	}
-
-	[Fact]
-	public void Lamps_MakeTheSearchFaster()
-	{
-		int without = SecondsToFindBatteries(Fog(), 1);
-		var lit = Fog();
-		lit.Place(BuildingType.Lamp, 22, 38);
-		lit.Place(BuildingType.Lamp, 30, 42);
-		int with = SecondsToFindBatteries(lit, 1);
-		Assert.True(with < without, $"with lamps {with} s, without {without} s");
 	}
 
 	[Fact]

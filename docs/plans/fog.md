@@ -97,7 +97,7 @@ Constants in `Sim/Vision.cs` `VisionStats`.
       units (UnitView/CombatView projectiles from hidden units ok) and buildings (BuildingView), ghosts for
       remembered ones, car cone glow, minimap (CanvasLayer corner, click to jump, camera rect), menu entries
       (tent, lamp), placement error. `task build` + headless screenshot(s) (scratchpad shot.sh + VisualProbe).
-- [ ] 12. Balance (slow, `task test:report`): time for 1 scout to find the battery patch, with lamps,
+- [x] 12. Balance (slow, `task test:report`): time for 1 scout to find the battery patch, with lamps,
       bot matches still end in 15–25 min range; guards for these.
 - [ ] 13. CLAUDE.md design + code structure (Edit tool); `task check`; commit.
 
@@ -114,3 +114,4 @@ Constants in `Sim/Vision.cs` `VisionStats`.
 - Step 9: UI/Fog.cs: Knowledge.ShowBuilding/Ghosts, FogLevels (0/1/2), Minimap (kind in low bits + LitBit; terrain, deposits, remembered enemy buildings, own buildings, visible units; CameraRect, ToTiles). Hover filter for unseen enemies is done in the view (InfoPanel.Hovered) in step 11. 200/200.
 - Step 10: bot module "spejare" (Tent at 14,36 fed directly by plastic extractor 13,36); extractors on unexplored ground are skipped by MaintainPlan until explored (scouts + builders laying the battery belt light it); Observe counts only CanSee enemies. BotTests + bot matches use RealFog. Bot has a scout by 2 min and a battery extractor by 4 min. Bot vs bot: p0 wins 732 s (army 68 vs 15, still lopsided, now the other way); bot vs idle 354 s. 201/201.
 - Step 11: sprites Units/scout.png, Fog/tent.png, Fog/lamp.png (workbench ids c59e6600.., aa3b5f27.., 482dbb0e..). View/FogView (1 texel/tile Rgba8, linear filter, ZIndex 3; ghosts layer ZIndex 1; car cones ZIndex 2), View/MinimapView (CanvasLayer top right, 2 px/tile, 4 Hz, camera rect, click/drag moves camera). LocalPlayer on Building/Item/Unit/CombatView: enemies hidden unless seen; InfoPanel ignores unseen enemies; PowerView enemy cords only when both ends seen (PowerOverlay.Cords include). Builder ZIndex 4. Menu tab "Utforska" (tent, lamp). Screenshot verified (probe camera 48,31 zoom .3).
+- Step 12: slow Balance_Scouting (1 scout 139 s, 2 scouts 57 s, 1 scout + 2 lamps 128 s; guards <=180, 2<1, lamps<1) replaced the two long fast scout tests; bot vs bot reports first battery extractor (both 130 s, guard <=300). Vision recompute 0.44 ms (73 units, 443 buildings) = ~2% of sim time; sim ~1 ms/tick. Fast suite 11 s (was 8: more long scenarios). 202/202.
