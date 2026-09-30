@@ -14,6 +14,8 @@
 
   <ItemGroup>
     <Compile Include="../../factory-td/Scripts/Sim/**/*.cs" Link="Sim/%(RecursiveDir)%(Filename)%(Extension)" />
+    <!-- Godot-free UI logic (texts, conveyor look, drag path, food meter, hover panel rows). -->
+    <Compile Include="../../factory-td/Scripts/UI/**/*.cs" Link="UI/%(RecursiveDir)%(Filename)%(Extension)" />
   </ItemGroup>
 
   <ItemGroup>

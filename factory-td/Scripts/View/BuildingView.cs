@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using FactoryTD.Sim;
+using FactoryTD.UI;
 using Godot;
 
 namespace FactoryTD.View;
@@ -108,32 +109,9 @@ public partial class BuildingView : Node2D
 		if (_world.GetBuilding(x, y) is not Conveyor conveyor || !_sprites.TryGetValue(conveyor, out var sprite))
 			return;
 
-		var facing = conveyor.Facing;
-		bool fromBack = IsFedMoving(conveyor, facing);
-		// Right turn: e.g. moving east, then turning south (clockwise).
-		bool rightTurn = IsFedMoving(conveyor, facing.RotatedCounterClockwise());
-		bool leftTurn = IsFedMoving(conveyor, facing.RotatedClockwise());
-
-		if (!fromBack && rightTurn != leftTurn)
-		{
-			// The curve sprite is a right turn east -> south; flipped it is a left turn east -> north.
-			var reference = rightTurn ? Direction.South : Direction.North;
-			sprite.Texture = BuildingVisuals.ConveyorCurveTexture;
-			sprite.FlipV = leftTurn;
-			sprite.Rotation = (((int)facing - (int)reference + 4) & 3) * Mathf.Pi / 2f;
-		}
-		else
-		{
-			sprite.Texture = BuildingVisuals.GetTexture(BuildingType.Conveyor);
-			sprite.FlipV = false;
-			sprite.Rotation = BuildingVisuals.Rotation(facing);
-		}
-	}
-
-	/// <summary>Whether the neighbour that items moving in <paramref name="moving"/> would come from feeds this conveyor.</summary>
-	private bool IsFedMoving(Conveyor conveyor, Direction moving)
-	{
-		var source = _world.GetBuilding(conveyor.X - moving.DX(), conveyor.Y - moving.DY());
-		return source != null && source.Width == 1 && source.Height == 1 && source.OutputsToward(moving);
+		var look = ConveyorLook.For(_world, conveyor);
+		sprite.Texture = look.Curve ? BuildingVisuals.ConveyorCurveTexture : BuildingVisuals.GetTexture(BuildingType.Conveyor);
+		sprite.FlipV = look.FlipV;
+		sprite.Rotation = look.QuarterTurns * Mathf.Pi / 2f;
 	}
 }

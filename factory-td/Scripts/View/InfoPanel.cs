@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using FactoryTD.Sim;
+using FactoryTD.UI;
 using Godot;
 
 namespace FactoryTD.View;
@@ -90,120 +91,16 @@ public partial class InfoPanel : CanvasLayer
 			_rows.RemoveChild(child);
 			child.QueueFree();
 		}
-
-		string owner = building.Owner == _localPlayer ? "" : "  (fiende)";
-		Title(BuildingVisuals.DisplayName(building.Type) + owner);
-		Text($"Hälsa {building.Health}/{building.MaxHealth}", building.Health < building.MaxHealth ? Missing : Dim);
-
-		if (!building.IsBuilt)
+		foreach (var row in InfoRows.For(_world, building, _localPlayer))
 		{
-			int builders = _world.BuildersOn(building);
-			int percent = building.BuildTime == 0 ? 100 : building.BuildWork * 100 / building.BuildTime;
-			Text($"Byggs: {percent}%", Good);
-			Progress(building.BuildWork, building.BuildTime);
-			Text(builders == 0
-				? "Ingen byggare på väg. Fler byggare får du från en verktygslåda."
-				: $"{builders} byggare på väg eller jobbar här.", builders == 0 ? Missing : Dim);
-			Text("Fungerar inte förrän den är klar.", Dim);
-			return;
-		}
-
-		switch (building)
-		{
-			case UnitFactory factory:
-				Text($"Gör: {BuildingVisuals.UnitName(factory.Produces)}");
-				Text("Behöver per trupp:", Dim);
-				Needs(factory.Recipe, factory.Crafter);
-				Progress(factory.Crafter.Progress, UnitStats.BuildTicks(factory.Produces));
-				Text("Mata in materialet med band från vilken sida som helst.", Dim);
-				break;
-
-			case Assembler assembler:
-				Text($"Gör: {BuildingVisuals.ItemName(assembler.Recipe.Output)}  (klicka för att byta)");
-				Text("Behöver per styck:", Dim);
-				Needs(assembler.Recipe.Inputs, assembler.Crafter);
-				Progress(assembler.Crafter.Progress, assembler.Recipe.Ticks);
-				Text($"Klara, väntar på att komma ut: {assembler.Finished}", Dim);
-				Text("Tar emot från alla håll, lämnar ut åt pilens håll.", Dim);
-				break;
-
-			case Tower tower:
-				Item(tower.Stats.Ammo, $"Ammo: {BuildingVisuals.ItemName(tower.Stats.Ammo).ToLowerInvariant()}  (1 = {tower.Stats.ShotsPerItem} skott)");
-				Text($"Skott kvar: {tower.Shots}/{tower.Stats.MaxShots}", tower.Shots > 0 ? Good : Missing);
-				Text($"Räckvidd {tower.Stats.RangeTiles} rutor, skada {tower.Stats.Damage}", Dim);
-				break;
-
-			case Extractor extractor:
-				Item(extractor.Output, $"Gör: {BuildingVisuals.ItemCount(extractor.Output, 1)} var {Extractor.ProductionTicks / World.TicksPerSecond}:a sekund");
-				Text($"I lager: {extractor.Stored}/{Extractor.MaxStored}", extractor.Stored >= Extractor.MaxStored ? Missing : Dim);
-				Text("Lämnar till band på alla sidor (utom band som pekar in i den).", Dim);
-				break;
-
-			case Sorter sorter:
-				Item(sorter.Filter, $"{BuildingVisuals.ItemName(sorter.Filter)} rakt fram, allt annat åt sidorna");
-				Text("Klicka för att byta sort.", Dim);
-				break;
-
-			case Kitchen kitchen:
-				Item(ItemType.Food, "Gör: 1 matlåda");
-				Text("Behöver per styck:", Dim);
-				Needs(Kitchen.Recipe, kitchen.Crafter);
-				Progress(kitchen.Crafter.Progress, Kitchen.CookTicks);
-				Text($"Klar mat som väntar på att komma ut: {kitchen.Finished}", kitchen.Finished >= 5 ? Missing : Dim);
-				Text("Bönder lämnar morötter här. Maten går ut åt pilens håll.", Dim);
-				break;
-
-			case CropField field:
-				if (field.IsRipe)
-					Item(ItemType.Crop, $"Mogen! {BuildingVisuals.ItemCount(ItemType.Crop, CropField.Yield)} väntar på en bonde", Good);
-				else
-				{
-					int left = (CropField.GrowTicks - field.Growth + World.TicksPerSecond - 1) / World.TicksPerSecond;
-					Item(ItemType.Crop, $"Växer: {field.Growth * 100 / CropField.GrowTicks}%, mogen om {left} s");
-					Progress(field.Growth, CropField.GrowTicks);
-				}
-				Text("Bönder skördar och bär morötterna till ett kök eller lager.", Dim);
-				break;
-
-			case Core:
-				Text("Tar emot allt från banden. Det betalar dina byggen.", Dim);
-				Storage(building.Owner);
-				break;
-
-			case Warehouse:
-				Text($"Lagrar allt från banden, +{PlayerState.WarehouseCapacity} plats per sort.", Dim);
-				Storage(building.Owner);
-				break;
-
-			default:
-				var description = BuildingVisuals.Description(building.Type);
-				if (description.Length > 0)
-					Text(description, Dim);
-				break;
-		}
-	}
-
-	/// <summary>The shared stock of toybox + warehouses: what's stored and how much room there is.</summary>
-	private void Storage(int owner)
-	{
-		var player = _world.Players[owner];
-		Text($"Förråd (leksakslåda + {player.Warehouses} lager):", Dim);
-		foreach (var item in Items.All)
-		{
-			int count = player.GetCount(item), capacity = player.Capacity(item);
-			if (count == 0 && item is not (ItemType.Brick or ItemType.Plastic or ItemType.Battery))
-				continue;
-			Item(item, $"{count}/{capacity}", count >= capacity ? Missing : Colors.White);
-		}
-	}
-
-	private void Needs(ItemStack[] recipe, Crafter crafter)
-	{
-		foreach (var input in recipe)
-		{
-			int have = crafter.Stock(input.Type);
-			Item(input.Type, $"{BuildingVisuals.ItemCount(input.Type, input.Amount)}   (har {have})",
-				have >= input.Amount ? Good : Missing);
+			var color = row.Tone switch { Tone.Dim => Dim, Tone.Good => Good, Tone.Missing => Missing, _ => Colors.White };
+			switch (row.Kind)
+			{
+				case RowKind.Title: Title(row.Text); break;
+				case RowKind.Text: Text(row.Text, color); break;
+				case RowKind.Item: Item(row.Item, row.Text, color); break;
+				case RowKind.Progress: Progress(row.Done, row.Total); break;
+			}
 		}
 	}
 
