@@ -67,7 +67,7 @@ Constants in `Sim/Vision.cs` `VisionStats`.
 - [x] 3. Placement: `PlaceError.Unexplored` for extractors only (checked before WrongResource), Texts error.
       Tests: battery patch not buildable at start, buildable after a unit walked past, FullVision ignores it,
       a belt/lamp can be placed in the dark, the builder walking there explores the site.
-- [ ] 4. Knowledge: `World.CanSee(player, unit)`, remembered enemy buildings (`Vision.Remembered`:
+- [x] 4. Knowledge: `World.CanSee(player, unit)`, remembered enemy buildings (`Vision.Remembered`:
       snapshot list), updated on sight. Tests: enemy unit hidden outside light / shown inside; enemy
       building remembered after the unit leaves; destroyed while unseen stays remembered until re-seen;
       own buildings always known.
@@ -106,3 +106,4 @@ Constants in `Sim/Vision.cs` `VisionStats`.
 - Step 1: branch fog; World.FullVision (internal) + Scenario.Match() full vision by default, .RealFog() opt-in. Bot matches still full vision until step 10 (World.CreateMatch in DeterminismTests is real). 165/165.
 - Step 2: Sim/Vision.cs (VisionStats; Vision with Explored/Visible bool[] per player; precomputed Bresenham rays per disc radius and 8 cones, walls stop rays, wall tile lit). World.IsExplored/IsVisible (FullVision -> true), recompute every 4 ticks + at CreateMatch. Unit.LightDirection from MoveX/Y (Vision.DirectionIndex, 22.5 deg sectors). Building source tile = X+W/2,Y+H/2. 179/179.
 - Step 3: PlaceError.Unexplored (appended to enum) for extractors only, checked before WrongResource (no leak); Texts message. Walls/Occupied still "leak" in the dark (accepted). 182/182.
+- Step 4: RememberedBuilding record (type, footprint, owner, facing); Vision keeps a list per player, refreshed where visible each recompute. World.CanSee(player, unit), World.RememberedBuildings(player) (FullVision: all enemy buildings now). 185/185.

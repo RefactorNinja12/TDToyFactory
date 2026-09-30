@@ -132,3 +132,52 @@ public class FogPlacementTests
 		s.World.Until(() => s.World.IsExplored(0, 41, 47), 60, "the builder walking there lights the battery patch");
 	}
 }
+
+public class KnowledgeTests
+{
+	private static Scenario Fog() => Scenario.Match().NoWorkers().Instant().Rich().RealFog();
+
+	[Fact]
+	public void EnemyUnits_OnlyWhileInTheLight()
+	{
+		var s = Fog();
+		var enemy = s.Spawn(UnitType.PlasticSoldier, 30, 45, owner: 1);
+		s.World.Ticks(VisionStats.VisionTicks);
+		Assert.False(s.World.CanSee(0, enemy));
+		Assert.True(s.World.CanSee(1, enemy)); // its own
+		s.Place(BuildingType.SoldierFactory, 30, 42); // light radius 5 around (31, 43)
+		s.World.Ticks(VisionStats.VisionTicks);
+		Assert.True(s.World.CanSee(0, enemy));
+	}
+
+	[Fact]
+	public void EnemyBuildings_RememberedAsLastSeen()
+	{
+		var s = Fog();
+		s.Place(BuildingType.Conveyor, 80, 30, owner: 1);
+		s.World.Ticks(VisionStats.VisionTicks);
+		Assert.Empty(s.World.RememberedBuildings(0));
+
+		s.Place(BuildingType.BatteryCharger, 78, 30); // lights radius 3
+		s.World.Ticks(VisionStats.VisionTicks);
+		var seen = Assert.Single(s.World.RememberedBuildings(0));
+		Assert.Equal((BuildingType.Conveyor, 80, 30, 1), (seen.Type, seen.X, seen.Y, seen.Owner));
+
+		Assert.True(s.World.TryRemove(78, 30, 0)); // the light goes away
+		Assert.True(s.World.TryRemove(80, 30, 1)); // the belt is gone, but nobody saw it go
+		s.World.Ticks(VisionStats.VisionTicks);
+		Assert.Single(s.World.RememberedBuildings(0));
+
+		s.Place(BuildingType.BatteryCharger, 78, 30); // looking again
+		s.World.Ticks(VisionStats.VisionTicks);
+		Assert.Empty(s.World.RememberedBuildings(0));
+	}
+
+	[Fact]
+	public void FullVision_KnowsEveryEnemyBuilding()
+	{
+		var s = Scenario.Match();
+		Assert.Contains(s.World.RememberedBuildings(0), r => r.Type == BuildingType.Core && r.Owner == 1);
+		Assert.DoesNotContain(s.World.RememberedBuildings(0), r => r.Owner == 0);
+	}
+}

@@ -41,6 +41,9 @@ public static class VisionStats
 	}
 }
 
+/// <summary>What a player last saw of an enemy building (it may have changed or gone since).</summary>
+public readonly record struct RememberedBuilding(BuildingType Type, int X, int Y, int Width, int Height, int Owner, Direction Facing);
+
 /// <summary>
 /// Fog of war. For each player and tile: Explored (lit at some point, never forgotten) and Visible (lit
 /// right now). Light goes out in straight lines from its source and stops at walls (the wall itself is lit).
@@ -65,6 +68,7 @@ public sealed class Vision
 	private readonly int _height;
 	private readonly bool[][] _explored;
 	private readonly bool[][] _visible;
+	private readonly List<RememberedBuilding>[] _remembered;
 
 	public Vision(int width, int height, int players)
 	{
@@ -77,7 +81,13 @@ public sealed class Vision
 			_explored[p] = new bool[width * height];
 			_visible[p] = new bool[width * height];
 		}
+		_remembered = new List<RememberedBuilding>[players];
+		for (int p = 0; p < players; p++)
+			_remembered[p] = new List<RememberedBuilding>();
 	}
+
+	/// <summary>Enemy buildings as the player last saw them, in the order they were seen.</summary>
+	public IReadOnlyList<RememberedBuilding> Remembered(int player) => _remembered[player];
 
 	public bool IsExplored(int player, int x, int y) =>
 		x >= 0 && y >= 0 && x < _width && y < _height && _explored[player][y * _width + x];
@@ -128,7 +138,22 @@ public sealed class Vision
 			for (int i = 0; i < visible.Length; i++)
 				if (visible[i])
 					explored[i] = true;
+
+			// Memories of what is in sight now are replaced by what is really there.
+			_remembered[p].RemoveAll(r => AnyVisible(p, r.X, r.Y, r.Width, r.Height));
+			foreach (var b in world.Buildings)
+				if (b.Owner != p && AnyVisible(p, b.X, b.Y, b.Width, b.Height))
+					_remembered[p].Add(new RememberedBuilding(b.Type, b.X, b.Y, b.Width, b.Height, b.Owner, b.Facing));
 		}
+	}
+
+	private bool AnyVisible(int player, int x, int y, int width, int height)
+	{
+		for (int ty = y; ty < y + height; ty++)
+			for (int tx = x; tx < x + width; tx++)
+				if (IsVisible(player, tx, ty))
+					return true;
+		return false;
 	}
 
 	private void Light(MapLayout map, int player, int x, int y, Ray[] shape)

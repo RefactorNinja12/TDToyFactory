@@ -400,6 +400,24 @@ public sealed class World
 	/// <summary>Whether the player has ever lit this tile (fog of war).</summary>
 	public bool IsExplored(int player, int x, int y) => FullVision || _vision.IsExplored(player, x, y);
 
+	/// <summary>Whether the player knows where this unit is: its own, or standing in the player's light.</summary>
+	public bool CanSee(int player, Unit unit) => unit.Owner == player || IsVisible(player, unit.TileX, unit.TileY);
+
+	/// <summary>
+	/// Enemy buildings as the player last saw them (with full vision: all of them, as they are now).
+	/// Own buildings are always known and not listed.
+	/// </summary>
+	public IReadOnlyList<RememberedBuilding> RememberedBuildings(int player)
+	{
+		if (!FullVision)
+			return _vision.Remembered(player);
+		var all = new List<RememberedBuilding>();
+		foreach (var b in _buildings)
+			if (b.Owner != player)
+				all.Add(new RememberedBuilding(b.Type, b.X, b.Y, b.Width, b.Height, b.Owner, b.Facing));
+		return all;
+	}
+
 	/// <summary>Whether the player's light reaches this tile right now.</summary>
 	public bool IsVisible(int player, int x, int y) => FullVision || _vision.IsVisible(player, x, y);
 
