@@ -60,8 +60,9 @@ public partial class PowerView : Node2D
 		var selected = _builder?.Selected;
 		if (ShowOverlay || (selected is { } type && UsesPower(type)))
 			DrawCoverage();
+		// Enemy cords only where both ends are in sight.
 		for (int player = 0; player < _world.Players.Count; player++)
-			foreach (var cord in PowerOverlay.Cords(_world, player))
+			foreach (var cord in PowerOverlay.Cords(_world, player, include: player == _localPlayer ? null : b => Knowledge.ShowBuilding(_world, _localPlayer, b)))
 				DrawCord(cord, TeamCord[player % TeamCord.Length]);
 		if (selected is BuildingType.Pylon or BuildingType.BatteryCharger)
 			DrawPlacementPreview(selected.Value);

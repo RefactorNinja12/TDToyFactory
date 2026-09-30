@@ -91,7 +91,7 @@ Constants in `Sim/Vision.cs` `VisionStats`.
       are explored (battery patch etc.); Observe uses visibility. Tests: bot explores the battery patch and
       builds a battery extractor within N min; BotTests fixture with real fog; slow bot vs idle still wins,
       bot vs bot healthy (starvation, power, army) — record times in the log.
-- [ ] 11. Assets + view: sprites via `pixelart_workbench` draw (tent: toy camping tent; scout: wind-up toy
+- [x] 11. Assets + view: sprites via `pixelart_workbench` draw (tent: toy camping tent; scout: wind-up toy
       explorer with binoculars/hat, like the other unit sprites; lamp: toy night light/lantern; light cone
       glow). FogView (ImageTexture 1 px/tile, linear filter, over the map, under UI), hide unseen enemy
       units (UnitView/CombatView projectiles from hidden units ok) and buildings (BuildingView), ghosts for
@@ -113,3 +113,4 @@ Constants in `Sim/Vision.cs` `VisionStats`.
 - Step 8: Vision.HashInto (explored/visible as 64-bit words, remembered list), unit hash + LightDirection, scout target/flee. Checksum_SeesSmallChanges covers explored; RealFog_ScoutsFleeingAndExploring_IsDeterministic (90 s). 195/195.
 - Step 9: UI/Fog.cs: Knowledge.ShowBuilding/Ghosts, FogLevels (0/1/2), Minimap (kind in low bits + LitBit; terrain, deposits, remembered enemy buildings, own buildings, visible units; CameraRect, ToTiles). Hover filter for unseen enemies is done in the view (InfoPanel.Hovered) in step 11. 200/200.
 - Step 10: bot module "spejare" (Tent at 14,36 fed directly by plastic extractor 13,36); extractors on unexplored ground are skipped by MaintainPlan until explored (scouts + builders laying the battery belt light it); Observe counts only CanSee enemies. BotTests + bot matches use RealFog. Bot has a scout by 2 min and a battery extractor by 4 min. Bot vs bot: p0 wins 732 s (army 68 vs 15, still lopsided, now the other way); bot vs idle 354 s. 201/201.
+- Step 11: sprites Units/scout.png, Fog/tent.png, Fog/lamp.png (workbench ids c59e6600.., aa3b5f27.., 482dbb0e..). View/FogView (1 texel/tile Rgba8, linear filter, ZIndex 3; ghosts layer ZIndex 1; car cones ZIndex 2), View/MinimapView (CanvasLayer top right, 2 px/tile, 4 Hz, camera rect, click/drag moves camera). LocalPlayer on Building/Item/Unit/CombatView: enemies hidden unless seen; InfoPanel ignores unseen enemies; PowerView enemy cords only when both ends seen (PowerOverlay.Cords include). Builder ZIndex 4. Menu tab "Utforska" (tent, lamp). Screenshot verified (probe camera 48,31 zoom .3).

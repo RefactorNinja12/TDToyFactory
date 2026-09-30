@@ -78,7 +78,8 @@ public partial class InfoPanel : CanvasLayer
 		var mouse = GetViewport().GetMousePosition();
 		var world = GetViewport().GetCanvasTransform().AffineInverse() * mouse;
 		var cell = BuildingVisuals.WorldToCell(world);
-		return _world.GetBuilding(cell.X, cell.Y);
+		var building = _world.GetBuilding(cell.X, cell.Y);
+		return building != null && Knowledge.ShowBuilding(_world, _localPlayer, building) ? building : null;
 	}
 
 	// ---------------------------------------------------------------------------------------------
