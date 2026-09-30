@@ -354,6 +354,7 @@ public sealed class World
 			hash.Add(unit.X); hash.Add(unit.Y); hash.Add(unit.Health); hash.Add(unit.AttackCooldown);
 			hash.Add(unit.Job?.X ?? -1); hash.Add(unit.Job?.Y ?? -1);
 			hash.Add((int)unit.Carrying); hash.Add(unit.CarryAmount); hash.Add(unit.WorkTimer);
+			hash.Add(unit.Charge); hash.Add((int)unit.PowerState);
 		}
 		hash.Add(_projectiles.Count);
 		foreach (var shot in _projectiles)

@@ -83,5 +83,41 @@ public class DeterminismTests
 		e.Place(BuildingType.Conveyor, 20, 20);
 		d.Feed(d.World.GetBuilding(20, 20), ItemType.Brick);
 		Assert.NotEqual(d.World.Checksum(), e.World.Checksum()); // an item on a belt counts
+
+		var f = Scenario.Match();
+		var g = Scenario.Match();
+		f.Spawn(UnitType.BrickGolem, 30, 30).Charge -= 1;
+		g.Spawn(UnitType.BrickGolem, 30, 30);
+		Assert.NotEqual(f.World.Checksum(), g.World.Checksum()); // battery charge counts
+
+		var h = Scenario.Match().Instant();
+		var i = Scenario.Match().Instant();
+		h.Charger(30, 30, energy: 1);
+		i.Charger(30, 30);
+		Assert.NotEqual(h.World.Checksum(), i.World.Checksum()); // charger energy counts
+	}
+
+	[Fact]
+	public void RealPower_ChargingAndReturning_IsDeterministic()
+	{
+		static List<ulong> Run()
+		{
+			var s = Scenario.Match().Rich().Instant().RealPower();
+			s.Pylon(20, 30);
+			var charger = s.Charger(21, 30, energy: 3000);
+			s.Place(BuildingType.BatteryExtractor, 41, 47);
+			s.Belt(41, 46, 41, 31).Belt(41, 30, 22, 30); // batteries all the way to the charger
+			s.Place<UnitFactory>(BuildingType.GolemWorkshop, 16, 26);
+			for (int k = 0; k < 4; k++) s.Spawn(UnitType.BrickGolem, 30 + k, 32).Charge = 500 * k;
+			for (int k = 0; k < 3; k++) s.Spawn(UnitType.RcCar, 30 + k, 34);
+			var sums = new List<ulong>();
+			for (int t = 0; t < 20 * 90; t++)
+			{
+				s.World.Tick();
+				sums.Add(s.World.Checksum());
+			}
+			return sums;
+		}
+		AssertSame(Run(), Run(), "tick");
 	}
 }
