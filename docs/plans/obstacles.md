@@ -31,4 +31,5 @@ step, tick + log + commit per step (same loop as docs/plans/fog.md: tests first,
 - Step 2: workbench drawings teddy 5091f8f2.. (256x320), blocks d780c616.. (192x256), doll 14e0c1d3.. (192x320) in tools/art/source/Obstacles, restyled into Assets/Sprites/Obstacles.
 - Step 3: MapView draws floor under toys, View/ObstacleView (footprint + 1 tile overhang, ZIndex 1, mirrored toys flipped), minimap colour (Minimap.Toy), no fog outline for toys (looked like a box). Screenshot ok.
 - Later: sock (5x2, workbench 9c574be6.., redrawn sockier d0eddd95.., then flat one-colour knitted by tools/art/make_sock.py), added last in RoomToys so the others kept their places; minimap unknown = fog navy.
+- Later: lollipop (5x3, flat swirl candy + stick, tools/art/make_lollipop.py), last in RoomToys.
 - Step 4: bot tests + slow bot matches already on the obstacle map since step 1, all pass (bot vs bot p0 wins 657 s, bot vs idle 354 s, batteries found 130 s). CLAUDE.md updated. PLAN DONE.
