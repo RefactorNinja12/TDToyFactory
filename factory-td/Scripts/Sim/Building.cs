@@ -26,6 +26,7 @@ public enum BuildingType : byte
 	Pylon,
 	BatteryCharger,
 	Lamp,
+	Tent,
 }
 
 /// <summary>Facing / output direction. Clockwise order, matching Godot's y-down rotation.</summary>
@@ -183,6 +184,7 @@ public static class BuildingRules
 		BuildingType.BatteryCharger,
 		BuildingType.Pylon,
 		BuildingType.Lamp,
+		BuildingType.Tent,
 		BuildingType.CropField,
 		BuildingType.Farmhouse,
 		BuildingType.Kitchen,
@@ -232,6 +234,7 @@ public static class BuildingRules
 	private static readonly ItemStack[] PylonCost = { new(ItemType.Brick, 4), new(ItemType.Plastic, 4) };
 	private static readonly ItemStack[] BatteryChargerCost = { new(ItemType.Brick, 20), new(ItemType.Plastic, 15) };
 	private static readonly ItemStack[] LampCost = { new(ItemType.Brick, 3), new(ItemType.Plastic, 3) };
+	private static readonly ItemStack[] TentCost = { new(ItemType.Brick, 5), new(ItemType.Plastic, 10) };
 
 	public static ItemStack[] Cost(BuildingType type) => type switch
 	{
@@ -258,6 +261,7 @@ public static class BuildingRules
 		BuildingType.Pylon => PylonCost,
 		BuildingType.BatteryCharger => BatteryChargerCost,
 		BuildingType.Lamp => LampCost,
+		BuildingType.Tent => TentCost,
 		_ => Free,
 	};
 	// -------------------------------------------------------------------------------------
@@ -328,6 +332,7 @@ public static class BuildingRules
 		BuildingType.Pylon => new Pylon(x, y, facing, owner),
 		BuildingType.BatteryCharger => new BatteryCharger(x, y, facing, owner),
 		BuildingType.Lamp => new Lamp(x, y, facing, owner),
+		BuildingType.Tent => new UnitFactory(type, x, y, facing, owner, UnitType.Scout),
 		BuildingType.FoamTower or BuildingType.Catapult or BuildingType.WaterTower or BuildingType.LaserTower
 			=> new Tower(type, x, y, facing, owner),
 		_ => new Extractor(type, x, y, facing, owner),

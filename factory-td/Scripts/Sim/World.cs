@@ -281,6 +281,8 @@ public sealed class World
 				TickBuilder(unit);
 			else if (unit.Type == UnitType.Farmer)
 				TickFarmer(unit);
+			else if (unit.Type == UnitType.Scout)
+				TickScout(unit);
 			else
 				TickUnit(unit);
 		}
@@ -751,6 +753,14 @@ public sealed class World
 			}
 		}
 		return null;
+	}
+
+	/// <summary>Scouts explore the edge of the fog (see ScoutTests / plan step 7).</summary>
+	private void TickScout(Unit scout)
+	{
+		scout.PrevX = scout.X;
+		scout.PrevY = scout.Y;
+		scout.MoveX = scout.MoveY = 0;
 	}
 
 	private void TickUnit(Unit unit)

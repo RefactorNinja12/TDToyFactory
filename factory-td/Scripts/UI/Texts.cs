@@ -27,6 +27,7 @@ public static class Texts
 		BuildingType.Pylon => "Leksaksmast",
 		BuildingType.BatteryCharger => "Batteriladdare",
 		BuildingType.Lamp => "Leksakslampa",
+		BuildingType.Tent => "Tält",
 		BuildingType.CropField => "Odlingslåda",
 		BuildingType.Farmhouse => "Bondgård",
 		BuildingType.Kitchen => "Kök",
@@ -52,6 +53,7 @@ public static class Texts
 		BuildingType.Pylon => $"Leder ström till allt inom {PowerStats.PylonRadius} rutor och kopplas med sladd till master, laddare och leksakslådan inom {PowerStats.LinkRange} rutor.",
 		BuildingType.BatteryCharger => $"Äter batterier från band (1 batteri = {PowerStats.EnergyPerBattery} ström) och laddar nätet den är kopplad till. Rymmer {PowerStats.ChargerCapacity} ström.",
 		BuildingType.Lamp => $"Nattlampa som lyser upp allt inom {VisionStats.LampRadius} rutor (inte genom väggar). Bygg i mörkret för att se mer av banan; spejare slipper då leta där.",
+		BuildingType.Tent => $"Leksakstält där spejare bor ({UnitStats.ScoutsPerTent} per tält, max {UnitStats.MaxScouts}). Gör en spejare av {Texts.ItemCount(ItemType.Plastic, 3)}. Spejare letar längs kanten av dimman, brett före djupt, och springer från fiender.",
 		BuildingType.Warehouse => $"2x2. Leksakshylla som lagrar allt som körs in på band, i samma förråd som leksakslådan. Varje lager ger plats för {PlayerState.WarehouseCapacity} till av varje sort.",
 		BuildingType.CropField => $"Plastmorötter växer här på {CropField.GrowTicks / World.TicksPerSecond} s och ger {CropField.Yield} morötter. En bonde skördar, sedan växer den igen.",
 		BuildingType.Farmhouse => $"2x2. Leksaksladugård som vevar upp en bonde av 3 klossar. Bönder skördar mogna odlingslådor och bär morötterna till kök, lager eller leksakslådan. Gör bara så många bönder som odlingslådorna behöver (1 per {UnitStats.FieldsPerFarmer}), max {UnitStats.MaxFarmers}.",
@@ -115,6 +117,7 @@ public static class Texts
 		UnitType.RcCar => "Radiobil",
 		UnitType.Builder => "Byggare (uppdragsrobot)",
 		UnitType.Farmer => "Bonde",
+		UnitType.Scout => "Spejare",
 		_ => type.ToString(),
 	};
 

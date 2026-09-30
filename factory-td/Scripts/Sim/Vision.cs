@@ -26,6 +26,7 @@ public static class VisionStats
 		UnitType.PlasticSoldier => 5,
 		UnitType.BrickGolem => 5,
 		UnitType.RcCar => 3,
+		UnitType.Scout => 7,
 		_ => 3, // builders, farmers
 	};
 
