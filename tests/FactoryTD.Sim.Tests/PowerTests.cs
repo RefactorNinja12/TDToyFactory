@@ -153,3 +153,77 @@ public class PowerGridTests
 		Assert.Equal(2, s.World.Power.Cords.Count(c => c.A.Owner == 0 && c.A.Y >= 20 && c.A.Y <= 23 && c.A is Pylon));
 	}
 }
+
+public class PowerSupplyTests
+{
+	[Fact]
+	public void Charger_TakesOnlyBatteries_UpToItsBuffer()
+	{
+		var s = Scenario.Match().Instant().RealPower();
+		var charger = s.Charger(20, 20, energy: PowerStats.ChargerCapacity); // full: keeps the batteries waiting
+		Assert.Equal(0, s.Feed(charger, ItemType.Plastic));
+		Assert.Equal(PowerStats.ChargerBatteryBuffer, s.Feed(charger, ItemType.Battery, 10));
+	}
+
+	[Fact]
+	public void OneBattery_GivesEnergyPerBattery_NeverOverCapacity()
+	{
+		var s = Scenario.Match().Instant().RealPower();
+		var charger = s.Charger(20, 20);
+		s.Feed(charger, ItemType.Battery, 2);
+		s.World.Tick();
+		Assert.Equal(PowerStats.EnergyPerBattery, charger.Energy);
+		s.World.Tick();
+		Assert.Equal(2 * PowerStats.EnergyPerBattery, charger.Energy);
+
+		charger.Energy = PowerStats.ChargerCapacity - PowerStats.EnergyPerBattery + 1;
+		s.Feed(charger, ItemType.Battery, 1);
+		s.World.Ticks(5);
+		Assert.Equal(PowerStats.ChargerCapacity - PowerStats.EnergyPerBattery + 1, charger.Energy); // would overflow: waits
+		Assert.Equal(1, charger.Batteries);
+	}
+
+	[Fact]
+	public void Draw_NeedsACoveredTileAndEnoughEnergy()
+	{
+		var s = Scenario.Match().Instant().RealPower();
+		Assert.False(s.World.TryDrawPower(0, 30, 30, 1)); // no grid there
+		s.Pylon(30, 30);
+		Assert.False(s.World.TryDrawPower(0, 30, 30, 1)); // grid, but nothing charged
+		var charger = s.Charger(33, 30, energy: 100);
+		Assert.True(s.World.TryDrawPower(0, 31, 31, 60));
+		Assert.Equal(40, charger.Energy);
+		Assert.False(s.World.TryDrawPower(0, 31, 31, 60)); // all or nothing
+		Assert.Equal(40, charger.Energy);
+		Assert.False(s.World.TryDrawPower(1, 30, 30, 1)); // not the enemy's grid
+	}
+
+	[Fact]
+	public void Draw_UsesSeveralChargersOfTheNetwork()
+	{
+		var s = Scenario.Match().Instant().RealPower();
+		s.Pylon(30, 30);
+		var a = s.Charger(32, 30, energy: 50);
+		var b = s.Charger(34, 30, energy: 50);
+		Assert.True(s.World.TryDrawPower(0, 30, 30, 80));
+		Assert.Equal(20, a.Energy + b.Energy);
+	}
+
+	[Fact]
+	public void Networks_DontShareEnergy()
+	{
+		var s = Scenario.Match().Instant().RealPower();
+		s.Pylon(30, 20);
+		s.Charger(31, 20, energy: 500);
+		s.Pylon(30, 45); // far away: its own network
+		Assert.True(s.World.TryDrawPower(0, 30, 20, 1));
+		Assert.False(s.World.TryDrawPower(0, 30, 45, 1));
+	}
+
+	[Fact]
+	public void FreePower_AlwaysDraws()
+	{
+		var s = Scenario.Match();
+		Assert.True(s.World.TryDrawPower(0, 30, 45, 1000));
+	}
+}

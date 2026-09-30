@@ -45,7 +45,34 @@ public sealed class BatteryCharger : Building
 	{
 	}
 
+	/// <summary>Batteries waiting to be used up.</summary>
+	public int Batteries { get; private set; }
+
 	public override bool OutputsToward(Direction direction) => false;
 
-	protected override void HashState(ref StateHash hash) => hash.Add(Energy);
+	public override bool CanTake(ItemType item) => item == ItemType.Battery && Batteries < PowerStats.ChargerBatteryBuffer;
+
+	public override bool TryAccept(ItemType item, Direction moving)
+	{
+		if (!CanTake(item))
+			return false;
+		Batteries++;
+		return true;
+	}
+
+	/// <summary>Uses up one battery per tick while the energy fits.</summary>
+	public override void Tick(World world)
+	{
+		if (Batteries > 0 && Energy + PowerStats.EnergyPerBattery <= PowerStats.ChargerCapacity)
+		{
+			Batteries--;
+			Energy += PowerStats.EnergyPerBattery;
+		}
+	}
+
+	protected override void HashState(ref StateHash hash)
+	{
+		hash.Add(Energy);
+		hash.Add(Batteries);
+	}
 }

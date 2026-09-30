@@ -76,6 +76,28 @@ public sealed class World
 		}
 	}
 
+	/// <summary>
+	/// Takes <paramref name="amount"/> energy from the player's network powering this tile, all or nothing.
+	/// Whoever asks first in a tick gets served first (buildings in build order, then units by id).
+	/// </summary>
+	public bool TryDrawPower(int player, int x, int y, int amount)
+	{
+		if (FreePower)
+			return true;
+		var network = Power.NetworkAt(player, x, y);
+		if (network == null || network.Energy < amount)
+			return false;
+		foreach (var charger in network.Chargers)
+		{
+			int take = System.Math.Min(amount, charger.Energy);
+			charger.Energy -= take;
+			amount -= take;
+			if (amount == 0)
+				break;
+		}
+		return true;
+	}
+
 	public FlowField GetFlowField(int player)
 	{
 		RebuildFieldsIfDirty();
