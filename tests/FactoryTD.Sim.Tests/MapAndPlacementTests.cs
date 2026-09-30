@@ -208,3 +208,64 @@ public class StorageTests
 		Assert.True(((Conveyor)s.World.GetBuilding(8, 30)).Items.Count > 0);
 	}
 }
+
+public class ObstacleTests
+{
+	private static readonly MapLayout Map = MapLayout.CreateDefault();
+
+	[Fact]
+	public void EveryToyIsPlaced_AndMirrored()
+	{
+		Assert.Equal(8, Map.Obstacles.Count); // four per room
+		foreach (var o in Map.Obstacles)
+			Assert.Contains(Map.Obstacles, m => m.Kind == o.Kind && m.Y == o.Y && m.X == Map.Width - o.X - o.Width);
+		Assert.Contains(Map.Obstacles, o => o.Kind == ObstacleKind.TeddyBear);
+		Assert.Contains(Map.Obstacles, o => o.Kind == ObstacleKind.RagDoll);
+		Assert.Contains(Map.Obstacles, o => o.Kind == ObstacleKind.AbcBlocks);
+	}
+
+	[Fact]
+	public void ToyTiles_BlockWalkingAndBuilding_ButNotLight()
+	{
+		var s = Scenario.Match(obstacles: true).RealFog();
+		var toy = s.World.Map.Obstacles[0];
+		Assert.Equal(TileType.Obstacle, s.World.Map[toy.X, toy.Y]);
+		Assert.Equal(PlaceError.NotFloor, s.World.CheckPlace(BuildingType.Conveyor, toy.X + 1, toy.Y + 1, 0));
+		Assert.Equal(FlowField.Unreachable, s.World.GetFlowField(0).Distance(toy.X + 1, toy.Y + 1));
+		Assert.Equal(FlowField.Unreachable, s.World.GetFlowField(1).Distance(toy.X + 1, toy.Y + 1));
+
+		s.Rich().Instant();
+		s.Place(BuildingType.Lamp, toy.X - 1, toy.Y + 1); // light on one side of the toy...
+		s.World.Ticks(VisionStats.VisionTicks);
+		Assert.True(s.World.IsVisible(0, toy.X + toy.Width, toy.Y + 1)); // ...reaches the other side
+	}
+
+	[Fact]
+	public void ToysKeepOutOfTheBase_TheDeposits_AndTheDoorLane()
+	{
+		foreach (var o in Map.Obstacles)
+			for (int y = o.Y - 2; y < o.Y + o.Height + 2; y++)
+				for (int x = o.X - 2; x < o.X + o.Width + 2; x++)
+				{
+					Assert.Equal(ResourceType.None, Map.GetResource(x, y));
+					int lx = x < Map.Width / 2 ? x : Map.Width - 1 - x; // as in the left room
+					Assert.False(lx <= 27 && y >= 14 && y <= 46 && x >= o.X && x < o.X + o.Width && y >= o.Y && y < o.Y + o.Height, $"toy in the base at ({x},{y})");
+				}
+		foreach (var o in Map.Obstacles)
+		{
+			Assert.NotEqual(Zone.Hall, Map.GetZone(o.X, o.Y));
+			Assert.False(o.Y <= 35 && o.Y + o.Height - 1 >= 26 && (o.X + o.Width - 1 >= 20 && o.X <= Map.Width - 21), $"toy in the door lane at ({o.X},{o.Y})");
+		}
+	}
+
+	[Fact]
+	public void EveryFloorTile_StaysReachable() => Assert.True(Map.AllFloorConnected());
+
+	[Fact]
+	public void SameSeed_SameToys_OtherSeed_OtherPlaces()
+	{
+		Assert.Equal(Map.Obstacles, MapLayout.CreateDefault().Obstacles);
+		Assert.NotEqual(Map.Obstacles, MapLayout.CreateDefault(seed: 123).Obstacles);
+		Assert.Empty(MapLayout.CreateDefault(obstacles: false).Obstacles);
+	}
+}

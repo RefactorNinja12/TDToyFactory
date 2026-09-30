@@ -5,6 +5,8 @@ public enum TileType : byte
 	Empty,
 	Floor,
 	Wall,
+	/// <summary>A big toy lying on the floor: blocks walking and building like a wall, but not light.</summary>
+	Obstacle,
 }
 
 public enum ResourceType : byte
@@ -30,7 +32,7 @@ public enum Zone : byte
 /// Layout: [room A] - hall - [room B], left to right, both rooms with one door into the hall.
 /// The map is mirrored left/right so both players get identical rooms and deposits.
 /// </summary>
-public sealed class MapLayout
+public sealed partial class MapLayout
 {
 	public const int RoomSize = 60;   // interior tiles per side
 	public const int HallLength = 36;
@@ -73,7 +75,9 @@ public sealed class MapLayout
 	/// <summary>The room a player builds in: player 0 has the left room, player 1 the right.</summary>
 	public static Zone HomeZone(int player) => player == 0 ? Zone.LeftRoom : Zone.RightRoom;
 
-	public static MapLayout CreateDefault()
+	/// <param name="obstacles">Big toys in the rooms (off in most tests, so they can't get in the way).</param>
+	/// <param name="seed">Where the toys lie; the same seed gives the same map everywhere.</param>
+	public static MapLayout CreateDefault(bool obstacles = true, int seed = DefaultSeed)
 	{
 		const int roomOuter = RoomSize + 2; // including walls
 		var map = new MapLayout(roomOuter * 2 + HallLength, roomOuter);
@@ -100,6 +104,8 @@ public sealed class MapLayout
 		map.SetZone(Zone.Hall, roomOuter, hallTop - 1, roomBX - 1, hallBottom + 1);
 
 		map.AddDeposits();
+		if (obstacles)
+			map.AddObstacles(seed);
 		return map;
 	}
 
