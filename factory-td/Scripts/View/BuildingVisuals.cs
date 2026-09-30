@@ -32,6 +32,8 @@ public static class BuildingVisuals
 		[BuildingType.Kitchen] = "res://Assets/Sprites/Buildings/kitchen.png",
 		[BuildingType.GolemWorkshop] = "res://Assets/Sprites/Buildings/factory_golem.png",
 		[BuildingType.CarFactory] = "res://Assets/Sprites/Buildings/factory_car.png",
+		[BuildingType.Pylon] = "res://Assets/Sprites/Power/pylon.png",
+		[BuildingType.BatteryCharger] = "res://Assets/Sprites/Power/charger.png",
 	};
 
 	/// <summary>Build menu tabs, in order.</summary>
@@ -43,6 +45,7 @@ public static class BuildingVisuals
 			BuildingType.BrickExtractor, BuildingType.PlasticExtractor, BuildingType.BatteryExtractor,
 			BuildingType.Assembler, BuildingType.Toolbox,
 		}),
+		("Ström", new[] { BuildingType.BatteryCharger, BuildingType.Pylon }),
 		("Mat", new[] { BuildingType.CropField, BuildingType.Farmhouse, BuildingType.Kitchen, BuildingType.Warehouse }),
 		("Armé", new[] { BuildingType.SoldierFactory, BuildingType.GolemWorkshop, BuildingType.CarFactory }),
 		("Försvar", new[] { BuildingType.FoamTower, BuildingType.Catapult, BuildingType.WaterTower, BuildingType.LaserTower }),

@@ -26,6 +26,7 @@ public partial class Game : Node2D
 	[Export] public bool EnableBot = true;
 
 	private BotPlayer _bot;
+	private PowerView _power;
 
 	// TODO: comes from the network session later.
 	private const int LocalPlayer = 0;
@@ -52,6 +53,10 @@ public partial class Game : Node2D
 		Menu.Bind(World.Players[LocalPlayer]);
 		Info.Bind(World, Builder, LocalPlayer);
 
+		_power = new PowerView { Name = "Power" };
+		AddChild(_power);
+		_power.Bind(World, Builder, LocalPlayer);
+
 		Menu.SelectionChanged += Builder.Select;
 		Builder.SelectionCleared += Menu.ClearSelection;
 		Builder.StatusChanged += Menu.ShowStatus;
@@ -75,6 +80,7 @@ public partial class Game : Node2D
 		Items.Alpha = alpha;
 		Units.Alpha = alpha;
 		Combat.Alpha = alpha;
+		_power.Alpha = alpha;
 	}
 
 	public override void _UnhandledInput(InputEvent @event)

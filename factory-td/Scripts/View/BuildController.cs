@@ -25,6 +25,12 @@ public partial class BuildController : Node2D
 
 	/// <summary>Whether a building is picked for placing (the info panel stays out of the way then).</summary>
 	public bool HasSelection => _selected != null;
+
+	/// <summary>What is being placed, if anything.</summary>
+	public BuildingType? Selected => _selected;
+
+	/// <summary>The tile under the mouse.</summary>
+	public Vector2I HoverCell => MouseCell();
 	private Direction _facing = Direction.East;
 	private Sprite2D _ghost;
 	private string _status = "";
