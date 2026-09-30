@@ -44,4 +44,12 @@ public class SmokeTests
 		var error = Assert.ThrowsAny<Xunit.Sdk.XunitException>(() => s.World.Until(() => false, 0.5, "never"));
 		Assert.Contains("never", error.Message);
 	}
+
+	[Fact]
+	public void Scenario_FreePowerByDefault_RealPowerOptIn()
+	{
+		Assert.False(World.CreateMatch().FreePower);
+		Assert.True(Scenario.Match().World.FreePower);
+		Assert.False(Scenario.Match().RealPower().World.FreePower);
+	}
 }

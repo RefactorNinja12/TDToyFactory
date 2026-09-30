@@ -54,7 +54,9 @@ public sealed class Assembler : Building
 
 	public override void Tick(World world)
 	{
-		if (_output < MaxOutput && _crafter.Tick(Recipe.Inputs, Recipe.Ticks))
+		bool working = _output < MaxOutput && _crafter.CanWork(Recipe.Inputs);
+		NoPower = working && !world.TryDrawPower(this, PowerStats.AssemblerEnergyPerTick);
+		if (working && !NoPower && _crafter.Tick(Recipe.Inputs, Recipe.Ticks))
 			_output++;
 		if (_output > 0 && TryPush(world, Recipe.Output, Facing))
 			_output--;
@@ -113,6 +115,17 @@ public sealed class Crafter
 			}
 		}
 		return false;
+	}
+
+	/// <summary>Whether a tick would make progress: crafting already, or all inputs are here.</summary>
+	public bool CanWork(ItemStack[] inputs)
+	{
+		if (_crafting)
+			return true;
+		foreach (var input in inputs)
+			if (_stock[(int)input.Type] < input.Amount)
+				return false;
+		return true;
 	}
 
 	/// <summary>Advances one tick. Returns true on the tick a craft completes.</summary>

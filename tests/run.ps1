@@ -5,6 +5,7 @@
     tests/run.ps1 Farming         fast tests whose name contains "Farming"
     tests/run.ps1 -Slow           only the slow scenario tests
     tests/run.ps1 -All            everything
+    tests/run.ps1 -Slow -Report   also print what each passing test measured (balance numbers) and its time
 
   Prints compile errors, or each failing test with its message and the line in the test file,
   then one summary line:  PASS 142/142 (fast) in 3.1s   /   FAIL 2/142 ...
@@ -12,7 +13,8 @@
 param(
 	[string]$Name = "",
 	[switch]$Slow,
-	[switch]$All
+	[switch]$All,
+	[switch]$Report
 )
 
 # Continue: dotnet writes test failures to stderr, which Windows PowerShell would otherwise treat as fatal.
@@ -58,23 +60,39 @@ $runs = Select-Xml -Xml $xml -XPath "//t:UnitTestResult" -Namespace $ns | ForEac
 $total = @($runs).Count
 $failed = @($runs | Where-Object { $_.outcome -ne "Passed" })
 
-foreach ($f in $failed) {
-	Write-Output "FAIL $($f.testName)"
+function Short($name) { $name -replace '^FactoryTD\.Sim\.Tests\.', '' }
+
+# Failures with the exact same message almost always share one cause: one block per message.
+# At most $shown blocks in full; the rest only by name.
+$shown = 6
+$groups = @($failed | Group-Object { "$($_.Output.ErrorInfo.Message)".Trim() })
+foreach ($group in $groups | Select-Object -First $shown) {
+	$f = $group.Group[0]
+	$others = if ($group.Count -gt 1) { "  (+$($group.Count - 1) more with the same message)" } else { "" }
+	Write-Output "FAIL $(Short $f.testName)$others"
 	$message = $f.Output.ErrorInfo.Message
 	if ($message) { ($message.Trim() -split "`r?`n") | Select-Object -First 6 | ForEach-Object { Write-Output "     $_" } }
-	# Only the stack frame(s) inside the test project, e.g. "at ...Tests.Foo() in ...\FarmingTests.cs:line 42".
+	# Only frames inside the test project, e.g. "at ...Tests.Foo() in ...\FarmingTests.cs:line 42".
 	$stack = $f.Output.ErrorInfo.StackTrace
 	if ($stack) {
-		($stack -split "`r?`n") | Where-Object { $_ -match "FactoryTD\.Sim\.Tests\\[^\\]+\.cs:line" } | Select-Object -First 2 |
+		($stack -split "`r?`n") | Where-Object { $_ -match "FactoryTD\.Sim\.Tests\\(Support\\)?[^\\]+\.cs:line" } | Select-Object -First 2 |
 			ForEach-Object { Write-Output ("     " + ($_.Trim() -replace ".*\\(\w+\.cs:line \d+)", '@ $1')) }
 	}
+	if ($group.Count -gt 1) {
+		$names = $group.Group | Select-Object -Skip 1 -First 5 | ForEach-Object { (Short $_.testName) -replace '\(.*$', '' }
+		Write-Output "     also: $($names -join ', ')$(if ($group.Count -gt 6) { ', ...' })"
+	}
+}
+if ($groups.Count -gt $shown) {
+	$rest = $groups | Select-Object -Skip $shown | ForEach-Object { $_.Group } | Select-Object -First 10 | ForEach-Object { (Short $_.testName) -replace '\(.*$', '' }
+	Write-Output "also failing (other messages): $($rest -join ', ')$(if (($groups | Select-Object -Skip $shown | Measure-Object -Property Count -Sum).Sum -gt 10) { ', ...' })"
 }
 
-# Slow runs: the scenario tests' own measurements (balance numbers) and how long each took.
-if ($Slow -or $All) {
+# -Report: the scenario tests' own measurements (balance numbers) and how long each took.
+if ($Report) {
 	foreach ($r in $runs | Where-Object { $_.outcome -eq "Passed" -and $_.Output.StdOut }) {
 		$duration = [math]::Round(([TimeSpan]::Parse($r.duration)).TotalSeconds, 1)
-		Write-Output "  $($r.testName -replace '^FactoryTD\.Sim\.Tests\.', '') (${duration}s)"
+		Write-Output "  $(Short $r.testName) (${duration}s)"
 		($r.Output.StdOut.Trim() -split "`r?`n") | ForEach-Object { Write-Output "     $_" }
 	}
 }

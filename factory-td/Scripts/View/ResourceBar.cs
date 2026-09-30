@@ -18,6 +18,7 @@ public partial class ResourceBar : CanvasLayer
 	private static readonly Color Bad = new(1f, 0.45f, 0.4f);
 
 	private Label _food;
+	private Label _power;
 
 	private readonly Dictionary<ItemType, Label> _counts = new();
 	private World _world;
@@ -67,6 +68,8 @@ public partial class ResourceBar : CanvasLayer
 		// Food meter: what comes in, what is eaten, and how long the stock lasts.
 		_food = new Label { TooltipText = "Mat in: matlådor som kommit till förrådet senaste minuten. Äts: vad dina enheter äter per minut nu." };
 		column.AddChild(_food);
+		_power = new Label { TooltipText = "Ström (⚡ = 100 energi, 1 batteri = 60⚡): laddat av batteriladdarna och använt av fabriker, torn, golems och bilar senaste minuten. V visar nätet." };
+		column.AddChild(_power);
 
 		_health = new Label();
 		column.AddChild(_health);
@@ -90,6 +93,9 @@ public partial class ResourceBar : CanvasLayer
 		foreach (var (type, label) in _counts)
 			label.Text = player.GetCount(type).ToString();
 		UpdateFoodMeter(player);
+		var (powerText, powerMood) = PowerMeter.Describe(_world, _localPlayer);
+		_power.Text = powerText;
+		_power.Modulate = powerMood switch { Mood.Bad => Bad, Mood.Warn => Warn, _ => Good };
 
 		var own = _world.GetCore(_localPlayer);
 		var enemy = _world.GetCore(_world.EnemyOf(_localPlayer));

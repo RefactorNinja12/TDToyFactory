@@ -48,8 +48,8 @@ public class BeltTests
 		var b = s.Conveyor(21, 20, Direction.West);
 		s.Feed(a, ItemType.Brick);
 		s.World.Seconds(3);
-		Assert.Equal(1, a.Items.Count);
-		Assert.Equal(0, b.Items.Count);
+		Assert.Single(a.Items);
+		Assert.Empty(b.Items);
 	}
 }
 

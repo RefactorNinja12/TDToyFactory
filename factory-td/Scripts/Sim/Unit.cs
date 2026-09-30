@@ -157,6 +157,10 @@ public sealed class Unit
 	public int Health { get; internal set; }
 	internal int AttackCooldown { get; set; }
 
+	/// <summary>Battery charge (golems and cars only, see PowerStats).</summary>
+	public int Charge { get; internal set; }
+	public UnitPower PowerState { get; internal set; }
+
 	// Workers: the building it is working on or walking to, and the tiles left to walk there.
 	public Building Job { get; internal set; }
 	internal List<(int X, int Y)> Path { get; set; }
@@ -179,5 +183,6 @@ public sealed class Unit
 		X = PrevX = x;
 		Y = PrevY = y;
 		Health = UnitStats.MaxHealth(type);
+		Charge = PowerStats.MaxCharge(type);
 	}
 }

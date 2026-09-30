@@ -21,8 +21,18 @@ public sealed class Scenario
 
 	private Scenario(World world) => World = world;
 
-	/// <summary>A normal 1v1 match: both cores, starting stock, starting builders and farmer.</summary>
-	public static Scenario Match() => new(World.CreateMatch());
+	/// <summary>
+	/// A normal 1v1 match: both cores, starting stock, starting builders and farmer.
+	/// Power is free (everything powered, no unit drain) unless the test calls <see cref="RealPower"/>.
+	/// </summary>
+	public static Scenario Match() => new(World.CreateMatch()) { World = { FreePower = true } };
+
+	/// <summary>Use the real power grid: consumers need a charged network, golems/cars drain off-grid.</summary>
+	public Scenario RealPower()
+	{
+		World.FreePower = false;
+		return this;
+	}
 
 	/// <summary>Removes all units, including the starting builders and farmers.</summary>
 	public Scenario NoWorkers()
@@ -50,6 +60,16 @@ public sealed class Scenario
 			player.Add(ItemType.Battery, amount);
 		}
 		return this;
+	}
+
+	public Pylon Pylon(int x, int y, int owner = 0) => Place<Pylon>(BuildingType.Pylon, x, y, owner: owner);
+
+	/// <summary>A battery charger, optionally already holding some energy.</summary>
+	public BatteryCharger Charger(int x, int y, int energy = 0, int owner = 0)
+	{
+		var charger = Place<BatteryCharger>(BuildingType.BatteryCharger, x, y, owner: owner);
+		charger.Energy = energy;
+		return charger;
 	}
 
 	public Scenario Give(ItemType item, int amount, int owner = 0)

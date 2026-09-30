@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Linq;
 using FactoryTD.Sim;
 using FactoryTD.Sim.Tests.Support;
@@ -16,7 +17,7 @@ public class ScenarioTests
 	[Fact]
 	public void Bot_BeatsAnIdlePlayer()
 	{
-		var s = Scenario.Match();
+		var s = Scenario.Match().RealPower();
 		var bot = new BotPlayer(1);
 		int ticks = s.World.Until(() => s.World.Winner >= 0, 20 * 60, "a winner", bot);
 		_out.WriteLine($"bot won after {ticks / WorldRunner.TicksPerSecond} s");
@@ -27,17 +28,27 @@ public class ScenarioTests
 	[Fact]
 	public void BotVsBot_FifteenMinutes_HealthyEconomy()
 	{
-		var s = Scenario.Match();
+		var s = Scenario.Match().RealPower();
 		var bots = new[] { new BotPlayer(0), new BotPlayer(1) };
 		int[] starvingTicks = new int[2];
 		int[] maxUnits = new int[2];
 		int[] maxCrops = new int[2];
+		// Army factories/assemblers/towers without power, in the first 8 minutes (later a losing side's grid
+		// gets shot to pieces, which is fair).
+		int[] factoryTicks = new int[2], unpoweredTicks = new int[2];
 		for (int t = 0; t < 15 * WorldRunner.TicksPerMinute && s.World.Winner < 0; t++)
 		{
 			s.World.Ticks(1, bots);
 			for (int p = 0; p < 2; p++)
 			{
 				if (s.World.Players[p].Starving) starvingTicks[p]++;
+				foreach (var b in s.World.TickCount < 8 * WorldRunner.TicksPerMinute ? s.World.Buildings : new List<Building>())
+				{
+					if (b.Owner != p || !b.IsBuilt || !(b is Tower or Assembler || (b is UnitFactory f && !UnitStats.IsWorker(f.Produces))))
+						continue;
+					factoryTicks[p]++;
+					if (b.NoPower) unpoweredTicks[p]++;
+				}
 				maxCrops[p] = System.Math.Max(maxCrops[p], s.World.Players[p].GetCount(ItemType.Crop));
 				maxUnits[p] = System.Math.Max(maxUnits[p], s.World.Units.Count(u => u.Owner == p && !UnitStats.IsWorker(u.Type)));
 			}
@@ -45,6 +56,7 @@ public class ScenarioTests
 		for (int p = 0; p < 2; p++)
 			_out.WriteLine($"player {p}: starving {starvingTicks[p] / WorldRunner.TicksPerSecond} s, max stored crops {maxCrops[p]}, " +
 				$"kitchens {s.World.CountBuildings(p, BuildingType.Kitchen)}, max army {maxUnits[p]}, " +
+				$"consumers without power {unpoweredTicks[p] * 100 / System.Math.Max(1, factoryTicks[p])}% (first 8 min), " +
 				$"modules {string.Join(",", bots[p].ModulesBuilt)}");
 		_out.WriteLine($"winner {s.World.Winner} at {s.World.TickCount / WorldRunner.TicksPerSecond} s");
 		for (int p = 0; p < 2; p++)
@@ -52,6 +64,7 @@ public class ScenarioTests
 			Assert.True(starvingTicks[p] <= 60 * WorldRunner.TicksPerSecond, $"player {p} starved {starvingTicks[p] / WorldRunner.TicksPerSecond} s");
 			Assert.True(maxUnits[p] >= 5, $"player {p} never had an army (max {maxUnits[p]})");
 			Assert.Contains("mat", bots[p].ModulesBuilt);
+			Assert.True(unpoweredTicks[p] * 100 <= factoryTicks[p] * 10, $"player {p}: consumers without power {unpoweredTicks[p] * 100 / System.Math.Max(1, factoryTicks[p])}% of the time");
 			Assert.True(maxCrops[p] <= 300, $"player {p} piled up {maxCrops[p]} crops (cap {PlayerState.CoreCapacity}): too few kitchens");
 		}
 	}
@@ -88,5 +101,70 @@ public class ScenarioTests
 		int ticks = s.World.Until(() => target.Health <= 0, 30, $"{unit} dead");
 		_out.WriteLine($"{tower} killed {unit} in {ticks / (double)WorldRunner.TicksPerSecond:0.0} s");
 		Assert.True(ticks <= maxSeconds * WorldRunner.TicksPerSecond, $"took {ticks / (double)WorldRunner.TicksPerSecond:0.0} s");
+	}
+
+	[Theory]
+	[InlineData(UnitType.BrickGolem)]
+	[InlineData(UnitType.RcCar)]
+	public void Balance_FromTheHallsEnd_UnitsFightAtTheEnemyToyboxBeforeTurningBack(UnitType type)
+	{
+		var s = Scenario.Match().NoWorkers().Instant().Rich().RealPower();
+		s.Pylon(92, 30); // the last forward pylon a player can build (the hall ends at x = 97)
+		s.Charger(92, 31, energy: PowerStats.ChargerCapacity);
+		var unit = s.Spawn(type, 92, 30);
+		var core = s.World.GetCore(1);
+		int firstHit = -1, ticks = 0;
+		while (unit.PowerState == UnitPower.Normal && ticks < 5 * WorldRunner.TicksPerMinute)
+		{
+			s.World.Tick();
+			ticks++;
+			if (firstHit < 0 && core.Health < core.MaxHealth)
+				firstHit = ticks;
+		}
+		int fighting = firstHit < 0 ? 0 : (ticks - firstHit) / WorldRunner.TicksPerSecond;
+		_out.WriteLine($"{type}: reached the toybox after {firstHit / WorldRunner.TicksPerSecond} s, fought {fighting} s, " +
+			$"did {core.MaxHealth - core.Health} damage, then {unit.PowerState}");
+		Assert.True(fighting >= 10, $"{type} fought only {fighting} s at the enemy toybox");
+	}
+
+	[Fact]
+	public void Balance_OneBatteryAMinute_RunsTwoFactoriesAndTwoBusyTowers()
+	{
+		var s = Scenario.Match().NoWorkers().Instant().Rich().RealPower();
+		s.Pylon(33, 22);
+		var charger = s.Charger(34, 22);
+		var factories = new[]
+		{
+			s.Place<UnitFactory>(BuildingType.SoldierFactory, 30, 20),
+			s.Place<UnitFactory>(BuildingType.SoldierFactory, 35, 20),
+		};
+		var towers = new[] { s.Place<Tower>(BuildingType.FoamTower, 31, 24), s.Place<Tower>(BuildingType.LaserTower, 35, 24) };
+		// Targets that never die and never fight back: flat enemy golems crawl, so put them back every tick.
+		var targets = new[] { s.Spawn(UnitType.BrickGolem, 33, 26, owner: 1), s.Spawn(UnitType.BrickGolem, 34, 26, owner: 1) };
+		s.Feed(charger, ItemType.Battery, 1);
+		int working = 0, unpowered = 0;
+		for (int t = 0; t < 5 * WorldRunner.TicksPerMinute; t++)
+		{
+			if (t > 0 && t % WorldRunner.TicksPerMinute == 0)
+				s.Feed(charger, ItemType.Battery, 1);
+			foreach (var f in factories)
+				if (!f.Crafter.CanWork(f.Recipe))
+					foreach (var input in f.Recipe) s.Feed(f, input.Type, input.Amount);
+			foreach (var tower in towers)
+				s.Feed(tower, tower.Stats.Ammo, 1);
+			for (int k = 0; k < targets.Length; k++)
+			{
+				targets[k].Charge = 0;
+				targets[k].Health = UnitStats.MaxHealth(UnitType.BrickGolem);
+				targets[k].X = (33 + k) * UnitStats.SubTile + UnitStats.SubTile / 2;
+				targets[k].Y = 26 * UnitStats.SubTile + UnitStats.SubTile / 2;
+			}
+			s.World.Tick();
+			s.World.ClearSoldiers();
+			foreach (var f in factories) { working++; if (f.NoPower) unpowered++; }
+			foreach (var tower in towers) { working++; if (tower.NoPower) unpowered++; }
+		}
+		_out.WriteLine($"without power {unpowered * 100 / working}% of the time, used {s.P0.EnergyUsedLastMinute * 100 / PowerStats.EnergyPerBattery}% of a battery in the last minute, {charger.Energy} left");
+		Assert.True(unpowered * 100 <= working * 5, $"without power {unpowered * 100 / working}% of the time");
 	}
 }
