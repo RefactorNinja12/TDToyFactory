@@ -352,6 +352,22 @@ public sealed class BotPlayer
 			Route(w, plastic, toolbox);
 		}));
 
+		// Power: a charger fed by a battery belt from the battery patch, and pylons over the base so every
+		// factory, assembler and tower is on the grid (the toybox links the west pylons, the rest link
+		// in a chain). Before the towers: a tower without power doesn't shoot.
+		_pending.Add(new Module("ström", _ => true, w =>
+		{
+			var charger = Place(BuildingType.BatteryCharger, 18, 31, Direction.East);
+			Place(BuildingType.Pylon, 8, 26, Direction.East);   // core defence north, links to the toybox
+			Place(BuildingType.Pylon, 8, 36, Direction.East);   // core defence south
+			Place(BuildingType.Pylon, 15, 26, Direction.East);  // golem workshop
+			Place(BuildingType.Pylon, 15, 34, Direction.East);  // soldier factory
+			Place(BuildingType.Pylon, 21, 30, Direction.East);  // front towers, charger
+			var battery = Place(BuildingType.BatteryExtractor, 40, 47, Direction.West);
+			Route(w, battery, charger);
+		},
+		Emergency: _ => SoldiersSeen + GolemsSeen + CarsSeen >= 1));
+
 		// The front: attackers come in through the door (x = 61) and head west for the core, shooting
 		// whatever buildings they meet first. So the towers stand in front of the base, on the door side
 		// of the factories (x = 19), where attackers run into them before they reach anything else, but
@@ -403,6 +419,16 @@ public sealed class BotPlayer
 			},
 			Emergency: _ => GolemsSeen > 0 || CarsSeen > 0));
 
+		// Golems and cars run flat away from the grid: a chain of pylons through the door and along the
+		// hall (every 8 tiles, the cord range) lets them charge on the way to the enemy.
+		_pending.Add(new Module("frammaster", w => Built("soldater") && Built("ström") && w.TickCount >= _armyDelayTicks + 2 * Minute, _ =>
+		{
+			for (int x = 29; x <= 53; x += 8)
+				Place(BuildingType.Pylon, x, 30, Direction.East);
+			for (int x = 60; x <= 92; x += 8)
+				Place(BuildingType.Pylon, x, 30, Direction.East);
+		}));
+
 		// Golems by the brick patch: bricks -> gear assembler -> workshop, bricks -> belt -> workshop,
 		// and plastic routed from the plastic patch into the gear assembler.
 		_pending.Add(new Module("golems", w => Built("soldater") && !FoodCrisis(w) && w.TickCount >= _armyDelayTicks + 3 * Minute, w =>
@@ -436,6 +462,10 @@ public sealed class BotPlayer
 			Place(BuildingType.BatteryExtractor, 42, 46, Direction.East);
 			Place(BuildingType.Conveyor, 43, 47, Direction.East);
 			Place(BuildingType.BatteryExtractor, 42, 47, Direction.East);
+			// Its own little grid: a charger filled straight by the extractor next to it.
+			Place(BuildingType.BatteryExtractor, 42, 48, Direction.East);
+			Place(BuildingType.BatteryCharger, 43, 48, Direction.East);
+			Place(BuildingType.Pylon, 45, 45, Direction.East);
 			var gears = Place(BuildingType.Assembler, 46, 46, Direction.West, ItemType.Gear);
 			var plasticA = Place(BuildingType.PlasticExtractor, 12, 39, Direction.South);
 			var plasticB = Place(BuildingType.PlasticExtractor, 11, 39, Direction.South);

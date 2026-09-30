@@ -6,10 +6,29 @@ using Xunit;
 
 namespace FactoryTD.Sim.Tests;
 
-public class BotTests
+/// <summary>
+/// Bot runs shared by the read-only tests (simulating minutes of bot play is the slow part):
+/// run once per test class, never modified.
+/// </summary>
+public sealed class BotRuns
 {
+	private readonly System.Lazy<(Scenario, BotPlayer)> _p0 = new(() => BotTests.RichBot(0, 120));
+	private readonly System.Lazy<(Scenario, BotPlayer)> _p1 = new(() => BotTests.RichBot(1, 240));
+
+	/// <summary>Player 0 (left room) after 2 minutes.</summary>
+	public (Scenario, BotPlayer) Left => _p0.Value;
+
+	/// <summary>Player 1 (right room, mirrored plan) after 4 minutes.</summary>
+	public (Scenario, BotPlayer) Right => _p1.Value;
+}
+
+public class BotTests : IClassFixture<BotRuns>
+{
+	private readonly BotRuns _runs;
+	public BotTests(BotRuns runs) => _runs = runs;
+
 	/// <summary>A bot with plenty of resources, run until its plan has grown for a while.</summary>
-	private static (Scenario, BotPlayer) RichBot(int player, int seconds)
+	internal static (Scenario, BotPlayer) RichBot(int player, int seconds)
 	{
 		var s = Scenario.Match().RealPower().Rich(5000).Give(ItemType.Food, 500, player);
 		var bot = new BotPlayer(player);
@@ -22,7 +41,7 @@ public class BotTests
 	[Fact]
 	public void BeltsNeverCoverDeposits()
 	{
-		var (s, bot) = RichBot(0, 60);
+		var (s, bot) = _runs.Left;
 		var onDeposit = bot.PlannedSteps
 			.Where(p => IsBelt(p.Type) && s.World.Map.GetResource(p.X, p.Y) != ResourceType.None)
 			.ToList();
@@ -32,7 +51,7 @@ public class BotTests
 	[Fact]
 	public void PlannedTiles_DontOverlap()
 	{
-		var (_, bot) = RichBot(0, 60);
+		var (_, bot) = _runs.Left;
 		var seen = new Dictionary<(int, int), BuildingType>();
 		foreach (var p in bot.PlannedSteps)
 		{
@@ -82,8 +101,32 @@ public class BotTests
 	[Fact]
 	public void OnlyBuildsInsideItsZones()
 	{
-		var (s, _) = RichBot(1, 90);
+		var (s, _) = _runs.Right;
 		foreach (var b in s.World.Buildings.Where(b => b.Owner == 1))
 			Assert.NotEqual(Zone.LeftRoom, s.World.Map.GetZone(b.X, b.Y));
+	}
+
+	private static bool NeedsPower(Building b) =>
+		b is Tower or Assembler || (b is UnitFactory f && !UnitStats.IsWorker(f.Produces));
+
+	[Fact]
+	public void PlansAPowerGrid()
+	{
+		var (_, bot) = _runs.Left;
+		var steps = bot.PlannedSteps.ToList();
+		Assert.Contains(steps, p => p.Type == BuildingType.BatteryCharger);
+		Assert.True(steps.Count(p => p.Type == BuildingType.Pylon) >= 4, "pylons over the base");
+	}
+
+	[Fact]
+	public void AfterFourMinutes_ConsumersAreOnACharged_Grid_ThatReachesIntoTheHall()
+	{
+		var (s, bot) = _runs.Right;
+		var consumers = s.World.Buildings.Where(b => b.Owner == 1 && b.IsBuilt && NeedsPower(b)).ToList();
+		Assert.NotEmpty(consumers);
+		var outside = consumers.Where(b => s.World.NetworkOf(b) == null).Select(b => $"{b.Type}({b.X},{b.Y})").ToList();
+		Assert.True(outside.Count == 0, "outside the grid: " + string.Join(" ", outside));
+		Assert.True(s.World.Power.EnergyStored(1) > 0, "no energy stored");
+		Assert.Contains(bot.PlannedSteps, p => p.Type == BuildingType.Pylon && s.World.Map.GetZone(p.X, p.Y) == Zone.Hall);
 	}
 }

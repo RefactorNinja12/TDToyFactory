@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Linq;
 using FactoryTD.Sim;
 using FactoryTD.Sim.Tests.Support;
@@ -16,7 +17,7 @@ public class ScenarioTests
 	[Fact]
 	public void Bot_BeatsAnIdlePlayer()
 	{
-		var s = Scenario.Match(); // TODO power step 9: .RealPower() once the bot builds a grid
+		var s = Scenario.Match().RealPower();
 		var bot = new BotPlayer(1);
 		int ticks = s.World.Until(() => s.World.Winner >= 0, 20 * 60, "a winner", bot);
 		_out.WriteLine($"bot won after {ticks / WorldRunner.TicksPerSecond} s");
@@ -27,17 +28,27 @@ public class ScenarioTests
 	[Fact]
 	public void BotVsBot_FifteenMinutes_HealthyEconomy()
 	{
-		var s = Scenario.Match(); // TODO power step 9: .RealPower() once the bot builds a grid
+		var s = Scenario.Match().RealPower();
 		var bots = new[] { new BotPlayer(0), new BotPlayer(1) };
 		int[] starvingTicks = new int[2];
 		int[] maxUnits = new int[2];
 		int[] maxCrops = new int[2];
+		// Army factories/assemblers/towers without power, in the first 8 minutes (later a losing side's grid
+		// gets shot to pieces, which is fair).
+		int[] factoryTicks = new int[2], unpoweredTicks = new int[2];
 		for (int t = 0; t < 15 * WorldRunner.TicksPerMinute && s.World.Winner < 0; t++)
 		{
 			s.World.Ticks(1, bots);
 			for (int p = 0; p < 2; p++)
 			{
 				if (s.World.Players[p].Starving) starvingTicks[p]++;
+				foreach (var b in s.World.TickCount < 8 * WorldRunner.TicksPerMinute ? s.World.Buildings : new List<Building>())
+				{
+					if (b.Owner != p || !b.IsBuilt || !(b is Tower or Assembler || (b is UnitFactory f && !UnitStats.IsWorker(f.Produces))))
+						continue;
+					factoryTicks[p]++;
+					if (b.NoPower) unpoweredTicks[p]++;
+				}
 				maxCrops[p] = System.Math.Max(maxCrops[p], s.World.Players[p].GetCount(ItemType.Crop));
 				maxUnits[p] = System.Math.Max(maxUnits[p], s.World.Units.Count(u => u.Owner == p && !UnitStats.IsWorker(u.Type)));
 			}
@@ -45,6 +56,7 @@ public class ScenarioTests
 		for (int p = 0; p < 2; p++)
 			_out.WriteLine($"player {p}: starving {starvingTicks[p] / WorldRunner.TicksPerSecond} s, max stored crops {maxCrops[p]}, " +
 				$"kitchens {s.World.CountBuildings(p, BuildingType.Kitchen)}, max army {maxUnits[p]}, " +
+				$"consumers without power {unpoweredTicks[p] * 100 / System.Math.Max(1, factoryTicks[p])}% (first 8 min), " +
 				$"modules {string.Join(",", bots[p].ModulesBuilt)}");
 		_out.WriteLine($"winner {s.World.Winner} at {s.World.TickCount / WorldRunner.TicksPerSecond} s");
 		for (int p = 0; p < 2; p++)
@@ -52,6 +64,7 @@ public class ScenarioTests
 			Assert.True(starvingTicks[p] <= 60 * WorldRunner.TicksPerSecond, $"player {p} starved {starvingTicks[p] / WorldRunner.TicksPerSecond} s");
 			Assert.True(maxUnits[p] >= 5, $"player {p} never had an army (max {maxUnits[p]})");
 			Assert.Contains("mat", bots[p].ModulesBuilt);
+			Assert.True(unpoweredTicks[p] * 100 <= factoryTicks[p] * 10, $"player {p}: consumers without power {unpoweredTicks[p] * 100 / System.Math.Max(1, factoryTicks[p])}% of the time");
 			Assert.True(maxCrops[p] <= 300, $"player {p} piled up {maxCrops[p]} crops (cap {PlayerState.CoreCapacity}): too few kitchens");
 		}
 	}
