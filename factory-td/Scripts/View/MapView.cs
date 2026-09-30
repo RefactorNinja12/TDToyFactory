@@ -14,6 +14,11 @@ public partial class MapView : TileMapLayer
 	/// whose source ids are ResourceType - 1 (Brick = 0, Plastic = 1, Battery = 2).</summary>
 	[Export] public TileMapLayer ResourceLayer;
 
+	/// <summary>Floor tiles come in variants side by side in the atlas; picked per tile so the floor doesn't repeat.</summary>
+	private const int FloorVariants = 4;
+
+	private static int FloorVariant(int x, int y) => (int)(((uint)(x * 73856093) ^ (uint)(y * 19349663)) % FloorVariants);
+
 	public void Render(MapLayout map)
 	{
 		Clear();
@@ -30,7 +35,7 @@ public partial class MapView : TileMapLayer
 					_ => -1,
 				};
 				if (source >= 0)
-					SetCell(cell, source, Vector2I.Zero);
+					SetCell(cell, source, source == FloorSource ? new Vector2I(FloorVariant(x, y), 0) : Vector2I.Zero);
 
 				var resource = map.GetResource(x, y);
 				if (resource != ResourceType.None)
