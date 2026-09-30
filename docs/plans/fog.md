@@ -58,7 +58,7 @@ Constants in `Sim/Vision.cs` `VisionStats`.
 
 ## Progress
 - [x] 1. Branch `fog`; `World.FullVision` + Scenario `.RealFog()`; existing tests unchanged.
-- [ ] 2. `Sim/Vision.cs`: VisionStats radii, disc/cone masks with precomputed rays, `Vision` per player
+- [x] 2. `Sim/Vision.cs`: VisionStats radii, disc/cone masks with precomputed rays, `Vision` per player
       (Explored/Visible arrays, `IsExplored/IsVisible(p,x,y)`), recompute every VisionTicks in World.Tick.
       Tests: toybox lights both near deposits at start, radius per size, walls block light (unit next to a
       room wall doesn't light the hall/other side; light passes the door), walking unit explores its path,
@@ -104,3 +104,4 @@ Constants in `Sim/Vision.cs` `VisionStats`.
 ## Log
 (one line per finished step: what changed, test count, anything surprising)
 - Step 1: branch fog; World.FullVision (internal) + Scenario.Match() full vision by default, .RealFog() opt-in. Bot matches still full vision until step 10 (World.CreateMatch in DeterminismTests is real). 165/165.
+- Step 2: Sim/Vision.cs (VisionStats; Vision with Explored/Visible bool[] per player; precomputed Bresenham rays per disc radius and 8 cones, walls stop rays, wall tile lit). World.IsExplored/IsVisible (FullVision -> true), recompute every 4 ticks + at CreateMatch. Unit.LightDirection from MoveX/Y (Vision.DirectionIndex, 22.5 deg sectors). Building source tile = X+W/2,Y+H/2. 179/179.

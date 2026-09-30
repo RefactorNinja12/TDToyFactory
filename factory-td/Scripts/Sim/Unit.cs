@@ -161,6 +161,9 @@ public sealed class Unit
 	public int Charge { get; internal set; }
 	public UnitPower PowerState { get; internal set; }
 
+	/// <summary>Direction index (Vision.DirectionIndex) it last moved or aimed in: where car headlights point.</summary>
+	public int LightDirection { get; internal set; } = -1;
+
 	// Workers: the building it is working on or walking to, and the tiles left to walk there.
 	public Building Job { get; internal set; }
 	internal List<(int X, int Y)> Path { get; set; }

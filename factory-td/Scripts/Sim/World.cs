@@ -23,6 +23,7 @@ public sealed class World
 	private readonly FlowField[] _fields;
 	private bool _fieldsDirty = true;
 	private readonly PowerGrid _power;
+	private readonly Vision _vision;
 	private readonly FlowField[] _powerFields; // per player: towards the nearest tile its grid powers
 	private readonly bool[] _powerFieldDirty;    // built only when a unit needs it (most ticks nobody does)
 	private int _nextUnitId;
@@ -57,6 +58,7 @@ public sealed class World
 		_cores = new Core[playerCount];
 		_fields = new FlowField[playerCount];
 		_power = new PowerGrid(map.Width, map.Height, playerCount);
+		_vision = new Vision(map.Width, map.Height, playerCount);
 		_powerFields = new FlowField[playerCount];
 		_powerFieldDirty = new bool[playerCount];
 		for (int i = 0; i < playerCount; i++)
@@ -159,6 +161,7 @@ public sealed class World
 			for (int i = 0; i < UnitStats.StartingFarmers; i++)
 				world.SpawnUnit(UnitType.Farmer, player.Id, x, core.Y + 2 + i);
 		}
+		world._vision.Recompute(world);
 		return world;
 	}
 
@@ -280,6 +283,14 @@ public sealed class World
 		}
 		TickProjectiles();
 		TickUpkeep();
+		foreach (var unit in _units)
+		{
+			int direction = Vision.DirectionIndex(unit.MoveX, unit.MoveY);
+			if (direction >= 0)
+				unit.LightDirection = direction;
+		}
+		if (TickCount % VisionStats.VisionTicks == 0)
+			_vision.Recompute(this);
 		_units.RemoveAll(u => u.Health <= 0);
 
 		for (int p = 0; p < _cores.Length && Winner < 0; p++)
@@ -382,6 +393,12 @@ public sealed class World
 	/// Lets tests of other systems ignore scouting. Always false in real matches.
 	/// </summary>
 	internal bool FullVision { get; set; }
+
+	/// <summary>Whether the player has ever lit this tile (fog of war).</summary>
+	public bool IsExplored(int player, int x, int y) => FullVision || _vision.IsExplored(player, x, y);
+
+	/// <summary>Whether the player's light reaches this tile right now.</summary>
+	public bool IsVisible(int player, int x, int y) => FullVision || _vision.IsVisible(player, x, y);
 
 	public int CountBuildings(int owner, BuildingType type)
 	{
