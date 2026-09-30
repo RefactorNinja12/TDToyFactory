@@ -67,7 +67,7 @@ golem MaxCharge 600 EU drain 10 EU/s; car MaxCharge 600 EU drain 5 EU/s; ReturnP
       power meter. `task build` + one headless screenshot (scratchpad shot.sh).
 - [x] 11. Balance with `task test:report`; slow guards: golem from hall pylon reaches enemy toybox and
       fights ≥ 10 s; 1 battery/min runs 2 factories + 2 towers.
-- [ ] 12. CLAUDE.md design + code structure for power; `task check`; commit.
+- [x] 12. CLAUDE.md design + code structure for power; `task check`; commit.
 
 ## Log
 (one line per finished step: what changed, test count, anything surprising)
@@ -82,3 +82,4 @@ golem MaxCharge 600 EU drain 10 EU/s; car MaxCharge 600 EU drain 5 EU/s; ReturnP
 - Step 9: bot modules "ström" (charger 18,31 fed by battery extractor 40,47 via Route; pylons 8,26 8,36 15,26 15,34 21,30; also emergency), "frammaster" (pylons y=30 x=29..53 and 60..92 step 8, after soldiers + 2 min), car corner own grid (extractor 42,48 -> charger 43,48, pylon 45,45). Bot matches back on RealPower. BotTests share runs via IClassFixture<BotRuns> (Left=p0 120 s, Right=p1 240 s). BotVsBot reports/guards consumers without power <=10% in first 8 min (2%/2%). Still lopsided: p1 wins at 745 s, army 17 vs 90 (was so before power). 161/161.
 - Step 10: sprites Assets/Sprites/Power/{pylon,charger,no_power}.png via pixelart_workbench draw (drawing ids 2163f94e.., 801f2f76.., 0398ab55..). View/PowerView.cs (created in Game._Ready, ZIndex 5): cords (team colour, curls), coverage cyan/red (V or while placing power users), placement preview (PreviewLinks dashed + radius), blinking no-power icon, charge bars. "Ström" menu tab, ResourceBar power line, BuildController.Selected/HoverCell. Screenshot verified (VisualProbe: overlay on, camera 24,32 zoom .5).
 - Step 11: battery 12000 EU, charger cap 40000, towers pay ShotEnergy = ReloadTicks*2 (busy tower = working factory), golem 24000 / car 16000 charge. Slow guards: from pylon at x=92 golem fights 29 s and car 36 s at the enemy toybox (>=10); 1 battery/min runs 2 factories + 2 busy towers with 0% unpowered (<=5%). Car range test now ticks*speed (car stopped at the toybox). World.ClearSoldiers test helper. Bot vs bot: p1 wins 653 s, bot vs idle 345 s. 164/164.
+- Step 12: CLAUDE.md design (Ström) + code structure + plan convention. PLAN DONE.
