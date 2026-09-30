@@ -76,10 +76,13 @@ public static class UnitStats
 		ArmorClass.Plastic, MaxHealth: 20, Speed: 28, Damage: 0, AttackTicks: 20,
 		Range: 0, Sight: 0, ShotTravelTicks: 1,
 		TargetsUnits: false, BuildingDamagePercent: 0,
-		Recipe: new ItemStack[] { new(ItemType.Plastic, 2), new(ItemType.Brick, 1) }, BuildTicks: 200);
+		Recipe: new ItemStack[] { new(ItemType.Brick, 3) }, BuildTicks: 200);
 
 	public const int StartingFarmers = 1;
 	public const int MaxFarmers = 20;
+
+	/// <summary>A farmhouse makes another farmer only while there are more than this many fields per farmer.</summary>
+	public const int FieldsPerFarmer = 3;
 
 	/// <summary>Ticks a farmer spends picking a ripe field.</summary>
 	public const int HarvestTicks = World.TicksPerSecond * 2;

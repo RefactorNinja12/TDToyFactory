@@ -269,6 +269,15 @@ public sealed class World
 				_players[building.Owner].Warehouses++;
 	}
 
+	public int CountBuildings(int owner, BuildingType type)
+	{
+		int count = 0;
+		foreach (var building in _buildings)
+			if (building.Owner == owner && building.Type == type)
+				count++;
+		return count;
+	}
+
 	public int CountUnits(int owner, UnitType type)
 	{
 		int count = 0;
@@ -344,12 +353,24 @@ public sealed class World
 
 	private void GoHarvest(Unit farmer)
 	{
+		// Fetching crops from storage for a kitchen (set up below when nothing is ripe).
+		if (farmer.Job is Core or Warehouse)
+		{
+			FetchStoredCrops(farmer);
+			return;
+		}
+
 		if (farmer.Job is not CropField field || !IsStanding(field) || !field.IsRipe)
 		{
 			farmer.Job = field = ChooseField(farmer);
 			farmer.WorkTimer = 0;
 			if (field == null)
-				return; // nothing ripe: wait
+			{
+				// Nothing ripe: bring stored crops to a kitchen that has room, if there are any.
+				if (_players[farmer.Owner].GetCount(ItemType.Crop) > 0 && KitchenWithRoom(farmer) != null)
+					farmer.Job = NearestStorage(farmer);
+				return;
+			}
 		}
 
 		switch (WalkTo(farmer, field))
@@ -392,6 +413,53 @@ public sealed class World
 				farmer.Job = null;
 				break;
 		}
+	}
+
+	/// <summary>Walks to the toybox/warehouse and picks up stored crops (then DeliverCrops takes over).</summary>
+	private void FetchStoredCrops(Unit farmer)
+	{
+		var player = _players[farmer.Owner];
+		if (!IsStanding(farmer.Job) || player.GetCount(ItemType.Crop) == 0 || KitchenWithRoom(farmer) == null)
+		{
+			farmer.Job = null;
+			return;
+		}
+		switch (WalkTo(farmer, farmer.Job))
+		{
+			case Walk.Arrived:
+				int take = System.Math.Min(CropField.Yield, player.GetCount(ItemType.Crop));
+				player.TrySpend(new[] { new ItemStack(ItemType.Crop, take) });
+				farmer.Carrying = ItemType.Crop;
+				farmer.CarryAmount = take;
+				farmer.Job = null; // DeliverCrops picks the kitchen
+				break;
+			case Walk.Unreachable:
+				farmer.Job = null;
+				break;
+		}
+	}
+
+	private Building KitchenWithRoom(Unit farmer)
+	{
+		foreach (var building in _buildings)
+			if (building is Kitchen && building.Owner == farmer.Owner && building.CanTake(ItemType.Crop))
+				return building;
+		return null;
+	}
+
+	private Building NearestStorage(Unit farmer)
+	{
+		Building best = null;
+		int bestDistance = int.MaxValue;
+		foreach (var building in _buildings)
+		{
+			if (building.Owner != farmer.Owner || !building.IsBuilt || building is not (Core or Warehouse))
+				continue;
+			int distance = TileDistance(farmer, building);
+			if (distance < bestDistance)
+				(best, bestDistance) = (building, distance);
+		}
+		return best;
 	}
 
 	private CropField ChooseField(Unit farmer)

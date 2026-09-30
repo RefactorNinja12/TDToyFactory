@@ -130,7 +130,7 @@ public static class BuildingVisuals
 		BuildingType.Junction => "Låter två band korsa varandra. Allt åker rakt igenom, banden blandas aldrig.",
 		BuildingType.Warehouse => $"2x2. Leksakshylla som lagrar allt som körs in på band, i samma förråd som leksakslådan. Varje lager ger plats för {PlayerState.WarehouseCapacity} till av varje sort.",
 		BuildingType.CropField => $"Plastmorötter växer här på {CropField.GrowTicks / World.TicksPerSecond} s och ger {CropField.Yield} morötter. En bonde skördar, sedan växer den igen.",
-		BuildingType.Farmhouse => $"2x2. Leksaksladugård som vevar upp en bonde av 2 plast + 1 kloss. Bönder skördar mogna odlingslådor och bär morötterna till kök, lager eller leksakslådan. Max {UnitStats.MaxFarmers}.",
+		BuildingType.Farmhouse => $"2x2. Leksaksladugård som vevar upp en bonde av 3 klossar. Bönder skördar mogna odlingslådor och bär morötterna till kök, lager eller leksakslådan. Gör bara så många bönder som odlingslådorna behöver (1 per {UnitStats.FieldsPerFarmer}), max {UnitStats.MaxFarmers}.",
 		BuildingType.Kitchen => $"Leksaksspis som lagar {BuildingVisuals.ItemCount(ItemType.Crop, Kitchen.Recipe[0].Amount)} till en matlåda på {Kitchen.CookTicks / World.TicksPerSecond} s. Tar emot morötter från bönder och band, lämnar ut maten åt pilens håll (R roterar), t.ex. rakt in i ett lager.",
 		BuildingType.Toolbox => "2x2. Skruvar ihop en uppdragsrobot (byggare) av 2 plast + 2 klossar. Byggarna går själva till nya byggplatser och bygger dem. Max 20.",
 		BuildingType.LaserTower => "Ammo: batterier (1 batteri = 5 skott). Räckvidd 7. Dubbel skada mot klossgolems.",

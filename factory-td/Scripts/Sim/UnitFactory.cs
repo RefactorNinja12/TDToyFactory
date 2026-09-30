@@ -26,6 +26,10 @@ public sealed class UnitFactory : Building
 	{
 		if (world.CountUnits(Owner, Produces) >= UnitStats.Cap(Produces))
 			return;
+		// Farmers: only as many as the fields need.
+		if (Produces == UnitType.Farmer &&
+			world.CountUnits(Owner, UnitType.Farmer) * UnitStats.FieldsPerFarmer >= world.CountBuildings(Owner, BuildingType.CropField))
+			return;
 		// No food: no new soldiers. Workers still come, so a starving player can get farming going again.
 		if (world.Players[Owner].Starving && !UnitStats.IsWorker(Produces))
 			return;
