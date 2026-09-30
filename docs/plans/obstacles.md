@@ -24,9 +24,10 @@ step, tick + log + commit per step (same loop as docs/plans/fog.md: tests first,
 - [x] 1. Sim: TileType.Obstacle, ObstacleKind/Obstacle, generation with keep-outs + connectivity; World.CreateMatch(obstacles), Scenario opt-in. Tests.
 - [x] 2. Sprites (pixelart_workbench) into tools/art/source/Obstacles + restyle.
 - [x] 3. View: MapView floor under obstacles, ObstacleView, minimap, fog outline. Screenshot.
-- [ ] 4. Bot + slow matches on the obstacle map; CLAUDE.md; commit, push, PR link.
+- [x] 4. Bot + slow matches on the obstacle map; CLAUDE.md; commit, push, PR link.
 
 ## Log
 - Step 1: TileType.Obstacle, Sim/MapObstacles.cs (MapLayout partial: ObstacleKind, Obstacle, xorshift seed placement, keep-outs, floor ring, AllFloorConnected). CreateDefault(obstacles, seed), World.CreateMatch(obstacles, seed); Scenario.Match(obstacles: false default); bot tests + bot matches use obstacles. Seed 7: Teddy(35,21) RagDoll(38,54) AbcBlocks(3,9),(26,9) + mirrors. 209/209.
 - Step 2: workbench drawings teddy 5091f8f2.. (256x320), blocks d780c616.. (192x256), doll 14e0c1d3.. (192x320) in tools/art/source/Obstacles, restyled into Assets/Sprites/Obstacles.
 - Step 3: MapView draws floor under toys, View/ObstacleView (footprint + 1 tile overhang, ZIndex 1, mirrored toys flipped), minimap colour (Minimap.Toy), no fog outline for toys (looked like a box). Screenshot ok.
+- Step 4: bot tests + slow bot matches already on the obstacle map since step 1, all pass (bot vs bot p0 wins 657 s, bot vs idle 354 s, batteries found 130 s). CLAUDE.md updated. PLAN DONE.
