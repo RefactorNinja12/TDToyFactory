@@ -377,6 +377,12 @@ public sealed class World
 	/// </summary>
 	internal bool FreePower { get; set; }
 
+	/// <summary>
+	/// Test switch: every tile counts as explored and visible for every player (no fog of war).
+	/// Lets tests of other systems ignore scouting. Always false in real matches.
+	/// </summary>
+	internal bool FullVision { get; set; }
+
 	public int CountBuildings(int owner, BuildingType type)
 	{
 		int count = 0;

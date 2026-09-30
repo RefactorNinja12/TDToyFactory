@@ -74,6 +74,7 @@ Kompakt fabrik, max 3 nivåer i produktionskedjan, matcher 15–25 min.
 - Stora ändringar får en plan i `docs/plans/<namn>.md` med checklista + logg (överlever kontextslut):
   läs den först, fortsätt med första obockade steget, bocka av och logga i samma commit.
 - Klar: `docs/plans/power.md` (elnät).
+- Pågående: `docs/plans/fog.md` (dimma, ljus, spejare, minikarta; gren `fog`).
 
 ## Arbetsflöde (tester är feedbackloopen)
 - `Taskfile.yaml` (go-task) samlar kommandona; `task` listar dem.
