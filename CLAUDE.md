@@ -49,6 +49,17 @@ Kompakt fabrik, max 3 nivåer i produktionskedjan, matcher 15–25 min.
   Golems/bilar har batteri: laddas på eget nät, töms utanför; låg (≤35%) → går tillbaka och laddar till
   90%, tomt → kryper i 25% fart. Anfaller inte när de går tillbaka/laddar/är tomma. Bilar når ~2x längre.
   Konstanter i `PowerStats` (Sim/Power.cs). V visar nätet; det syns också när man placerar strömgrejer.
+- Dimma: per spelare och ruta Utforskad (för alltid) och Synlig (belyst nu), räknas om var 4:e tick.
+  Allt man äger lyser i proportion till storlek (1x1 byggnad 3, 2x2 5, leksakslådan 10, byggplats 1,
+  soldat/golem 5, arbetare 3, spejare 7, bil 3 + strålkastarkon 10 rutor framåt). Ljus går inte genom
+  väggar (Bresenham-strålar, väggen själv lyses upp). Leksakslampa: radie 9, ingen ström.
+  Fiendeenheter syns bara i ljus; fiendebyggnader minns som senast sedda (spöken). Bara utvinnare kräver
+  utforskad mark (`PlaceError.Unexplored`); allt annat får byggas i mörker (byggarna lyser upp vägen).
+  Spejare (från tält, 2 per tält, max 6, arbetare) söker brett: kantruta mot dimman med minst
+  gångavstånd hemifrån + halva avståndet från spejaren, sprider sig 6 rutor, flyr 3 s från synliga
+  fiender. Striderna i simuleringen är objektiva; dimman begränsar bara vad spelare/bot vet och var
+  utvinnare får byggas. Minikarta uppe till höger (klicka för att flytta kameran). Konstanter i
+  `VisionStats` (Sim/Vision.cs) och `ScoutStats` (Sim/Scouting.cs).
 
 ## Kodstruktur
 - `Scripts/Sim/` ren C#, deterministisk: `World` (tick 20/s, byggare/bönder/strid/underhåll), byggnader,
@@ -62,6 +73,11 @@ Kompakt fabrik, max 3 nivåer i produktionskedjan, matcher 15–25 min.
   täckning, sladdar; byggs om med flödesfälten). `World.TryDrawPower/HasPower/NetworkOf`, `World.TickCharge`,
   `World.PowerField` (lat flödesfält mot närmaste strömruta). Tester: `World.FreePower` (`Scenario.Match()`
   = gratis ström, `.RealPower()` = riktig); bot-matcher kör alltid riktig ström.
+- `Scripts/Sim/Vision.cs` (VisionStats, Vision: utforskat/synligt/minnen, Lamp), `Scripts/Sim/Scouting.cs`
+  (World partial: spejare, HomeDistance, IsFrontier). `World.IsExplored/IsVisible/CanSee/RememberedBuildings`.
+  Tester: `World.FullVision` (`Scenario.Match()` = ingen dimma, `.RealFog()` = riktig); bot-matcher kör
+  alltid riktig dimma. `Scripts/UI/Fog.cs` (Knowledge, FogLevels, Minimap); `View/FogView.cs` (dimtextur,
+  spöken, strålkastarkoner), `View/MinimapView.cs`. Vyerna har `LocalPlayer` och döljer det som inte syns.
 - `Scripts/View/PowerView.cs` ritar sladdar, täckning, placeringsförhandsvisning, ikon utan ström, laddstaplar.
 - `Scripts/UI/` ren C# utan Godot-typer: texter (`Texts`), bandkurvor (`ConveyorLook`), dragväg
   (`DragPath`), matmätaren (`FoodMeter`), hoverpanelens rader (`InfoRows`). View ritar bara det.
@@ -73,8 +89,7 @@ Kompakt fabrik, max 3 nivåer i produktionskedjan, matcher 15–25 min.
 ## Planer
 - Stora ändringar får en plan i `docs/plans/<namn>.md` med checklista + logg (överlever kontextslut):
   läs den först, fortsätt med första obockade steget, bocka av och logga i samma commit.
-- Klar: `docs/plans/power.md` (elnät).
-- Pågående: `docs/plans/fog.md` (dimma, ljus, spejare, minikarta; gren `fog`).
+- Klara: `docs/plans/power.md` (elnät), `docs/plans/fog.md` (dimma, ljus, spejare, minikarta).
 
 ## Arbetsflöde (tester är feedbackloopen)
 - `Taskfile.yaml` (go-task) samlar kommandona; `task` listar dem.
