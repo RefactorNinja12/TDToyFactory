@@ -25,6 +25,7 @@ public partial class MinimapView : CanvasLayer
 		new(1.00f, 0.40f, 0.35f),   // enemy building
 		new(0.75f, 0.95f, 1.00f),   // own unit
 		new(1.00f, 0.15f, 0.15f),   // enemy unit
+		new(0.62f, 0.44f, 0.30f),   // big toy
 	};
 
 	private World _world;

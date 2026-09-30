@@ -139,6 +139,16 @@ public class FogUiTests
 	}
 
 	[Fact]
+	public void Minimap_ShowsBigToys()
+	{
+		var s = Scenario.Match(obstacles: true);
+		var toy = s.World.Map.Obstacles[0];
+		var map = Cells(s);
+		Minimap.Build(s.World, 0, map);
+		Assert.Equal(Minimap.Toy, Minimap.Kind(map[I(s, toy.X, toy.Y)]));
+	}
+
+	[Fact]
 	public void Minimap_CameraRect_ClampedToTheMap()
 	{
 		Assert.Equal((0f, 10f, 40f, 20f), Minimap.CameraRect(-5, 5, 20, 15, 160, 62, 2));

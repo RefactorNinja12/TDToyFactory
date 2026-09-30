@@ -31,7 +31,7 @@ public partial class MapView : TileMapLayer
 				var cell = new Vector2I(x, y);
 				int source = map[x, y] switch
 				{
-					TileType.Floor => FloorSource,
+					TileType.Floor or TileType.Obstacle => FloorSource, // toys lie on the floor (ObstacleView)
 					TileType.Wall => WallSource,
 					_ => -1,
 				};

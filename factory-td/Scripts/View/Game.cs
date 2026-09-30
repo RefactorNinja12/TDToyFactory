@@ -56,6 +56,9 @@ public partial class Game : Node2D
 		Info.Bind(World, Builder, LocalPlayer);
 
 		Buildings.LocalPlayer = Items.LocalPlayer = Units.LocalPlayer = Combat.LocalPlayer = LocalPlayer;
+		var toys = new ObstacleView { Name = "Obstacles" };
+		AddChild(toys);
+		toys.Bind(World);
 		_fog = new FogView { Name = "Fog" };
 		AddChild(_fog);
 		_fog.Bind(World, LocalPlayer);
