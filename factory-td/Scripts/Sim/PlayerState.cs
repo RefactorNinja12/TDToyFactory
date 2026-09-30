@@ -49,15 +49,48 @@ public sealed class PlayerState
 			return false;
 		_items[(int)type]++;
 		if (type == ItemType.Food)
+		{
 			FoodStoredTotal++;
+			_foodInPerSecond[_second]++;
+			FoodProducedLastMinute++;
+		}
 		return true;
 	}
 
-	/// <summary>All food ever stored / eaten, for the food meter.</summary>
+	/// <summary>All food ever stored / eaten.</summary>
 	public int FoodStoredTotal { get; private set; }
 	public int FoodEatenTotal { get; private set; }
 
-	internal void FoodEaten() => FoodEatenTotal++;
+	// Food meter: food stored and eaten in each of the last 60 seconds (a ring of one-second slots).
+	private readonly int[] _foodInPerSecond = new int[60];
+	private readonly int[] _foodOutPerSecond = new int[60];
+	private int _second;
+
+	/// <summary>Food that reached storage (kitchens, belts, farmers) during the last minute.</summary>
+	public int FoodProducedLastMinute { get; private set; }
+
+	/// <summary>Food actually eaten during the last minute.</summary>
+	public int FoodEatenLastMinute { get; private set; }
+
+	/// <summary>How much food the player's units eat per minute right now; kept up to date by World.</summary>
+	public int FoodUpkeepPerMinute { get; internal set; }
+
+	internal void FoodEaten()
+	{
+		FoodEatenTotal++;
+		_foodOutPerSecond[_second]++;
+		FoodEatenLastMinute++;
+	}
+
+	/// <summary>Moves the food meter on by one second (called by World once a second).</summary>
+	internal void NextSecond()
+	{
+		_second = (_second + 1) % _foodInPerSecond.Length;
+		FoodProducedLastMinute -= _foodInPerSecond[_second];
+		FoodEatenLastMinute -= _foodOutPerSecond[_second];
+		_foodInPerSecond[_second] = 0;
+		_foodOutPerSecond[_second] = 0;
+	}
 
 	/// <summary>Adds without checking room (starting stock, test setup).</summary>
 	public void Add(ItemType type, int amount = 1) => _items[(int)type] += amount;

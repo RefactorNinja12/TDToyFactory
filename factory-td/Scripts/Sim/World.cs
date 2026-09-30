@@ -226,9 +226,19 @@ public sealed class World
 	/// <summary>Units eat: see PlayerState.Hunger. Starving units lose health every StarveTicks.</summary>
 	private void TickUpkeep()
 	{
+		foreach (var player in _players)
+			player.FoodUpkeepPerMinute = 0;
 		foreach (var unit in _units)
-			if (unit.Health > 0)
-				_players[unit.Owner].Hunger += UnitStats.FoodPerMinute(unit.Type);
+		{
+			if (unit.Health <= 0)
+				continue;
+			int perMinute = UnitStats.FoodPerMinute(unit.Type);
+			_players[unit.Owner].Hunger += perMinute;
+			_players[unit.Owner].FoodUpkeepPerMinute += perMinute;
+		}
+		if (TickCount % TicksPerSecond == 0)
+			foreach (var player in _players)
+				player.NextSecond();
 
 		var foodOnly = new ItemStack[] { new(ItemType.Food, 1) };
 		foreach (var player in _players)
