@@ -22,6 +22,7 @@ public enum BuildingType : byte
 	Warehouse,
 	CropField,
 	Farmhouse,
+	Kitchen,
 }
 
 /// <summary>Facing / output direction. Clockwise order, matching Godot's y-down rotation.</summary>
@@ -162,6 +163,7 @@ public static class BuildingRules
 		BuildingType.Warehouse,
 		BuildingType.CropField,
 		BuildingType.Farmhouse,
+		BuildingType.Kitchen,
 		BuildingType.SoldierFactory,
 		BuildingType.GolemWorkshop,
 		BuildingType.CarFactory,
@@ -203,6 +205,7 @@ public static class BuildingRules
 	private static readonly ItemStack[] WarehouseCost = { new(ItemType.Brick, 30), new(ItemType.Plastic, 20) };
 	private static readonly ItemStack[] CropFieldCost = { new(ItemType.Brick, 5), new(ItemType.Plastic, 5) };
 	private static readonly ItemStack[] FarmhouseCost = { new(ItemType.Brick, 25), new(ItemType.Plastic, 15) };
+	private static readonly ItemStack[] KitchenCost = { new(ItemType.Brick, 15), new(ItemType.Plastic, 10) };
 
 	public static ItemStack[] Cost(BuildingType type) => type switch
 	{
@@ -225,6 +228,7 @@ public static class BuildingRules
 		BuildingType.Warehouse => WarehouseCost,
 		BuildingType.CropField => CropFieldCost,
 		BuildingType.Farmhouse => FarmhouseCost,
+		BuildingType.Kitchen => KitchenCost,
 		_ => Free,
 	};
 	// -------------------------------------------------------------------------------------
@@ -236,7 +240,7 @@ public static class BuildingRules
 		BuildingType.Conveyor => 20,
 		BuildingType.Splitter or BuildingType.Sorter or BuildingType.Junction or BuildingType.CropField => 40,
 		BuildingType.BrickExtractor or BuildingType.PlasticExtractor or BuildingType.BatteryExtractor => 60,
-		BuildingType.Assembler => 80,
+		BuildingType.Assembler or BuildingType.Kitchen => 80,
 		BuildingType.SoldierFactory or BuildingType.GolemWorkshop or BuildingType.CarFactory or BuildingType.Toolbox or BuildingType.Warehouse or BuildingType.Farmhouse => 150,
 		BuildingType.FoamTower or BuildingType.WaterTower or BuildingType.LaserTower => 100,
 		BuildingType.Catapult => 120,
@@ -251,7 +255,7 @@ public static class BuildingRules
 		BuildingType.Splitter or BuildingType.Sorter or BuildingType.Junction => 30,
 		BuildingType.CropField => 40,
 		BuildingType.BrickExtractor or BuildingType.PlasticExtractor or BuildingType.BatteryExtractor => 60,
-		BuildingType.Assembler => 100,
+		BuildingType.Assembler or BuildingType.Kitchen => 100,
 		BuildingType.FoamTower or BuildingType.WaterTower or BuildingType.LaserTower => 120,
 		BuildingType.Catapult => 140,
 		BuildingType.Toolbox or BuildingType.Warehouse or BuildingType.Farmhouse => 160,
@@ -291,6 +295,7 @@ public static class BuildingRules
 		BuildingType.Warehouse => new Warehouse(x, y, facing, owner, world.Players[owner]),
 		BuildingType.CropField => new CropField(x, y, facing, owner),
 		BuildingType.Farmhouse => new UnitFactory(type, x, y, facing, owner, UnitType.Farmer),
+		BuildingType.Kitchen => new Kitchen(x, y, facing, owner),
 		BuildingType.FoamTower or BuildingType.Catapult or BuildingType.WaterTower or BuildingType.LaserTower
 			=> new Tower(type, x, y, facing, owner),
 		_ => new Extractor(type, x, y, facing, owner),

@@ -56,10 +56,15 @@ public sealed class Assembler : Building
 }
 
 /// <summary>
-/// Shared input buffer + craft timer for recipe buildings. Buffers up to two crafts' worth of each input.
+/// Shared input buffer + craft timer for recipe buildings. Buffers up to <c>bufferCrafts</c> crafts' worth
+/// of each input (two by default).
 /// </summary>
 public sealed class Crafter
 {
+	private readonly int _bufferCrafts;
+
+	public Crafter(int bufferCrafts = 2) => _bufferCrafts = bufferCrafts;
+
 	private readonly int[] _stock = new int[Items.All.Length + 1];
 	private int _progress;
 	private bool _crafting;
@@ -76,11 +81,20 @@ public sealed class Crafter
 		_crafting = false;
 	}
 
+	/// <summary>Whether TryAccept would take this item right now.</summary>
+	public bool HasRoom(ItemStack[] inputs, ItemType item)
+	{
+		foreach (var input in inputs)
+			if (input.Type == item && _stock[(int)item] < input.Amount * _bufferCrafts)
+				return true;
+		return false;
+	}
+
 	public bool TryAccept(ItemStack[] inputs, ItemType item)
 	{
 		foreach (var input in inputs)
 		{
-			if (input.Type == item && _stock[(int)item] < input.Amount * 2)
+			if (input.Type == item && _stock[(int)item] < input.Amount * _bufferCrafts)
 			{
 				_stock[(int)item]++;
 				return true;

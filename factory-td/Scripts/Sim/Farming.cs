@@ -36,3 +36,41 @@ public sealed class CropField : Building
 		return Yield;
 	}
 }
+
+/// <summary>
+/// A toy stove that cooks crops into food. Takes crops from farmers and from belts on any side, and pushes
+/// the food out of its front (the arrow): onto a belt, or straight into a toybox/warehouse next to it.
+/// </summary>
+public sealed class Kitchen : Building
+{
+	// ---- Balance: cooking ----
+	public static readonly ItemStack[] Recipe = { new(ItemType.Crop, 2) };
+	public const int CookTicks = World.TicksPerSecond * 3;
+	private const int MaxOutput = 5;
+
+	// Room for 5 meals' worth of crops, so a farmer's whole armful (3) usually fits.
+	private readonly Crafter _crafter = new(bufferCrafts: 5);
+	private int _output;
+
+	public Kitchen(int x, int y, Direction facing, int owner)
+		: base(BuildingType.Kitchen, x, y, facing, owner) { }
+
+	public Crafter Crafter => _crafter;
+
+	/// <summary>Cooked food waiting to go out of the front.</summary>
+	public int Finished => _output;
+
+	public override bool OutputsToward(Direction direction) => direction == Facing;
+
+	public override bool TryAccept(ItemType item, Direction moving) => _crafter.TryAccept(Recipe, item);
+
+	public override bool CanTake(ItemType item) => IsBuilt && _crafter.HasRoom(Recipe, item);
+
+	public override void Tick(World world)
+	{
+		if (_output < MaxOutput && _crafter.Tick(Recipe, CookTicks))
+			_output++;
+		if (_output > 0 && TryPush(world, ItemType.Food, Facing))
+			_output--;
+	}
+}

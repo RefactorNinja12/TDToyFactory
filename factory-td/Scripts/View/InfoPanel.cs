@@ -144,6 +144,15 @@ public partial class InfoPanel : CanvasLayer
 				Text("Klicka för att byta sort.", Dim);
 				break;
 
+			case Kitchen kitchen:
+				Item(ItemType.Food, "Gör: 1 matlåda");
+				Text("Behöver per styck:", Dim);
+				Needs(Kitchen.Recipe, kitchen.Crafter);
+				Progress(kitchen.Crafter.Progress, Kitchen.CookTicks);
+				Text($"Klar mat som väntar på att komma ut: {kitchen.Finished}", kitchen.Finished >= 5 ? Missing : Dim);
+				Text("Bönder lämnar morötter här. Maten går ut åt pilens håll.", Dim);
+				break;
+
 			case CropField field:
 				if (field.IsRipe)
 					Item(ItemType.Crop, $"Mogen! {BuildingVisuals.ItemCount(ItemType.Crop, CropField.Yield)} väntar på en bonde", Good);
