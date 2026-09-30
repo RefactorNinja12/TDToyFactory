@@ -49,7 +49,7 @@ golem MaxCharge 600 EU drain 10 EU/s; car MaxCharge 600 EU drain 5 EU/s; ReturnP
       rebuilt when dirty. Tests: link/no link, split on removal, radius edge, enemies don't link, core root.
 - [x] 4. Supply: charger takes batteries → EU; per-network pool; stable-order serving. Tests: 1 battery =
       300 EU, no charger = nothing powered, shortage cuts same consumers, networks don't share.
-- [ ] 5. Consumers: `Building.Powered`; factories/assemblers progress only when powered; towers need EU
+- [x] 5. Consumers: `Building.Powered`; factories/assemblers progress only when powered; towers need EU
       per shot. Tests: outside grid never produces, tower with ammo but no power silent, resume after
       shortage, starvation and power independent.
 - [ ] 6. Unit charge: UnitDef MaxCharge/Drain/ChargeRate, states, power flow field (multi-source
@@ -58,7 +58,7 @@ golem MaxCharge 600 EU drain 10 EU/s; car MaxCharge 600 EU drain 5 EU/s; ReturnP
 - [ ] 7. Determinism: checksum includes charger EU, unit charge + state. New real-power determinism test.
 - [ ] 8. UI logic (`Scripts/UI`): `PowerMeter` (like FoodMeter), InfoRows for charger/pylon/consumers,
       `PowerOverlay` (circles, cord pairs + sag points). Tests in UiTests.
-- [ ] 9. Bot: "ström" module (charger on battery belt, pylons over base, forward pylon chain in hall
+- [ ] 9. Bot (FIRST: ScenarioTests bot matches back to .RealPower(), see TODO): "ström" module (charger on battery belt, pylons over base, forward pylon chain in hall
       before golems/cars), rebuild. Tests: plan has charger+pylons, factories powered after N min;
       slow: bot vs idle < 12 min, bot vs bot reports unpowered ticks.
 - [ ] 10. Assets + view: sprites via `pixelart_workbench` (pylon: stacked toy rings with battery top +
@@ -75,3 +75,4 @@ golem MaxCharge 600 EU drain 10 EU/s; car MaxCharge 600 EU drain 5 EU/s; ReturnP
 - Step 2: Pylon/BatteryCharger in Sim/Power.cs (+PowerStats), BuildingRules cost/hp/buildtime/Create/Buildable, Texts names. View has NO textures/menu for them yet (BuildingVisuals.TexturePaths would throw if one is placed in-game) -> step 10. Scenario.Pylon/Charger(energy:). 121/121.
 - Step 3: Sim/PowerGrid.cs (PowerNetwork: Owner/Nodes/Chargers/Energy; PowerGrid: NetworkAt(player,x,y), Networks, Cords = Kruskal spanning tree). World.Power rebuilds with the flow fields (_fieldsDirty). Chargers link but cover nothing. 130/130.
 - Step 4: BatteryCharger takes batteries (buffer 2), converts 1/tick while it fits. World.TryDrawPower(player,x,y,amount): all-or-nothing from the network at that tile, FreePower -> true. Order = tick order (buildings list, then units), no separate serving pass. 136/136.
+- Step 5: Building.NoPower; Crafter.CanWork; army UnitFactory (not workers) draws FactoryEnergyPerTick=2 while working, Assembler 1, Tower HasPower check + TowerShotEnergy=30 per shot. World.TryDrawPower(Building)/HasPower/NetworkOf. Rescaled: battery 6000 EU, charger cap 20000. Bot slow matches temporarily FreePower (TODO step 9). 143/143.

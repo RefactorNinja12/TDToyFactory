@@ -227,3 +227,116 @@ public class PowerSupplyTests
 		Assert.True(s.World.TryDrawPower(0, 30, 45, 1000));
 	}
 }
+
+public class PowerConsumerTests
+{
+	private static void FeedRecipe(Scenario s, UnitFactory factory)
+	{
+		foreach (var input in factory.Recipe)
+			s.Feed(factory, input.Type, input.Amount);
+	}
+
+	[Fact]
+	public void Factory_OutsideTheGrid_NeverProduces()
+	{
+		var s = Scenario.Match().NoWorkers().Instant().Rich().RealPower();
+		var factory = s.Place<UnitFactory>(BuildingType.SoldierFactory, 30, 20);
+		FeedRecipe(s, factory);
+		s.World.Ticks(UnitStats.BuildTicks(UnitType.PlasticSoldier) * 2);
+		Assert.Empty(s.World.Units);
+		Assert.True(factory.NoPower);
+	}
+
+	[Fact]
+	public void Factory_OnAChargedGrid_ProducesAndUsesEnergy()
+	{
+		var s = Scenario.Match().NoWorkers().Instant().Rich().RealPower();
+		var factory = s.Place<UnitFactory>(BuildingType.SoldierFactory, 30, 20);
+		s.Pylon(33, 20);
+		var charger = s.Charger(34, 20, energy: 10000);
+		FeedRecipe(s, factory);
+		int ticks = UnitStats.BuildTicks(UnitType.PlasticSoldier);
+		s.World.Ticks(ticks + 1);
+		Assert.Single(s.World.Units);
+		Assert.False(factory.NoPower);
+		Assert.Equal(10000 - ticks * PowerStats.FactoryEnergyPerTick, charger.Energy);
+	}
+
+	[Fact]
+	public void IdleFactory_UsesNothing()
+	{
+		var s = Scenario.Match().NoWorkers().Instant().Rich().RealPower();
+		var factory = s.Place<UnitFactory>(BuildingType.SoldierFactory, 30, 20);
+		s.Pylon(33, 20);
+		var charger = s.Charger(34, 20, energy: 1000);
+		s.World.Seconds(5);
+		Assert.Equal(1000, charger.Energy);
+		Assert.False(factory.NoPower);
+	}
+
+	[Fact]
+	public void WorkerFactories_DontNeedPower()
+	{
+		var s = Scenario.Match().NoWorkers().Instant().Rich().RealPower();
+		var toolbox = s.Place<UnitFactory>(BuildingType.Toolbox, 30, 20);
+		FeedRecipe(s, toolbox);
+		s.World.Ticks(UnitStats.BuildTicks(UnitType.Builder) + 1);
+		Assert.Single(s.World.Units);
+	}
+
+	[Fact]
+	public void Assembler_NeedsPower()
+	{
+		var s = Scenario.Match().NoWorkers().Instant().RealPower();
+		var assembler = s.Place<Assembler>(BuildingType.Assembler, 30, 20);
+		s.Feed(assembler, ItemType.Brick, 2);
+		s.Feed(assembler, ItemType.Plastic, 1);
+		s.World.Ticks(assembler.Recipe.Ticks + 2);
+		Assert.Equal(0, assembler.Finished);
+		Assert.True(assembler.NoPower);
+
+		s.Pylon(31, 20);
+		s.Charger(32, 20, energy: 1000);
+		s.World.Ticks(assembler.Recipe.Ticks + 2);
+		Assert.Equal(1, assembler.Finished);
+	}
+
+	[Fact]
+	public void Tower_WithAmmoButNoPower_StaysSilent_ThenFiresWhenPowered()
+	{
+		var s = Scenario.Match().NoWorkers().Instant().Rich().RealPower();
+		var tower = s.Place<Tower>(BuildingType.FoamTower, 30, 20);
+		s.Feed(tower, ItemType.Plastic, 2);
+		s.Spawn(UnitType.BrickGolem, 33, 20, owner: 1);
+		s.World.Ticks(10);
+		Assert.Empty(s.World.Projectiles);
+		Assert.True(tower.NoPower);
+
+		s.Pylon(30, 22);
+		var charger = s.Charger(31, 22, energy: 1000);
+		s.World.Ticks(2);
+		Assert.NotEmpty(s.World.Projectiles);
+		Assert.False(tower.NoPower);
+		Assert.Equal(1000 - PowerStats.TowerShotEnergy, charger.Energy);
+	}
+
+	[Fact]
+	public void Shortage_PausesProgress_ResumesWhenRecharged()
+	{
+		var s = Scenario.Match().NoWorkers().Instant().Rich().RealPower();
+		var factory = s.Place<UnitFactory>(BuildingType.SoldierFactory, 30, 20);
+		s.Pylon(33, 20);
+		int ticks = UnitStats.BuildTicks(UnitType.PlasticSoldier);
+		var charger = s.Charger(34, 20, energy: ticks / 2 * PowerStats.FactoryEnergyPerTick);
+		FeedRecipe(s, factory);
+		s.World.Ticks(ticks * 2);
+		Assert.Empty(s.World.Units);
+		Assert.True(factory.NoPower);
+		int progress = factory.Crafter.Progress;
+		Assert.InRange(progress, ticks / 2 - 1, ticks / 2 + 1);
+
+		s.Feed(charger, ItemType.Battery, 1);
+		s.World.Ticks(ticks - progress + 2);
+		Assert.Single(s.World.Units);
+	}
+}

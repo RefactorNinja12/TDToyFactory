@@ -7,9 +7,16 @@ namespace FactoryTD.Sim;
 public static class PowerStats
 {
 	/// <summary>Energy one battery gives when a charger uses it up.</summary>
-	public const int EnergyPerBattery = 300;
+	public const int EnergyPerBattery = 6000;
 	/// <summary>Most energy one charger can hold.</summary>
-	public const int ChargerCapacity = 1000;
+	public const int ChargerCapacity = 20000;
+
+	/// <summary>Army factories (not worker factories) while they craft.</summary>
+	public const int FactoryEnergyPerTick = 2;
+	/// <summary>Assemblers while they craft.</summary>
+	public const int AssemblerEnergyPerTick = 1;
+	/// <summary>Towers pay this for every shot.</summary>
+	public const int TowerShotEnergy = 30;
 	/// <summary>Batteries a charger keeps waiting in its input.</summary>
 	public const int ChargerBatteryBuffer = 2;
 

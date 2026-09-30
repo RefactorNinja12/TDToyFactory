@@ -80,11 +80,37 @@ public sealed class World
 	/// Takes <paramref name="amount"/> energy from the player's network powering this tile, all or nothing.
 	/// Whoever asks first in a tick gets served first (buildings in build order, then units by id).
 	/// </summary>
-	public bool TryDrawPower(int player, int x, int y, int amount)
+	public bool TryDrawPower(int player, int x, int y, int amount) =>
+		FreePower || Draw(Power.NetworkAt(player, x, y), amount);
+
+	/// <summary>Like the tile version, from the owner's network that powers any tile of the building.</summary>
+	public bool TryDrawPower(Building building, int amount) => FreePower || Draw(NetworkOf(building), amount);
+
+	/// <summary>Whether the building's network has at least this much energy right now.</summary>
+	public bool HasPower(Building building, int amount)
 	{
 		if (FreePower)
 			return true;
-		var network = Power.NetworkAt(player, x, y);
+		var network = NetworkOf(building);
+		return network != null && network.Energy >= amount;
+	}
+
+	/// <summary>The owner's network powering the building (the first of its tiles that is covered), or null.</summary>
+	public PowerNetwork NetworkOf(Building building)
+	{
+		var grid = Power;
+		for (int y = building.Y; y < building.Y + building.Height; y++)
+			for (int x = building.X; x < building.X + building.Width; x++)
+			{
+				var network = grid.NetworkAt(building.Owner, x, y);
+				if (network != null)
+					return network;
+			}
+		return null;
+	}
+
+	private static bool Draw(PowerNetwork network, int amount)
+	{
 		if (network == null || network.Energy < amount)
 			return false;
 		foreach (var charger in network.Chargers)

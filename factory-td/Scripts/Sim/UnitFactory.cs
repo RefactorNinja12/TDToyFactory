@@ -35,6 +35,14 @@ public sealed class UnitFactory : Building
 		// No food: no new soldiers. Workers still come, so a starving player can get farming going again.
 		if (world.Players[Owner].Starving && !UnitStats.IsWorker(Produces))
 			return;
+		// Army factories need power while they work; worker factories don't (someone has to build the grid).
+		if (!UnitStats.IsWorker(Produces))
+		{
+			bool working = _crafter.CanWork(Recipe);
+			NoPower = working && !world.TryDrawPower(this, PowerStats.FactoryEnergyPerTick);
+			if (!working || NoPower)
+				return;
+		}
 		if (_crafter.Tick(Recipe, UnitStats.BuildTicks(Produces)))
 			world.SpawnUnit(Produces, Owner, X + Width / 2, Y + Height / 2);
 	}

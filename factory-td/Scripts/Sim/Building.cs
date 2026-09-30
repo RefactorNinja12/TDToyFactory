@@ -105,6 +105,9 @@ public abstract class Building
 	internal void CompleteConstruction() => BuildWork = BuildTime;
 
 	/// <summary>Whether a worker could drop this item off here right now (storage and kitchens).</summary>
+	/// <summary>True while it wants power and its grid can't give it any (shown with a no-power icon).</summary>
+	public bool NoPower { get; internal set; }
+
 	public virtual bool CanTake(ItemType item) => false;
 
 	/// <summary>Hands an item to this building if it is finished and takes it. What belts and machines call.</summary>
