@@ -91,9 +91,9 @@ public static class UnitStats
 	/// <summary>Food each unit eats per minute.</summary>
 	public static int FoodPerMinute(UnitType type) => type switch
 	{
-		UnitType.PlasticSoldier => 2,
-		UnitType.BrickGolem => 4,
-		UnitType.RcCar => 3,
+		UnitType.PlasticSoldier => 1,
+		UnitType.BrickGolem => 2,
+		UnitType.RcCar => 2,
 		_ => 1, // builders, farmers
 	};
 

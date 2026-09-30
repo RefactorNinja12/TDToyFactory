@@ -7,8 +7,9 @@ namespace FactoryTD.Sim;
 public sealed class CropField : Building
 {
 	// ---- Balance: crops ----
-	public const int GrowTicks = World.TicksPerSecond * 30;
-	public const int Yield = 3;
+	// One field gives ~5-6 food/min; an army of 20 soldiers plus workers needs ~5-6 fields and 2 kitchens.
+	public const int GrowTicks = World.TicksPerSecond * 20;
+	public const int Yield = 4;
 
 	public CropField(int x, int y, Direction facing, int owner)
 		: base(BuildingType.CropField, x, y, facing, owner) { }

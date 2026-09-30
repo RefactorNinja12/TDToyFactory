@@ -145,11 +145,15 @@ public sealed class BotPlayer
 
 	private long _lastFarmTick = -Minute;
 
-	/// <summary>Eating more than the kitchens bring in, and it's been a while since the last new fields.</summary>
+	/// <summary>
+	/// Eating more than the kitchens bring in, it's been a while since the last new fields, and the
+	/// shortage is really crops (if crops are piling up in storage, the kitchens are the bottleneck instead).
+	/// </summary>
 	private bool NeedsMoreFood(World world)
 	{
 		var player = world.Players[_player];
 		return player.FoodUpkeepPerMinute > player.FoodProducedLastMinute &&
+			player.GetCount(ItemType.Crop) < 20 &&
 			world.TickCount >= _lastFarmTick + Minute * 3 / 4;
 	}
 
@@ -319,6 +323,13 @@ public sealed class BotPlayer
 				},
 				Emergency: w => Built("mat") && FoodCrisis(w) && w.TickCount >= _lastFarmTick + Minute / 2));
 		}
+
+		// Crops piling up in storage means the kitchens can't keep up: cook more (north side of the toybox).
+		bool CropsPilingUp(World w) => Built("mat") && w.Players[_player].GetCount(ItemType.Crop) >= 40;
+		_pending.Add(new Module("fler kök 1", CropsPilingUp, _ => Place(BuildingType.Kitchen, 6, 29, Direction.South), Emergency: CropsPilingUp));
+		_pending.Add(new Module("fler kök 2", w => Built("fler kök 1") && CropsPilingUp(w),
+			_ => Place(BuildingType.Kitchen, 7, 29, Direction.South),
+			Emergency: w => Built("fler kök 1") && CropsPilingUp(w) && w.TickCount >= _lastFarmTick + Minute / 2));
 
 		// Warehouses when the stock is nearly full (they add room even without a belt of their own).
 		_pending.Add(new Module("lager 1", StorageNearlyFull, _ => Place(BuildingType.Warehouse, 2, 27, Direction.East)));
