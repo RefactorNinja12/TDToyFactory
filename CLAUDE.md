@@ -41,6 +41,14 @@ Kompakt fabrik, max 3 nivåer i produktionskedjan, matcher 15–25 min.
   Slut på mat = svält: armefabriker står still (arbetarfabriker går), enheter tappar hälsa.
   Matmätaren (resursraden) visar in/min, äts/min, netto och hur länge maten räcker.
 - Arbetare (byggare, bönder) slåss inte och räknas inte som armé; bondgården gör max 1 bonde per 3 odlingslådor.
+- Ström: batteriladdare äter batterier från band (1 batteri = 12000 energi) och laddar sitt nät.
+  Leksaksmaster ger ström inom 5 rutor och kopplas med sladd till master/laddare/leksakslådan inom 8
+  rutor (leksakslådan är en liten mast, radie 4). Ett nät = sammankopplade noder med gemensam energi;
+  spelarnas nät kopplas aldrig ihop. Armefabriker och monteringsmaskiner drar ström medan de jobbar,
+  torn per skott (2/tick av omladdningen); arbetarfabriker och resten drar inget. Utan ström: pausar.
+  Golems/bilar har batteri: laddas på eget nät, töms utanför; låg (≤35%) → går tillbaka och laddar till
+  90%, tomt → kryper i 25% fart. Anfaller inte när de går tillbaka/laddar/är tomma. Bilar når ~2x längre.
+  Konstanter i `PowerStats` (Sim/Power.cs). V visar nätet; det syns också när man placerar strömgrejer.
 
 ## Kodstruktur
 - `Scripts/Sim/` ren C#, deterministisk: `World` (tick 20/s, byggare/bönder/strid/underhåll), byggnader,
@@ -50,6 +58,11 @@ Kompakt fabrik, max 3 nivåer i produktionskedjan, matcher 15–25 min.
   i vänster rum (speglas), band dras automatiskt (BFS, korsningar vid behov). Bygger upp det som
   förstörs, lägger till laser/vattenpistol när den ser golems/radiobilar, odlar mer när den äter mer
   än den producerar. Svårighet: `armyDelayTicks` (0 = normal, högre = lättare).
+- `Scripts/Sim/Power.cs` (PowerStats, Pylon, BatteryCharger, UnitPower), `Scripts/Sim/PowerGrid.cs` (nät,
+  täckning, sladdar; byggs om med flödesfälten). `World.TryDrawPower/HasPower/NetworkOf`, `World.TickCharge`,
+  `World.PowerField` (lat flödesfält mot närmaste strömruta). Tester: `World.FreePower` (`Scenario.Match()`
+  = gratis ström, `.RealPower()` = riktig); bot-matcher kör alltid riktig ström.
+- `Scripts/View/PowerView.cs` ritar sladdar, täckning, placeringsförhandsvisning, ikon utan ström, laddstaplar.
 - `Scripts/UI/` ren C# utan Godot-typer: texter (`Texts`), bandkurvor (`ConveyorLook`), dragväg
   (`DragPath`), matmätaren (`FoodMeter`), hoverpanelens rader (`InfoRows`). View ritar bara det.
 - `tests/FactoryTD.Sim.Tests/` xUnit, kompilerar `Scripts/Sim` + `Scripts/UI` direkt (internals syns).
@@ -57,8 +70,10 @@ Kompakt fabrik, max 3 nivåer i produktionskedjan, matcher 15–25 min.
   `Spawn`, `Feed`), `WorldRunner` kör tid (`Seconds`, `Until(villkor, maxSek, "vad")`).
   Långsamma helmatcher/balans har `[Trait("Speed","Slow")]` och skriver sina mätvärden.
 
-## Pågående plan
-- `docs/plans/power.md` (elnät, gren `power`): läs den först, fortsätt med första obockade steget.
+## Planer
+- Stora ändringar får en plan i `docs/plans/<namn>.md` med checklista + logg (överlever kontextslut):
+  läs den först, fortsätt med första obockade steget, bocka av och logga i samma commit.
+- Klar: `docs/plans/power.md` (elnät).
 
 ## Arbetsflöde (tester är feedbackloopen)
 - `Taskfile.yaml` (go-task) samlar kommandona; `task` listar dem.
