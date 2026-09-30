@@ -87,7 +87,7 @@ Constants in `Sim/Vision.cs` `VisionStats`.
       tile), `FogLevels` (per tile 0/1/2 for the fog texture), `Knowledge` helpers (which enemy units /
       buildings / ghosts to draw), InfoRows: nothing for unseen enemies, placement error text.
       Tests in UiTests.
-- [ ] 10. Bot: tent + scout module early; modules with extractors are Ready only when their deposit tiles
+- [x] 10. Bot: tent + scout module early; modules with extractors are Ready only when their deposit tiles
       are explored (battery patch etc.); Observe uses visibility. Tests: bot explores the battery patch and
       builds a battery extractor within N min; BotTests fixture with real fog; slow bot vs idle still wins,
       bot vs bot healthy (starvation, power, army) — record times in the log.
@@ -112,3 +112,4 @@ Constants in `Sim/Vision.cs` `VisionStats`.
 - Step 7: Sim/Scouting.cs (World partial): target = frontier tile minimising homeDistance + manhattan(scout)/2 (pure nearest-home ping-ponged across the base: 717 tiles/60 s -> 2825/180 s), spread 6 tiles, retarget on vision ticks, flee 3 s from visible enemy units (5 directions tried), home when nothing left. World.HomeDistance (BFS over explored floor, cached per vision tick), IsFrontier, ExploredCount, ExploreAll (test). One scout finds the battery patch in 139 s (guard 180). 194/194.
 - Step 8: Vision.HashInto (explored/visible as 64-bit words, remembered list), unit hash + LightDirection, scout target/flee. Checksum_SeesSmallChanges covers explored; RealFog_ScoutsFleeingAndExploring_IsDeterministic (90 s). 195/195.
 - Step 9: UI/Fog.cs: Knowledge.ShowBuilding/Ghosts, FogLevels (0/1/2), Minimap (kind in low bits + LitBit; terrain, deposits, remembered enemy buildings, own buildings, visible units; CameraRect, ToTiles). Hover filter for unseen enemies is done in the view (InfoPanel.Hovered) in step 11. 200/200.
+- Step 10: bot module "spejare" (Tent at 14,36 fed directly by plastic extractor 13,36); extractors on unexplored ground are skipped by MaintainPlan until explored (scouts + builders laying the battery belt light it); Observe counts only CanSee enemies. BotTests + bot matches use RealFog. Bot has a scout by 2 min and a battery extractor by 4 min. Bot vs bot: p0 wins 732 s (army 68 vs 15, still lopsided, now the other way); bot vs idle 354 s. 201/201.

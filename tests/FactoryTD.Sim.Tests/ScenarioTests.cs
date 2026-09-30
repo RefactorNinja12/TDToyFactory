@@ -17,7 +17,7 @@ public class ScenarioTests
 	[Fact]
 	public void Bot_BeatsAnIdlePlayer()
 	{
-		var s = Scenario.Match().RealPower();
+		var s = Scenario.Match().RealPower().RealFog();
 		var bot = new BotPlayer(1);
 		int ticks = s.World.Until(() => s.World.Winner >= 0, 20 * 60, "a winner", bot);
 		_out.WriteLine($"bot won after {ticks / WorldRunner.TicksPerSecond} s");
@@ -28,7 +28,7 @@ public class ScenarioTests
 	[Fact]
 	public void BotVsBot_FifteenMinutes_HealthyEconomy()
 	{
-		var s = Scenario.Match().RealPower();
+		var s = Scenario.Match().RealPower().RealFog();
 		var bots = new[] { new BotPlayer(0), new BotPlayer(1) };
 		int[] starvingTicks = new int[2];
 		int[] maxUnits = new int[2];
