@@ -8,14 +8,19 @@ namespace FactoryTD.View;
 /// Fog of war over the map: a texture with one texel per tile (black where never seen, darkened where only
 /// explored, clear where lit), drawn over the map by Shaders/fog.gdshader as small fog pixels with a
 /// stepped gradient from light to dark.
-/// Also draws remembered enemy buildings as faded ghosts (under the fog) and car headlight cones.
+/// Walls are marked in the texture's red channel so the shader can draw their outlines through the fog.
+/// Also draws remembered enemy buildings as faded ghosts (under the fog), and the glow of light sources
+/// (warm lanterns and units, cold electric pylons) plus car headlight cones, added on top of the map.
 /// </summary>
 public partial class FogView : Node2D
 {
 	private const float T = BuildingVisuals.TileSize;
 	private static readonly Color Ghost = new(1f, 1f, 1f, 0.55f);
-	private static readonly Color ConeNear = new(1f, 0.93f, 0.6f, 0.30f);
-	private static readonly Color ConeFar = new(1f, 0.93f, 0.6f, 0f);
+	// Each light is drawn twice: a tint (normal blending, so blue really looks blue on the warm floor) and
+	// a brightening (additive). Colours: [tint, add].
+	private static readonly Color[] Warm = { new(1f, 0.68f, 0.25f, 0.28f), new(1f, 0.8f, 0.5f, 0.2f) };
+	private static readonly Color[] Cold = { new(0.15f, 0.45f, 1f, 0.5f), new(0.45f, 0.72f, 1f, 0.15f) };
+	private static readonly Color[] Cone = { new(1f, 0.75f, 0.3f, 0.3f), new(1f, 0.85f, 0.55f, 0.35f) };
 
 	private World _world;
 	private int _localPlayer;
@@ -24,6 +29,9 @@ public partial class FogView : Node2D
 	private ImageTexture _texture;
 	private Sprite2D _fog;
 	private GhostLayer _ghosts;
+	private LightLayer _tint;
+	private LightLayer _lights;
+	private bool[] _walls;
 	private long _lastUpdate = -1;
 
 	/// <summary>Interpolation between the last two ticks, for the car cones (set by Game).</summary>
@@ -50,7 +58,14 @@ public partial class FogView : Node2D
 		AddChild(_fog);
 		_ghosts = new GhostLayer { View = this, ZIndex = 1 };
 		AddChild(_ghosts);
-		ZIndex = 2; // this node itself draws the car cones: above units, under the fog
+		// Light glows are added onto what is under them (above units, under the fog).
+		_tint = new LightLayer { View = this, Layer = 0, ZIndex = 2 };
+		AddChild(_tint);
+		_lights = new LightLayer { View = this, Layer = 1, ZIndex = 2, Material = new CanvasItemMaterial { BlendMode = CanvasItemMaterial.BlendModeEnum.Add } };
+		AddChild(_lights);
+		_walls = new bool[w * h];
+		for (int i = 0; i < _walls.Length; i++)
+			_walls[i] = world.Map[i % w, i / w] == TileType.Wall;
 		Refresh();
 	}
 
@@ -64,7 +79,8 @@ public partial class FogView : Node2D
 			_lastUpdate = stamp;
 			Refresh();
 		}
-		QueueRedraw();
+		_tint.QueueRedraw();
+		_lights.QueueRedraw();
 	}
 
 	private void Refresh()
@@ -73,27 +89,67 @@ public partial class FogView : Node2D
 		int w = _world.Map.Width;
 		for (int i = 0; i < _levels.Length; i++)
 		{
-			float alpha = _levels[i] switch { FogLevels.Unknown => 1f, FogLevels.Explored => 0.55f, _ => 0f };
-			_image.SetPixel(i % w, i / w, new Color(0.03f, 0.02f, 0.08f, alpha));
+			float alpha = _levels[i] switch { FogLevels.Unknown => 1f, FogLevels.Explored => 0.62f, _ => 0f };
+			_image.SetPixel(i % w, i / w, new Color(_walls[i] ? 1f : 0f, 0f, 0f, alpha));
 		}
 		_texture.Update(_image);
 		_ghosts.QueueRedraw();
 	}
 
-	/// <summary>Headlight cones of the cars the player can see.</summary>
-	public override void _Draw()
+	/// <summary>
+	/// Glows of the light sources the player can see (UI.LightSources decides which and how warm), and car
+	/// headlight cones. Drawn with additive blending, so light brightens and tints what is under it.
+	/// </summary>
+	private partial class LightLayer : Node2D
 	{
-		if (_world == null)
-			return;
-		foreach (var unit in _world.Units)
+		public FogView View;
+		/// <summary>0 = tint (normal blending), 1 = brighten (additive).</summary>
+		public int Layer;
+		private Texture2D _glow;
+
+		public override void _Ready()
 		{
-			if (unit.Type != UnitType.RcCar || unit.LightDirection < 0 || !_world.CanSee(_localPlayer, unit))
-				continue;
-			var origin = new Vector2(Mathf.Lerp(unit.PrevX, unit.X, Alpha), Mathf.Lerp(unit.PrevY, unit.Y, Alpha)) / UnitStats.SubTile * T;
-			float angle = unit.LightDirection * Mathf.Pi / 4f, spread = Mathf.DegToRad(35f), range = VisionStats.HeadlightRange * T;
-			var left = origin + Vector2.FromAngle(angle - spread) * range;
-			var right = origin + Vector2.FromAngle(angle + spread) * range;
-			DrawPolygon(new[] { origin, left, right }, new[] { ConeNear, ConeFar, ConeFar });
+			var gradient = new Gradient();
+			gradient.SetColor(0, new Color(1, 1, 1, 1));
+			gradient.SetColor(1, new Color(1, 1, 1, 0));
+			gradient.AddPoint(0.45f, new Color(1, 1, 1, 0.45f));
+			_glow = new GradientTexture2D
+			{
+				Gradient = gradient,
+				Fill = GradientTexture2D.FillEnum.Radial,
+				FillFrom = new Vector2(0.5f, 0.5f),
+				FillTo = new Vector2(1f, 0.5f),
+				Width = 128,
+				Height = 128,
+			};
+		}
+
+		public override void _Draw()
+		{
+			var world = View?._world;
+			if (world == null || _glow == null)
+				return;
+			// Electric light hums a little.
+			float hum = 0.9f + 0.1f * Mathf.Sin((float)Time.GetTicksMsec() / 180f);
+			foreach (var light in LightSources.For(world, View._localPlayer))
+			{
+				var center = new Vector2(light.X, light.Y) * T;
+				float radius = light.Radius * T;
+				var colour = light.Tone == LightTone.Cold ? Cold[Layer] with { A = Cold[Layer].A * hum } : Warm[Layer];
+				DrawTextureRect(_glow, new Rect2(center - new Vector2(radius, radius), new Vector2(radius * 2, radius * 2)), false, colour);
+			}
+
+			foreach (var unit in world.Units)
+			{
+				if (unit.Type != UnitType.RcCar || unit.LightDirection < 0 || !world.CanSee(View._localPlayer, unit))
+					continue;
+				var origin = new Vector2(Mathf.Lerp(unit.PrevX, unit.X, View.Alpha), Mathf.Lerp(unit.PrevY, unit.Y, View.Alpha)) / UnitStats.SubTile * T;
+				float angle = unit.LightDirection * Mathf.Pi / 4f, spread = Mathf.DegToRad(35f), range = VisionStats.HeadlightRange * T;
+				var left = origin + Vector2.FromAngle(angle - spread) * range;
+				var right = origin + Vector2.FromAngle(angle + spread) * range;
+				var far = Cone[Layer] with { A = 0 };
+				DrawPolygon(new[] { origin, left, right }, new[] { Cone[Layer], far, far });
+			}
 		}
 	}
 

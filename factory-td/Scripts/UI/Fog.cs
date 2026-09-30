@@ -35,6 +35,46 @@ public static class Knowledge
 	}
 }
 
+/// <summary>Warm light (lanterns, lamps, the toybox, units) or cold electric light (pylons, chargers).</summary>
+public enum LightTone { Warm, Cold }
+
+/// <summary>A glowing light to draw: centre and radius in tiles.</summary>
+public readonly record struct LightSource(float X, float Y, float Radius, LightTone Tone);
+
+/// <summary>
+/// Which things glow. Every building lights the map (Vision), but only real light sources glow, or every
+/// belt would shine: the toybox and lamps (warm), pylons and chargers (cold electric blue) and units
+/// (a small warm glow; cars also have their headlight cones).
+/// </summary>
+public static class LightSources
+{
+	public static List<LightSource> For(World world, int player)
+	{
+		var lights = new List<LightSource>();
+		foreach (var b in world.Buildings)
+		{
+			if (!b.IsBuilt || !Knowledge.ShowBuilding(world, player, b))
+				continue;
+			var (tone, radius) = b.Type switch
+			{
+				BuildingType.Core => (LightTone.Warm, VisionStats.CoreRadius * 0.7f),
+				BuildingType.Lamp => (LightTone.Warm, (float)VisionStats.LampRadius),
+				BuildingType.Pylon => (LightTone.Cold, (float)PowerStats.PylonRadius),
+				BuildingType.BatteryCharger => (LightTone.Cold, VisionStats.SmallBuildingRadius * 1.3f),
+				_ => (LightTone.Warm, 0f),
+			};
+			if (radius > 0)
+				lights.Add(new LightSource(Tile(b.CenterX), Tile(b.CenterY), radius, tone));
+		}
+		foreach (var unit in world.Units)
+			if (world.CanSee(player, unit))
+				lights.Add(new LightSource(Tile(unit.X), Tile(unit.Y), VisionStats.UnitRadius(unit.Type) * 0.6f, LightTone.Warm));
+		return lights;
+	}
+
+	private static float Tile(int subTile) => subTile / (float)UnitStats.SubTile;
+}
+
 /// <summary>Per tile: 0 = never seen (black), 1 = explored but dark, 2 = lit now. For the fog texture.</summary>
 public static class FogLevels
 {

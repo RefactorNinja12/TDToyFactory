@@ -83,6 +83,23 @@ public class FogUiTests
 	}
 
 	[Fact]
+	public void LightSources_WarmLampsAndUnits_ColdPowerBuildings_NoGlowFromBelts()
+	{
+		var s = Fog();
+		s.Place(BuildingType.Lamp, 30, 45);
+		s.Place(BuildingType.Pylon, 34, 45);
+		s.Place(BuildingType.Conveyor, 32, 45);
+		s.Spawn(UnitType.PlasticSoldier, 150, 31, owner: 1); // in the dark
+		s.World.Ticks(VisionStats.VisionTicks);
+		var lights = LightSources.For(s.World, 0);
+		Assert.Contains(lights, l => l.X == 30.5f && l.Tone == LightTone.Warm && l.Radius == VisionStats.LampRadius);
+		Assert.Contains(lights, l => l.X == 34.5f && l.Tone == LightTone.Cold);
+		Assert.Contains(lights, l => l.X == 7f && l.Tone == LightTone.Warm); // the toybox
+		Assert.DoesNotContain(lights, l => l.X == 32.5f); // belts light the map but don't glow
+		Assert.DoesNotContain(lights, l => l.X > 140); // the unseen enemy
+	}
+
+	[Fact]
 	public void Minimap_CameraRect_ClampedToTheMap()
 	{
 		Assert.Equal((0f, 10f, 40f, 20f), Minimap.CameraRect(-5, 5, 20, 15, 160, 62, 2));
