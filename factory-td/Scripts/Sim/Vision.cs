@@ -36,9 +36,21 @@ public static class VisionStats
 		return building.Type switch
 		{
 			BuildingType.Core => CoreRadius,
+			BuildingType.Lamp => LampRadius,
 			_ => building.Width > 1 ? LargeBuildingRadius : SmallBuildingRadius,
 		};
 	}
+}
+
+/// <summary>Toy night light: a cheap building whose only job is to light up the map around it.</summary>
+public sealed class Lamp : Building
+{
+	public Lamp(int x, int y, Direction facing, int owner)
+		: base(BuildingType.Lamp, x, y, facing, owner)
+	{
+	}
+
+	public override bool OutputsToward(Direction direction) => false;
 }
 
 /// <summary>What a player last saw of an enemy building (it may have changed or gone since).</summary>

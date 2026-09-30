@@ -25,6 +25,7 @@ public enum BuildingType : byte
 	Kitchen,
 	Pylon,
 	BatteryCharger,
+	Lamp,
 }
 
 /// <summary>Facing / output direction. Clockwise order, matching Godot's y-down rotation.</summary>
@@ -181,6 +182,7 @@ public static class BuildingRules
 		BuildingType.Warehouse,
 		BuildingType.BatteryCharger,
 		BuildingType.Pylon,
+		BuildingType.Lamp,
 		BuildingType.CropField,
 		BuildingType.Farmhouse,
 		BuildingType.Kitchen,
@@ -229,6 +231,7 @@ public static class BuildingRules
 	private static readonly ItemStack[] KitchenCost = { new(ItemType.Brick, 15), new(ItemType.Plastic, 10) };
 	private static readonly ItemStack[] PylonCost = { new(ItemType.Brick, 4), new(ItemType.Plastic, 4) };
 	private static readonly ItemStack[] BatteryChargerCost = { new(ItemType.Brick, 20), new(ItemType.Plastic, 15) };
+	private static readonly ItemStack[] LampCost = { new(ItemType.Brick, 3), new(ItemType.Plastic, 3) };
 
 	public static ItemStack[] Cost(BuildingType type) => type switch
 	{
@@ -254,6 +257,7 @@ public static class BuildingRules
 		BuildingType.Kitchen => KitchenCost,
 		BuildingType.Pylon => PylonCost,
 		BuildingType.BatteryCharger => BatteryChargerCost,
+		BuildingType.Lamp => LampCost,
 		_ => Free,
 	};
 	// -------------------------------------------------------------------------------------
@@ -263,7 +267,7 @@ public static class BuildingRules
 	{
 		BuildingType.Core => 1000,
 		BuildingType.Conveyor => 20,
-		BuildingType.Splitter or BuildingType.Sorter or BuildingType.Junction or BuildingType.CropField or BuildingType.Pylon => 40,
+		BuildingType.Splitter or BuildingType.Sorter or BuildingType.Junction or BuildingType.CropField or BuildingType.Pylon or BuildingType.Lamp => 40,
 		BuildingType.BrickExtractor or BuildingType.PlasticExtractor or BuildingType.BatteryExtractor => 60,
 		BuildingType.Assembler or BuildingType.Kitchen or BuildingType.BatteryCharger => 80,
 		BuildingType.SoldierFactory or BuildingType.GolemWorkshop or BuildingType.CarFactory or BuildingType.Toolbox or BuildingType.Warehouse or BuildingType.Farmhouse => 150,
@@ -277,7 +281,7 @@ public static class BuildingRules
 	{
 		BuildingType.Core => 0,
 		BuildingType.Conveyor => 10,
-		BuildingType.Splitter or BuildingType.Sorter or BuildingType.Junction or BuildingType.Pylon => 30,
+		BuildingType.Splitter or BuildingType.Sorter or BuildingType.Junction or BuildingType.Pylon or BuildingType.Lamp => 30,
 		BuildingType.CropField => 40,
 		BuildingType.BrickExtractor or BuildingType.PlasticExtractor or BuildingType.BatteryExtractor => 60,
 		BuildingType.Assembler or BuildingType.Kitchen or BuildingType.BatteryCharger => 100,
@@ -323,6 +327,7 @@ public static class BuildingRules
 		BuildingType.Kitchen => new Kitchen(x, y, facing, owner),
 		BuildingType.Pylon => new Pylon(x, y, facing, owner),
 		BuildingType.BatteryCharger => new BatteryCharger(x, y, facing, owner),
+		BuildingType.Lamp => new Lamp(x, y, facing, owner),
 		BuildingType.FoamTower or BuildingType.Catapult or BuildingType.WaterTower or BuildingType.LaserTower
 			=> new Tower(type, x, y, facing, owner),
 		_ => new Extractor(type, x, y, facing, owner),

@@ -181,3 +181,23 @@ public class KnowledgeTests
 		Assert.DoesNotContain(s.World.RememberedBuildings(0), r => r.Owner == 0);
 	}
 }
+
+public class LampTests
+{
+	[Fact]
+	public void Lamp_LightsItsRadius_OnceBuilt()
+	{
+		var s = Scenario.Match().NoWorkers().Rich().RealFog();
+		var lamp = s.Place(BuildingType.Lamp, 30, 45);
+		Assert.Contains(BuildingType.Lamp, BuildingRules.Buildable);
+		s.World.Ticks(VisionStats.VisionTicks);
+		Assert.False(s.World.IsVisible(0, 32, 45)); // a construction site lights only its neighbours
+
+		lamp.CompleteConstruction();
+		s.World.Ticks(VisionStats.VisionTicks);
+		Assert.True(s.World.IsVisible(0, 30 + VisionStats.LampRadius, 45));
+		Assert.False(s.World.IsVisible(0, 31 + VisionStats.LampRadius, 45));
+		Assert.True(s.World.IsExplored(0, 30, 45 + VisionStats.LampRadius));
+		Assert.False(lamp.OutputsToward(Direction.East));
+	}
+}

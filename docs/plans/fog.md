@@ -71,7 +71,7 @@ Constants in `Sim/Vision.cs` `VisionStats`.
       snapshot list), updated on sight. Tests: enemy unit hidden outside light / shown inside; enemy
       building remembered after the unit leaves; destroyed while unseen stays remembered until re-seen;
       own buildings always known.
-- [ ] 5. Lamp building (`BuildingType.Lamp`): cost, hp, build time, Buildable, Texts. Tests: lights radius 9,
+- [x] 5. Lamp building (`BuildingType.Lamp`): cost, hp, build time, Buildable, Texts. Tests: lights radius 9,
       explores beyond the known area, only while built.
 - [ ] 6. Tent + scout: `BuildingType.Tent` (UnitFactory producing `UnitType.Scout`), UnitDef (fast,
       no damage), worker (no power, eats food), caps. Tests: tent makes scouts up to its cap, scouts
@@ -107,3 +107,4 @@ Constants in `Sim/Vision.cs` `VisionStats`.
 - Step 2: Sim/Vision.cs (VisionStats; Vision with Explored/Visible bool[] per player; precomputed Bresenham rays per disc radius and 8 cones, walls stop rays, wall tile lit). World.IsExplored/IsVisible (FullVision -> true), recompute every 4 ticks + at CreateMatch. Unit.LightDirection from MoveX/Y (Vision.DirectionIndex, 22.5 deg sectors). Building source tile = X+W/2,Y+H/2. 179/179.
 - Step 3: PlaceError.Unexplored (appended to enum) for extractors only, checked before WrongResource (no leak); Texts message. Walls/Occupied still "leak" in the dark (accepted). 182/182.
 - Step 4: RememberedBuilding record (type, footprint, owner, facing); Vision keeps a list per player, refreshed where visible each recompute. World.CanSee(player, unit), World.RememberedBuildings(player) (FullVision: all enemy buildings now). 185/185.
+- Step 5: BuildingType.Lamp (class Lamp in Vision.cs), cost 3 brick + 3 plastic, hp 40, build 30, radius 9 when built. View has NO texture/menu for Lamp yet (step 11). 186/186.
