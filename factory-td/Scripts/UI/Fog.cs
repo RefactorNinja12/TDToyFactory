@@ -38,13 +38,16 @@ public static class Knowledge
 /// <summary>Warm light (lanterns, lamps, the toybox, units) or cold electric light (pylons, chargers).</summary>
 public enum LightTone { Warm, Cold }
 
-/// <summary>A glowing light to draw: centre and radius in tiles.</summary>
-public readonly record struct LightSource(float X, float Y, float Radius, LightTone Tone);
+/// <summary>
+/// A glowing light to draw: centre and radius in tiles, strength 0..1, and whether it flickers like a
+/// small torch (workers). <paramref name="Seed"/> keeps each flickering light out of step with the others.
+/// </summary>
+public readonly record struct LightSource(float X, float Y, float Radius, LightTone Tone, float Strength = 1f, bool Flicker = false, int Seed = 0);
 
 /// <summary>
 /// Which things glow. Every building lights the map (Vision), but only real light sources glow, or every
 /// belt would shine: the toybox and lamps (warm), pylons and chargers (cold electric blue) and units
-/// (a small warm glow; cars also have their headlight cones).
+/// (a small warm glow; cars also have their headlight cones). Workers only carry a weak, flickering torch.
 /// </summary>
 public static class LightSources
 {
@@ -67,8 +70,13 @@ public static class LightSources
 				lights.Add(new LightSource(Tile(b.CenterX), Tile(b.CenterY), radius, tone));
 		}
 		foreach (var unit in world.Units)
-			if (world.CanSee(player, unit))
-				lights.Add(new LightSource(Tile(unit.X), Tile(unit.Y), VisionStats.UnitRadius(unit.Type) * 0.6f, LightTone.Warm));
+		{
+			if (!world.CanSee(player, unit))
+				continue;
+			bool worker = UnitStats.IsWorker(unit.Type);
+			lights.Add(new LightSource(Tile(unit.X), Tile(unit.Y), VisionStats.UnitRadius(unit.Type) * (worker ? 0.45f : 0.6f),
+				LightTone.Warm, Strength: worker ? 0.5f : 1f, Flicker: worker, Seed: unit.Id));
+		}
 		return lights;
 	}
 

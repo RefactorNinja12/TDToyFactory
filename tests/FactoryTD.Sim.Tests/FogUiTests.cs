@@ -100,6 +100,19 @@ public class FogUiTests
 	}
 
 	[Fact]
+	public void Workers_CarryAWeakFlickeringTorch()
+	{
+		var s = Fog();
+		var builder = s.Spawn(UnitType.Builder, 30, 45);
+		var soldier = s.Spawn(UnitType.PlasticSoldier, 30, 50);
+		var lights = LightSources.For(s.World, 0);
+		var torch = Assert.Single(lights, l => l.Seed == builder.Id && l.Flicker);
+		var soldierLight = Assert.Single(lights, l => l.Seed == soldier.Id);
+		Assert.False(soldierLight.Flicker);
+		Assert.True(torch.Strength < soldierLight.Strength);
+	}
+
+	[Fact]
 	public void Minimap_CameraRect_ClampedToTheMap()
 	{
 		Assert.Equal((0f, 10f, 40f, 20f), Minimap.CameraRect(-5, 5, 20, 15, 160, 62, 2));

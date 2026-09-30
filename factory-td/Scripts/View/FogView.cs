@@ -136,6 +136,16 @@ public partial class FogView : Node2D
 				var center = new Vector2(light.X, light.Y) * T;
 				float radius = light.Radius * T;
 				var colour = light.Tone == LightTone.Cold ? Cold[Layer] with { A = Cold[Layer].A * hum } : Warm[Layer];
+				colour.A *= light.Strength;
+				if (light.Flicker)
+				{
+					// A small torch: uneven flicker (three sines out of step), the flame also grows and shrinks a bit.
+					float t = (float)Time.GetTicksMsec() / 1000f + light.Seed * 1.7f;
+					float flicker = 0.75f + 0.12f * Mathf.Sin(t * 9.1f) + 0.08f * Mathf.Sin(t * 23.7f) + 0.05f * Mathf.Sin(t * 41.3f);
+					colour.A *= flicker;
+					radius *= 0.92f + 0.08f * flicker;
+					colour = colour.Lerp(new Color(1f, 0.5f, 0.15f, colour.A), 0.35f); // more orange, like a flame
+				}
 				DrawTextureRect(_glow, new Rect2(center - new Vector2(radius, radius), new Vector2(radius * 2, radius * 2)), false, colour);
 			}
 
