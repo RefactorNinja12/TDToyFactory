@@ -100,6 +100,32 @@ public class FogUiTests
 	}
 
 	[Fact]
+	public void Crowds_ShareOneLight_OnlyALittleBrighter()
+	{
+		var s = Fog();
+		for (int i = 0; i < 8; i++)
+			s.Spawn(UnitType.PlasticSoldier, 30, 45);
+		s.Spawn(UnitType.PlasticSoldier, 40, 45);
+		var lights = LightSources.For(s.World, 0);
+		var crowd = Assert.Single(lights, l => l.X == 30.5f && l.Y == 45.5f);
+		var alone = Assert.Single(lights, l => l.X == 40.5f);
+		Assert.Equal(alone.Strength * LightSources.MaxCrowdBoost, crowd.Strength, 3);
+	}
+
+	[Fact]
+	public void PylonsAndSoldiers_GlowSofterThanLamps()
+	{
+		var s = Fog();
+		s.Place(BuildingType.Lamp, 30, 45);
+		s.Place(BuildingType.Pylon, 34, 45);
+		s.Spawn(UnitType.PlasticSoldier, 38, 45);
+		var lights = LightSources.For(s.World, 0);
+		float lamp = Assert.Single(lights, l => l.X == 30.5f).Strength;
+		Assert.True(Assert.Single(lights, l => l.X == 34.5f).Strength < lamp);
+		Assert.True(Assert.Single(lights, l => l.X == 38.5f).Strength < lamp);
+	}
+
+	[Fact]
 	public void Workers_CarryAWeakFlickeringTorch()
 	{
 		var s = Fog();

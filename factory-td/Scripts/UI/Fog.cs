@@ -51,6 +51,15 @@ public readonly record struct LightSource(float X, float Y, float Radius, LightT
 /// </summary>
 public static class LightSources
 {
+	/// <summary>Glow strength of pylons (and chargers) and of fighting units; workers are weaker still.</summary>
+	public const float PowerStrength = 0.55f, UnitStrength = 0.55f, WorkerStrength = 0.4f;
+
+	/// <summary>
+	/// Units on the same 2x2 tiles share one light, a little stronger per extra unit up to this many times
+	/// one unit's, so a crowd doesn't add up to a blinding spot.
+	/// </summary>
+	public const float MaxCrowdBoost = 1.4f, BoostPerExtraUnit = 0.1f;
+
 	public static List<LightSource> For(World world, int player)
 	{
 		var lights = new List<LightSource>();
@@ -67,15 +76,33 @@ public static class LightSources
 				_ => (LightTone.Warm, 0f),
 			};
 			if (radius > 0)
-				lights.Add(new LightSource(Tile(b.CenterX), Tile(b.CenterY), radius, tone));
+				lights.Add(new LightSource(Tile(b.CenterX), Tile(b.CenterY), radius, tone, tone == LightTone.Cold ? PowerStrength : 1f));
 		}
+		// Units grouped per 2x2 tiles (workers and fighters apart: torches flicker, the others don't).
+		var crowds = new Dictionary<(int X, int Y, bool Worker), (float SumX, float SumY, float Radius, int Count, int Seed)>();
+		var order = new List<(int X, int Y, bool Worker)>();
 		foreach (var unit in world.Units)
 		{
 			if (!world.CanSee(player, unit))
 				continue;
 			bool worker = UnitStats.IsWorker(unit.Type);
-			lights.Add(new LightSource(Tile(unit.X), Tile(unit.Y), VisionStats.UnitRadius(unit.Type) * (worker ? 0.45f : 0.6f),
-				LightTone.Warm, Strength: worker ? 0.5f : 1f, Flicker: worker, Seed: unit.Id));
+			var key = (unit.TileX / 2, unit.TileY / 2, worker);
+			float radius = VisionStats.UnitRadius(unit.Type) * (worker ? 0.45f : 0.6f);
+			if (crowds.TryGetValue(key, out var crowd))
+				crowds[key] = (crowd.SumX + Tile(unit.X), crowd.SumY + Tile(unit.Y), System.Math.Max(crowd.Radius, radius), crowd.Count + 1, crowd.Seed);
+			else
+			{
+				crowds[key] = (Tile(unit.X), Tile(unit.Y), radius, 1, unit.Id);
+				order.Add(key);
+			}
+		}
+		foreach (var key in order)
+		{
+			var crowd = crowds[key];
+			float boost = System.Math.Min(MaxCrowdBoost, 1f + BoostPerExtraUnit * (crowd.Count - 1));
+			float strength = (key.Worker ? WorkerStrength : UnitStrength) * boost;
+			lights.Add(new LightSource(crowd.SumX / crowd.Count, crowd.SumY / crowd.Count, crowd.Radius, LightTone.Warm,
+				strength, Flicker: key.Worker, Seed: crowd.Seed));
 		}
 		return lights;
 	}
