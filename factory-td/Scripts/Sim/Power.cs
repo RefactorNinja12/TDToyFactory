@@ -7,16 +7,21 @@ namespace FactoryTD.Sim;
 public static class PowerStats
 {
 	/// <summary>Energy one battery gives when a charger uses it up.</summary>
-	public const int EnergyPerBattery = 6000;
+	public const int EnergyPerBattery = 12000;
 	/// <summary>Most energy one charger can hold.</summary>
-	public const int ChargerCapacity = 20000;
+	public const int ChargerCapacity = 40000;
 
 	/// <summary>Army factories (not worker factories) while they craft.</summary>
 	public const int FactoryEnergyPerTick = 2;
 	/// <summary>Assemblers while they craft.</summary>
 	public const int AssemblerEnergyPerTick = 1;
-	/// <summary>Towers pay this for every shot.</summary>
-	public const int TowerShotEnergy = 30;
+	/// <summary>
+	/// Towers pay per shot for the time until the next one, so a busy tower of any kind costs the same as a
+	/// working factory. One battery a minute keeps two factories and two busy towers going.
+	/// </summary>
+	public const int TowerEnergyPerTick = 2;
+
+	public static int ShotEnergy(TowerStats stats) => stats.ReloadTicks * TowerEnergyPerTick;
 
 	// ---- Golems and cars carry a battery: it drains off the grid and recharges on it. ----
 	/// <summary>Energy a unit takes from the grid per tick while charging (or topping up).</summary>
@@ -31,8 +36,8 @@ public static class PowerStats
 	/// <summary>Battery size; 0 = not electric. Cars are faster, so they get about twice the golem's range.</summary>
 	public static int MaxCharge(UnitType type) => type switch
 	{
-		UnitType.BrickGolem => 12000,
-		UnitType.RcCar => 8000,
+		UnitType.BrickGolem => 24000, // ~78 s out before turning back: from the end of the hall to the enemy toybox and a fight
+		UnitType.RcCar => 16000,     // three times as fast, so about twice the golem's range
 		_ => 0,
 	};
 

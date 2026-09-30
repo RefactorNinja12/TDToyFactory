@@ -368,6 +368,9 @@ public sealed class World
 	/// <summary>Removes every unit (tests start from a clean slate with this).</summary>
 	internal void ClearUnits() => _units.Clear();
 
+	/// <summary>Test helper: removes the player's new soldiers (keeps factories busy without crowding).</summary>
+	internal void ClearSoldiers() => _units.RemoveAll(u => u.Type == UnitType.PlasticSoldier);
+
 	/// <summary>
 	/// Test switch: every consumer counts as powered and golems/cars never lose charge.
 	/// Lets tests of other systems ignore the power grid. Always false in real matches.

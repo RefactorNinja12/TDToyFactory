@@ -90,12 +90,12 @@ public sealed class Tower : Building
 			_cooldown--;
 			return;
 		}
-		NoPower = !world.HasPower(this, PowerStats.TowerShotEnergy);
+		NoPower = !world.HasPower(this, PowerStats.ShotEnergy(Stats));
 		if (Shots == 0 || NoPower)
 			return;
 
 		var target = world.FindNearestEnemy(Owner, CenterX, CenterY, Stats.RangeTiles * UnitStats.SubTile);
-		if (target == null || !world.TryDrawPower(this, PowerStats.TowerShotEnergy))
+		if (target == null || !world.TryDrawPower(this, PowerStats.ShotEnergy(Stats)))
 			return;
 
 		Shots--;

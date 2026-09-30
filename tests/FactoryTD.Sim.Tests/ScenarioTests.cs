@@ -102,4 +102,69 @@ public class ScenarioTests
 		_out.WriteLine($"{tower} killed {unit} in {ticks / (double)WorldRunner.TicksPerSecond:0.0} s");
 		Assert.True(ticks <= maxSeconds * WorldRunner.TicksPerSecond, $"took {ticks / (double)WorldRunner.TicksPerSecond:0.0} s");
 	}
+
+	[Theory]
+	[InlineData(UnitType.BrickGolem)]
+	[InlineData(UnitType.RcCar)]
+	public void Balance_FromTheHallsEnd_UnitsFightAtTheEnemyToyboxBeforeTurningBack(UnitType type)
+	{
+		var s = Scenario.Match().NoWorkers().Instant().Rich().RealPower();
+		s.Pylon(92, 30); // the last forward pylon a player can build (the hall ends at x = 97)
+		s.Charger(92, 31, energy: PowerStats.ChargerCapacity);
+		var unit = s.Spawn(type, 92, 30);
+		var core = s.World.GetCore(1);
+		int firstHit = -1, ticks = 0;
+		while (unit.PowerState == UnitPower.Normal && ticks < 5 * WorldRunner.TicksPerMinute)
+		{
+			s.World.Tick();
+			ticks++;
+			if (firstHit < 0 && core.Health < core.MaxHealth)
+				firstHit = ticks;
+		}
+		int fighting = firstHit < 0 ? 0 : (ticks - firstHit) / WorldRunner.TicksPerSecond;
+		_out.WriteLine($"{type}: reached the toybox after {firstHit / WorldRunner.TicksPerSecond} s, fought {fighting} s, " +
+			$"did {core.MaxHealth - core.Health} damage, then {unit.PowerState}");
+		Assert.True(fighting >= 10, $"{type} fought only {fighting} s at the enemy toybox");
+	}
+
+	[Fact]
+	public void Balance_OneBatteryAMinute_RunsTwoFactoriesAndTwoBusyTowers()
+	{
+		var s = Scenario.Match().NoWorkers().Instant().Rich().RealPower();
+		s.Pylon(33, 22);
+		var charger = s.Charger(34, 22);
+		var factories = new[]
+		{
+			s.Place<UnitFactory>(BuildingType.SoldierFactory, 30, 20),
+			s.Place<UnitFactory>(BuildingType.SoldierFactory, 35, 20),
+		};
+		var towers = new[] { s.Place<Tower>(BuildingType.FoamTower, 31, 24), s.Place<Tower>(BuildingType.LaserTower, 35, 24) };
+		// Targets that never die and never fight back: flat enemy golems crawl, so put them back every tick.
+		var targets = new[] { s.Spawn(UnitType.BrickGolem, 33, 26, owner: 1), s.Spawn(UnitType.BrickGolem, 34, 26, owner: 1) };
+		s.Feed(charger, ItemType.Battery, 1);
+		int working = 0, unpowered = 0;
+		for (int t = 0; t < 5 * WorldRunner.TicksPerMinute; t++)
+		{
+			if (t > 0 && t % WorldRunner.TicksPerMinute == 0)
+				s.Feed(charger, ItemType.Battery, 1);
+			foreach (var f in factories)
+				if (!f.Crafter.CanWork(f.Recipe))
+					foreach (var input in f.Recipe) s.Feed(f, input.Type, input.Amount);
+			foreach (var tower in towers)
+				s.Feed(tower, tower.Stats.Ammo, 1);
+			for (int k = 0; k < targets.Length; k++)
+			{
+				targets[k].Charge = 0;
+				targets[k].Health = UnitStats.MaxHealth(UnitType.BrickGolem);
+				targets[k].X = (33 + k) * UnitStats.SubTile + UnitStats.SubTile / 2;
+				targets[k].Y = 26 * UnitStats.SubTile + UnitStats.SubTile / 2;
+			}
+			s.World.Tick();
+			s.World.ClearSoldiers();
+			foreach (var f in factories) { working++; if (f.NoPower) unpowered++; }
+			foreach (var tower in towers) { working++; if (tower.NoPower) unpowered++; }
+		}
+		_out.WriteLine($"without power {unpowered * 100 / working}% of the time, used {s.P0.EnergyUsedLastMinute * 100 / PowerStats.EnergyPerBattery}% of a battery in the last minute, {charger.Energy} left");
+		Assert.True(unpowered * 100 <= working * 5, $"without power {unpowered * 100 / working}% of the time");
+	}
 }

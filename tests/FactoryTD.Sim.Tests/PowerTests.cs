@@ -317,7 +317,7 @@ public class PowerConsumerTests
 		s.World.Ticks(2);
 		Assert.NotEmpty(s.World.Projectiles);
 		Assert.False(tower.NoPower);
-		Assert.Equal(1000 - PowerStats.TowerShotEnergy, charger.Energy);
+		Assert.Equal(1000 - PowerStats.ShotEnergy(tower.Stats), charger.Energy);
 	}
 
 	[Fact]
@@ -427,15 +427,18 @@ public class UnitChargeTests
 		Assert.InRange(moved, 20 * UnitStats.Speed(UnitType.BrickGolem) / 4 - 20, 20 * UnitStats.Speed(UnitType.BrickGolem) / 4 + 1);
 	}
 
-	/// <summary>How many tiles east of its grid a unit gets before it has to turn back.</summary>
+	/// <summary>
+	/// How many tiles a unit leaving its grid can walk before it has to turn back (measured in ticks, since it
+	/// may stop on the way to fight the enemy toybox).
+	/// </summary>
 	private static int RangeOffGrid(UnitType type)
 	{
 		var s = Real();
 		s.Pylon(40, 30);
 		s.Charger(40, 31, energy: PowerStats.ChargerCapacity);
-		var unit = s.Spawn(type, 40, 30);
-		s.World.Until(() => unit.PowerState == UnitPower.Returning, 300, $"{type} turning back");
-		return unit.TileX - 40;
+		var unit = s.Spawn(type, 40 + PowerStats.PylonRadius + 1, 30); // just off the grid, full
+		int ticks = s.World.Until(() => unit.PowerState == UnitPower.Returning, 600, $"{type} turning back");
+		return ticks * UnitStats.Speed(type) / UnitStats.SubTile;
 	}
 
 	[Fact]
