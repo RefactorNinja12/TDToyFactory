@@ -22,6 +22,7 @@ public sealed class World
 	// _fields[p] leads player p's units to the enemy core. Rebuilt lazily when buildings change.
 	private readonly FlowField[] _fields;
 	private bool _fieldsDirty = true;
+	private readonly PowerGrid _power;
 	private int _nextUnitId;
 
 	public MapLayout Map { get; }
@@ -53,6 +54,7 @@ public sealed class World
 		_players = new PlayerState[playerCount];
 		_cores = new Core[playerCount];
 		_fields = new FlowField[playerCount];
+		_power = new PowerGrid(map.Width, map.Height, playerCount);
 		for (int i = 0; i < playerCount; i++)
 		{
 			_players[i] = new PlayerState(i);
@@ -63,6 +65,16 @@ public sealed class World
 	public Core GetCore(int player) => _cores[player];
 
 	public int EnemyOf(int player) => (player + 1) % _players.Length;
+
+	/// <summary>Which tiles each player's power grid covers, its networks and cords.</summary>
+	public PowerGrid Power
+	{
+		get
+		{
+			RebuildFieldsIfDirty();
+			return _power;
+		}
+	}
 
 	public FlowField GetFlowField(int player)
 	{
@@ -858,6 +870,7 @@ public sealed class World
 		if (!_fieldsDirty)
 			return;
 		_fieldsDirty = false;
+		_power.Rebuild(_buildings);
 		for (int p = 0; p < _players.Length; p++)
 		{
 			var target = _cores[EnemyOf(p)];
