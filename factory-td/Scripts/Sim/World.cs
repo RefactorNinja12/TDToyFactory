@@ -737,7 +737,7 @@ public sealed class World
 	/// So an attack tears down the base around the core first. Nearest wins within a tier;
 	/// ties go to the oldest unit / earliest-built building (deterministic).
 	/// </summary>
-	private (Unit, Building) SelectTarget(Unit unit, int range, bool includeCore)
+	internal (Unit, Building) SelectTarget(Unit unit, int range, bool includeCore)
 	{
 		long range2 = (long)range * range;
 
