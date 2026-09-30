@@ -76,7 +76,7 @@ Constants in `Sim/Vision.cs` `VisionStats`.
 - [x] 6. Tent + scout: `BuildingType.Tent` (UnitFactory producing `UnitType.Scout`), UnitDef (fast,
       no damage), worker (no power, eats food), caps. Tests: tent makes scouts up to its cap, scouts
       don't fight, count as workers.
-- [ ] 7. Scout AI (`World.TickScout`): frontier BFS from home, spread between scouts, walk along the fog
+- [x] 7. Scout AI (`World.TickScout`): frontier BFS from home, spread between scouts, walk along the fog
       edge, retarget, flee from visible enemies. Tests: one scout finds the battery patch within X s;
       frontier target is the nearest to home (wide before deep); two scouts pick targets ≥6 apart;
       explored area grows faster with two; lamps near the fog shorten the time to the battery patch;
@@ -109,3 +109,4 @@ Constants in `Sim/Vision.cs` `VisionStats`.
 - Step 4: RememberedBuilding record (type, footprint, owner, facing); Vision keeps a list per player, refreshed where visible each recompute. World.CanSee(player, unit), World.RememberedBuildings(player) (FullVision: all enemy buildings now). 185/185.
 - Step 5: BuildingType.Lamp (class Lamp in Vision.cs), cost 3 brick + 3 plastic, hp 40, build 30, radius 9 when built. View has NO texture/menu for Lamp yet (step 11). 186/186.
 - Step 6: UnitType.Scout (worker: IsWorker, no power, eats 1; hp 18, speed 36, recipe 3 plastic, 160 ticks; light 7), MaxScouts 6, ScoutsPerTent 2 (UnitFactory rule). BuildingType.Tent 1x1 (5 brick 10 plastic) -> UnitFactory(Scout). World.TickScout stub (stands still). Texts names. View: no sprites for Tent/Scout yet (step 11). 188/188.
+- Step 7: Sim/Scouting.cs (World partial): target = frontier tile minimising homeDistance + manhattan(scout)/2 (pure nearest-home ping-ponged across the base: 717 tiles/60 s -> 2825/180 s), spread 6 tiles, retarget on vision ticks, flee 3 s from visible enemy units (5 directions tried), home when nothing left. World.HomeDistance (BFS over explored floor, cached per vision tick), IsFrontier, ExploredCount, ExploreAll (test). One scout finds the battery patch in 139 s (guard 180). 194/194.

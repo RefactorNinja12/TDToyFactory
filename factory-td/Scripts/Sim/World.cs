@@ -7,7 +7,7 @@ namespace FactoryTD.Sim;
 /// Game state: the map, the players and everything built on it. Pure C#.
 /// Buildings can cover several tiles; every tile they cover points to the same Building.
 /// </summary>
-public sealed class World
+public sealed partial class World
 {
 	/// <summary>Fixed simulation rate. Everything in the sim counts in ticks, never in seconds.</summary>
 	public const int TicksPerSecond = 20;
@@ -420,6 +420,12 @@ public sealed class World
 		return all;
 	}
 
+	/// <summary>Number of tiles the player has explored.</summary>
+	public int ExploredCount(int player) => _vision.ExploredCount(player);
+
+	/// <summary>Test helper: the player has seen the whole map (but still only sees what is lit now).</summary>
+	internal void ExploreAll(int player) => _vision.ExploreAll(player);
+
 	/// <summary>Whether the player's light reaches this tile right now.</summary>
 	public bool IsVisible(int player, int x, int y) => FullVision || _vision.IsVisible(player, x, y);
 
@@ -753,14 +759,6 @@ public sealed class World
 			}
 		}
 		return null;
-	}
-
-	/// <summary>Scouts explore the edge of the fog (see ScoutTests / plan step 7).</summary>
-	private void TickScout(Unit scout)
-	{
-		scout.PrevX = scout.X;
-		scout.PrevY = scout.Y;
-		scout.MoveX = scout.MoveY = 0;
 	}
 
 	private void TickUnit(Unit unit)

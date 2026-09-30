@@ -108,6 +108,19 @@ public sealed class Vision
 	public bool IsVisible(int player, int x, int y) =>
 		x >= 0 && y >= 0 && x < _width && y < _height && _visible[player][y * _width + x];
 
+	/// <summary>Number of tiles the player has explored.</summary>
+	public int ExploredCount(int player)
+	{
+		int count = 0;
+		foreach (bool e in _explored[player])
+			if (e)
+				count++;
+		return count;
+	}
+
+	/// <summary>Test helper: the whole map explored.</summary>
+	internal void ExploreAll(int player) => System.Array.Fill(_explored[player], true);
+
 	/// <summary>Direction index (0 = east, clockwise) closest to a movement vector; -1 when not moving.</summary>
 	public static int DirectionIndex(int dx, int dy)
 	{
