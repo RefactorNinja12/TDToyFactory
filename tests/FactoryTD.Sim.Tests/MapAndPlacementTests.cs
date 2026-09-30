@@ -216,13 +216,12 @@ public class ObstacleTests
 	[Fact]
 	public void EveryToyIsPlaced_AndMirrored()
 	{
-		Assert.Equal(12, Map.Obstacles.Count); // six per room
+		Assert.Equal(8, Map.Obstacles.Count); // one of each kind per room
 		foreach (var o in Map.Obstacles)
 			Assert.Contains(Map.Obstacles, m => m.Kind == o.Kind && m.Y == o.Y && m.X == Map.Width - o.X - o.Width);
 		Assert.Contains(Map.Obstacles, o => o.Kind == ObstacleKind.TeddyBear);
 		Assert.Contains(Map.Obstacles, o => o.Kind == ObstacleKind.RagDoll);
 		Assert.Contains(Map.Obstacles, o => o.Kind == ObstacleKind.AbcBlocks);
-		Assert.Contains(Map.Obstacles, o => o.Kind == ObstacleKind.Sock && o.Width == 5 && o.Height == 2);
 		Assert.Contains(Map.Obstacles, o => o.Kind == ObstacleKind.Lollipop && o.Width == 5 && o.Height == 3);
 	}
 

@@ -60,6 +60,9 @@ public static class LightSources
 	/// </summary>
 	public const float MaxCrowdBoost = 1.4f, BoostPerExtraUnit = 0.1f;
 
+	/// <summary>The small glow around a shot fired by a unit (soldiers, cars): radius in tiles, strength.</summary>
+	public const float ShotRadius = 1.2f, ShotStrength = 0.6f;
+
 	public static List<LightSource> For(World world, int player)
 	{
 		var lights = new List<LightSource>();
@@ -96,6 +99,18 @@ public static class LightSources
 				order.Add(key);
 			}
 		}
+		// Shots fired by units carry a small light while they fly (tower shots don't).
+		foreach (var shot in world.Projectiles)
+		{
+			if (shot.Kind != DamageKind.Bullet)
+				continue;
+			float t = shot.TotalTicks == 0 ? 1f : 1f - shot.TicksLeft / (float)shot.TotalTicks;
+			float x = Tile(shot.FromX) + (Tile(shot.ToX) - Tile(shot.FromX)) * t;
+			float y = Tile(shot.FromY) + (Tile(shot.ToY) - Tile(shot.FromY)) * t;
+			if (world.IsVisible(player, (int)x, (int)y))
+				lights.Add(new LightSource(x, y, ShotRadius, LightTone.Warm, ShotStrength));
+		}
+
 		foreach (var key in order)
 		{
 			var crowd = crowds[key];

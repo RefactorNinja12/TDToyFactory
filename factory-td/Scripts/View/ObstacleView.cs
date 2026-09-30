@@ -13,7 +13,7 @@ public partial class ObstacleView : Node2D
 	private const float T = BuildingVisuals.TileSize;
 
 	private World _world;
-	private Texture2D _teddy, _blocks, _doll, _sock, _lollipop;
+	private Texture2D _teddy, _blocks, _doll, _lollipop;
 
 	public void Bind(World world)
 	{
@@ -21,7 +21,6 @@ public partial class ObstacleView : Node2D
 		_teddy = GD.Load<Texture2D>("res://Assets/Sprites/Obstacles/teddy.png");
 		_blocks = GD.Load<Texture2D>("res://Assets/Sprites/Obstacles/blocks.png");
 		_doll = GD.Load<Texture2D>("res://Assets/Sprites/Obstacles/doll.png");
-		_sock = GD.Load<Texture2D>("res://Assets/Sprites/Obstacles/sock.png");
 		_lollipop = GD.Load<Texture2D>("res://Assets/Sprites/Obstacles/lollipop.png");
 		ZIndex = 1;
 		TextureFilter = TextureFilterEnum.Nearest;
@@ -38,7 +37,6 @@ public partial class ObstacleView : Node2D
 			{
 				ObstacleKind.TeddyBear => _teddy,
 				ObstacleKind.AbcBlocks => _blocks,
-				ObstacleKind.Sock => _sock,
 				ObstacleKind.Lollipop => _lollipop,
 				_ => _doll,
 			};

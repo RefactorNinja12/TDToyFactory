@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://dsnips52kjb4y"
-path="res://.godot/imported/sock.png-936036bf8eded28bc4113a8a2ee6eb6b.ctex"
+uid="uid://u5wfblwdw72g"
+path="res://.godot/imported/lollipop.png-1ec1f6b215e8dabc17355474285c0bdd.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://Assets/Sprites/Obstacles/sock.png"
-dest_files=["res://.godot/imported/sock.png-936036bf8eded28bc4113a8a2ee6eb6b.ctex"]
+source_file="res://Assets/Sprites/Obstacles/lollipop.png"
+dest_files=["res://.godot/imported/lollipop.png-1ec1f6b215e8dabc17355474285c0bdd.ctex"]
 
 [params]
 
