@@ -6,7 +6,8 @@ namespace FactoryTD.View;
 
 /// <summary>
 /// Fog of war over the map: a texture with one texel per tile (black where never seen, darkened where only
-/// explored, clear where lit), stretched over the map with linear filtering so light has soft edges.
+/// explored, clear where lit), drawn over the map by Shaders/fog.gdshader as small fog pixels with a
+/// stepped gradient from light to dark.
 /// Also draws remembered enemy buildings as faded ghosts (under the fog) and car headlight cones.
 /// </summary>
 public partial class FogView : Node2D
@@ -43,6 +44,8 @@ public partial class FogView : Node2D
 			Scale = new Vector2(T, T),
 			TextureFilter = TextureFilterEnum.Linear,
 			ZIndex = 3,
+			// Small fog pixels with a stepped soft edge instead of one big block per tile.
+			Material = new ShaderMaterial { Shader = GD.Load<Shader>("res://Shaders/fog.gdshader") },
 		};
 		AddChild(_fog);
 		_ghosts = new GhostLayer { View = this, ZIndex = 1 };
