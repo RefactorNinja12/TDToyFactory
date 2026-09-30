@@ -196,6 +196,7 @@ public sealed class World
 	{
 		TickCount++;
 		RebuildFieldsIfDirty();
+		UpdateStorage();
 
 		foreach (var building in _buildings)
 			if (building.IsBuilt)
@@ -213,6 +214,16 @@ public sealed class World
 		for (int p = 0; p < _cores.Length && Winner < 0; p++)
 			if (_cores[p] != null && _cores[p].Health == 0)
 				Winner = EnemyOf(p);
+	}
+
+	/// <summary>Counts each player's finished warehouses, which set how much they can store.</summary>
+	private void UpdateStorage()
+	{
+		foreach (var player in _players)
+			player.Warehouses = 0;
+		foreach (var building in _buildings)
+			if (building.Type == BuildingType.Warehouse && building.IsBuilt)
+				_players[building.Owner].Warehouses++;
 	}
 
 	public int CountUnits(int owner, UnitType type)

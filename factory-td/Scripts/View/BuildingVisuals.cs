@@ -26,6 +26,7 @@ public static class BuildingVisuals
 		[BuildingType.LaserTower] = "res://Assets/Sprites/Towers/tower_laser.png",
 		[BuildingType.Junction] = "res://Assets/Sprites/Buildings/junction.png",
 		[BuildingType.Toolbox] = "res://Assets/Sprites/Buildings/toolbox.png",
+		[BuildingType.Warehouse] = "res://Assets/Sprites/Buildings/warehouse.png",
 		[BuildingType.GolemWorkshop] = "res://Assets/Sprites/Buildings/factory_golem.png",
 		[BuildingType.CarFactory] = "res://Assets/Sprites/Buildings/factory_car.png",
 	};
@@ -37,7 +38,7 @@ public static class BuildingVisuals
 		("Produktion", new[]
 		{
 			BuildingType.BrickExtractor, BuildingType.PlasticExtractor, BuildingType.BatteryExtractor,
-			BuildingType.Assembler, BuildingType.Toolbox,
+			BuildingType.Assembler, BuildingType.Toolbox, BuildingType.Warehouse,
 		}),
 		("Armé", new[] { BuildingType.SoldierFactory, BuildingType.GolemWorkshop, BuildingType.CarFactory }),
 		("Försvar", new[] { BuildingType.FoamTower, BuildingType.Catapult, BuildingType.WaterTower, BuildingType.LaserTower }),
@@ -89,6 +90,7 @@ public static class BuildingVisuals
 		BuildingType.LaserTower => "Lasertorn",
 		BuildingType.Junction => "Korsning",
 		BuildingType.Toolbox => "Verktygslåda",
+		BuildingType.Warehouse => "Lager",
 		BuildingType.GolemWorkshop => "Golemverkstad",
 		BuildingType.CarFactory => "Bilfabrik",
 		_ => type.ToString(),
@@ -108,6 +110,7 @@ public static class BuildingVisuals
 		BuildingType.Catapult => "Ammo: klossar (kastar dem). Långsam, skadar ett område, räckvidd 8. Dubbel skada mot plastsoldater.",
 		BuildingType.WaterTower => "Ammo: batterier (1 batteri = 10 skott). Mycket snabb, räckvidd 4. Trippel skada mot elektronik (radiobilar). Halv skada mot golems.",
 		BuildingType.Junction => "Låter två band korsa varandra. Allt åker rakt igenom, banden blandas aldrig.",
+		BuildingType.Warehouse => $"2x2. Leksakshylla som lagrar allt som körs in på band, i samma förråd som leksakslådan. Varje lager ger plats för {PlayerState.WarehouseCapacity} till av varje sort.",
 		BuildingType.Toolbox => "2x2. Skruvar ihop en uppdragsrobot (byggare) av 2 plast + 2 klossar. Byggarna går själva till nya byggplatser och bygger dem. Max 20.",
 		BuildingType.LaserTower => "Ammo: batterier (1 batteri = 5 skott). Räckvidd 7. Dubbel skada mot klossgolems.",
 		BuildingType.GolemWorkshop => "2x2. Gör en klossgolem av 4 klossar + 2 kugghjul. Långsam och tålig, bryr sig inte om trupper, slår dubbelt så hårt på byggnader. Svag mot laser.",

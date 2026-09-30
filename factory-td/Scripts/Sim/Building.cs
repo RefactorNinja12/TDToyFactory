@@ -19,6 +19,7 @@ public enum BuildingType : byte
 	LaserTower,
 	Junction,
 	Toolbox,
+	Warehouse,
 }
 
 /// <summary>Facing / output direction. Clockwise order, matching Godot's y-down rotation.</summary>
@@ -153,6 +154,7 @@ public static class BuildingRules
 		BuildingType.BatteryExtractor,
 		BuildingType.Assembler,
 		BuildingType.Toolbox,
+		BuildingType.Warehouse,
 		BuildingType.SoldierFactory,
 		BuildingType.GolemWorkshop,
 		BuildingType.CarFactory,
@@ -191,6 +193,7 @@ public static class BuildingRules
 	private static readonly ItemStack[] GolemWorkshopCost = { new(ItemType.Brick, 40), new(ItemType.Plastic, 20) };
 	private static readonly ItemStack[] CarFactoryCost = { new(ItemType.Brick, 30), new(ItemType.Plastic, 20), new(ItemType.Battery, 10) };
 	private static readonly ItemStack[] ToolboxCost = { new(ItemType.Brick, 25), new(ItemType.Plastic, 15) };
+	private static readonly ItemStack[] WarehouseCost = { new(ItemType.Brick, 30), new(ItemType.Plastic, 20) };
 
 	public static ItemStack[] Cost(BuildingType type) => type switch
 	{
@@ -210,6 +213,7 @@ public static class BuildingRules
 		BuildingType.GolemWorkshop => GolemWorkshopCost,
 		BuildingType.CarFactory => CarFactoryCost,
 		BuildingType.Toolbox => ToolboxCost,
+		BuildingType.Warehouse => WarehouseCost,
 		_ => Free,
 	};
 	// -------------------------------------------------------------------------------------
@@ -222,7 +226,7 @@ public static class BuildingRules
 		BuildingType.Splitter or BuildingType.Sorter or BuildingType.Junction => 40,
 		BuildingType.BrickExtractor or BuildingType.PlasticExtractor or BuildingType.BatteryExtractor => 60,
 		BuildingType.Assembler => 80,
-		BuildingType.SoldierFactory or BuildingType.GolemWorkshop or BuildingType.CarFactory or BuildingType.Toolbox => 150,
+		BuildingType.SoldierFactory or BuildingType.GolemWorkshop or BuildingType.CarFactory or BuildingType.Toolbox or BuildingType.Warehouse => 150,
 		BuildingType.FoamTower or BuildingType.WaterTower or BuildingType.LaserTower => 100,
 		BuildingType.Catapult => 120,
 		_ => 50,
@@ -238,7 +242,7 @@ public static class BuildingRules
 		BuildingType.Assembler => 100,
 		BuildingType.FoamTower or BuildingType.WaterTower or BuildingType.LaserTower => 120,
 		BuildingType.Catapult => 140,
-		BuildingType.Toolbox => 160,
+		BuildingType.Toolbox or BuildingType.Warehouse => 160,
 		BuildingType.SoldierFactory or BuildingType.GolemWorkshop or BuildingType.CarFactory => 240,
 		_ => 60,
 	};
@@ -247,7 +251,7 @@ public static class BuildingRules
 	public static (int Width, int Height) Size(BuildingType type) => type switch
 	{
 		BuildingType.Core => (2, 2),
-		BuildingType.SoldierFactory or BuildingType.GolemWorkshop or BuildingType.CarFactory or BuildingType.Toolbox => (2, 2),
+		BuildingType.SoldierFactory or BuildingType.GolemWorkshop or BuildingType.CarFactory or BuildingType.Toolbox or BuildingType.Warehouse => (2, 2),
 		_ => (1, 1),
 	};
 
@@ -272,6 +276,7 @@ public static class BuildingRules
 		BuildingType.GolemWorkshop => new UnitFactory(type, x, y, facing, owner, UnitType.BrickGolem),
 		BuildingType.CarFactory => new UnitFactory(type, x, y, facing, owner, UnitType.RcCar),
 		BuildingType.Toolbox => new UnitFactory(type, x, y, facing, owner, UnitType.Builder),
+		BuildingType.Warehouse => new Warehouse(x, y, facing, owner, world.Players[owner]),
 		BuildingType.FoamTower or BuildingType.Catapult or BuildingType.WaterTower or BuildingType.LaserTower
 			=> new Tower(type, x, y, facing, owner),
 		_ => new Extractor(type, x, y, facing, owner),
