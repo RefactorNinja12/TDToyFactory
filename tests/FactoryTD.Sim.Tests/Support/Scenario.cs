@@ -62,6 +62,16 @@ public sealed class Scenario
 		return this;
 	}
 
+	public Pylon Pylon(int x, int y, int owner = 0) => Place<Pylon>(BuildingType.Pylon, x, y, owner: owner);
+
+	/// <summary>A battery charger, optionally already holding some energy.</summary>
+	public BatteryCharger Charger(int x, int y, int energy = 0, int owner = 0)
+	{
+		var charger = Place<BatteryCharger>(BuildingType.BatteryCharger, x, y, owner: owner);
+		charger.Energy = energy;
+		return charger;
+	}
+
 	public Scenario Give(ItemType item, int amount, int owner = 0)
 	{
 		World.Players[owner].Add(item, amount);

@@ -43,7 +43,7 @@ golem MaxCharge 600 EU drain 10 EU/s; car MaxCharge 600 EU drain 5 EU/s; ReturnP
 
 ## Progress
 - [x] 1. `World.FreePower` + Scenario `.RealPower()`; existing tests unchanged (114/114).
-- [ ] 2. Data model: `BuildingType.Pylon`, `BatteryCharger`, costs/size/build time/menu, `Sim/Power.cs`
+- [x] 2. Data model: `BuildingType.Pylon`, `BatteryCharger`, costs/size/build time/menu, `Sim/Power.cs`
       (`PowerStats`). Scenario helpers `Pylon(x,y)`, `Charger(x,y,energy:)`. Tests: placement, cost, zones.
 - [ ] 3. `PowerGrid` (pure C#): networks via union-find over link range, coverage map per player,
       rebuilt when dirty. Tests: link/no link, split on removal, radius edge, enemies don't link, core root.
@@ -72,3 +72,4 @@ golem MaxCharge 600 EU drain 10 EU/s; car MaxCharge 600 EU drain 5 EU/s; ReturnP
 ## Log
 (one line per finished step: what changed, test count, anything surprising)
 - Step 1: World.FreePower (internal) + Scenario.Match() free by default, .RealPower() opt-in; bot scenarios (ScenarioTests bot matches, BotTests) already use RealPower. 115/115.
+- Step 2: Pylon/BatteryCharger in Sim/Power.cs (+PowerStats), BuildingRules cost/hp/buildtime/Create/Buildable, Texts names. View has NO textures/menu for them yet (BuildingVisuals.TexturePaths would throw if one is placed in-game) -> step 10. Scenario.Pylon/Charger(energy:). 122/122.
