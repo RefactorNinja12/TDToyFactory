@@ -17,6 +17,7 @@ param(
 
 # Continue: dotnet writes test failures to stderr, which Windows PowerShell would otherwise treat as fatal.
 $ErrorActionPreference = "Continue"
+[Console]::OutputEncoding = [Text.Encoding]::UTF8
 $project = Join-Path $PSScriptRoot "FactoryTD.Sim.Tests"
 $results = Join-Path $project "TestResults"
 $trx = Join-Path $results "run.trx"
@@ -66,6 +67,15 @@ foreach ($f in $failed) {
 	if ($stack) {
 		($stack -split "`r?`n") | Where-Object { $_ -match "FactoryTD\.Sim\.Tests\\[^\\]+\.cs:line" } | Select-Object -First 2 |
 			ForEach-Object { Write-Output ("     " + ($_.Trim() -replace ".*\\(\w+\.cs:line \d+)", '@ $1')) }
+	}
+}
+
+# Slow runs: the scenario tests' own measurements (balance numbers) and how long each took.
+if ($Slow -or $All) {
+	foreach ($r in $runs | Where-Object { $_.outcome -eq "Passed" -and $_.Output.StdOut }) {
+		$duration = [math]::Round(([TimeSpan]::Parse($r.duration)).TotalSeconds, 1)
+		Write-Output "  $($r.testName -replace '^FactoryTD\.Sim\.Tests\.', '') (${duration}s)"
+		($r.Output.StdOut.Trim() -split "`r?`n") | ForEach-Object { Write-Output "     $_" }
 	}
 }
 
