@@ -20,6 +20,7 @@ public enum BuildingType : byte
 	Junction,
 	Toolbox,
 	Warehouse,
+	CropField,
 }
 
 /// <summary>Facing / output direction. Clockwise order, matching Godot's y-down rotation.</summary>
@@ -155,6 +156,7 @@ public static class BuildingRules
 		BuildingType.Assembler,
 		BuildingType.Toolbox,
 		BuildingType.Warehouse,
+		BuildingType.CropField,
 		BuildingType.SoldierFactory,
 		BuildingType.GolemWorkshop,
 		BuildingType.CarFactory,
@@ -194,6 +196,7 @@ public static class BuildingRules
 	private static readonly ItemStack[] CarFactoryCost = { new(ItemType.Brick, 30), new(ItemType.Plastic, 20), new(ItemType.Battery, 10) };
 	private static readonly ItemStack[] ToolboxCost = { new(ItemType.Brick, 25), new(ItemType.Plastic, 15) };
 	private static readonly ItemStack[] WarehouseCost = { new(ItemType.Brick, 30), new(ItemType.Plastic, 20) };
+	private static readonly ItemStack[] CropFieldCost = { new(ItemType.Brick, 5), new(ItemType.Plastic, 5) };
 
 	public static ItemStack[] Cost(BuildingType type) => type switch
 	{
@@ -214,6 +217,7 @@ public static class BuildingRules
 		BuildingType.CarFactory => CarFactoryCost,
 		BuildingType.Toolbox => ToolboxCost,
 		BuildingType.Warehouse => WarehouseCost,
+		BuildingType.CropField => CropFieldCost,
 		_ => Free,
 	};
 	// -------------------------------------------------------------------------------------
@@ -223,7 +227,7 @@ public static class BuildingRules
 	{
 		BuildingType.Core => 1000,
 		BuildingType.Conveyor => 20,
-		BuildingType.Splitter or BuildingType.Sorter or BuildingType.Junction => 40,
+		BuildingType.Splitter or BuildingType.Sorter or BuildingType.Junction or BuildingType.CropField => 40,
 		BuildingType.BrickExtractor or BuildingType.PlasticExtractor or BuildingType.BatteryExtractor => 60,
 		BuildingType.Assembler => 80,
 		BuildingType.SoldierFactory or BuildingType.GolemWorkshop or BuildingType.CarFactory or BuildingType.Toolbox or BuildingType.Warehouse => 150,
@@ -238,6 +242,7 @@ public static class BuildingRules
 		BuildingType.Core => 0,
 		BuildingType.Conveyor => 10,
 		BuildingType.Splitter or BuildingType.Sorter or BuildingType.Junction => 30,
+		BuildingType.CropField => 40,
 		BuildingType.BrickExtractor or BuildingType.PlasticExtractor or BuildingType.BatteryExtractor => 60,
 		BuildingType.Assembler => 100,
 		BuildingType.FoamTower or BuildingType.WaterTower or BuildingType.LaserTower => 120,
@@ -277,6 +282,7 @@ public static class BuildingRules
 		BuildingType.CarFactory => new UnitFactory(type, x, y, facing, owner, UnitType.RcCar),
 		BuildingType.Toolbox => new UnitFactory(type, x, y, facing, owner, UnitType.Builder),
 		BuildingType.Warehouse => new Warehouse(x, y, facing, owner, world.Players[owner]),
+		BuildingType.CropField => new CropField(x, y, facing, owner),
 		BuildingType.FoamTower or BuildingType.Catapult or BuildingType.WaterTower or BuildingType.LaserTower
 			=> new Tower(type, x, y, facing, owner),
 		_ => new Extractor(type, x, y, facing, owner),

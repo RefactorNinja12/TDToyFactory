@@ -144,6 +144,18 @@ public partial class InfoPanel : CanvasLayer
 				Text("Klicka för att byta sort.", Dim);
 				break;
 
+			case CropField field:
+				if (field.IsRipe)
+					Item(ItemType.Crop, $"Mogen! {BuildingVisuals.ItemCount(ItemType.Crop, CropField.Yield)} väntar på en bonde", Good);
+				else
+				{
+					int left = (CropField.GrowTicks - field.Growth + World.TicksPerSecond - 1) / World.TicksPerSecond;
+					Item(ItemType.Crop, $"Växer: {field.Growth * 100 / CropField.GrowTicks}%, mogen om {left} s");
+					Progress(field.Growth, CropField.GrowTicks);
+				}
+				Text("Bönder skördar och bär morötterna till ett kök eller lager.", Dim);
+				break;
+
 			case Core:
 				Text("Tar emot allt från banden. Det betalar dina byggen.", Dim);
 				Storage(building.Owner);

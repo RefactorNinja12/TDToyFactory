@@ -65,6 +65,8 @@ public partial class BuildingView : Node2D
 		foreach (var (building, sprite) in _sprites)
 		{
 			sprite.Modulate = building.IsBuilt ? Colors.White : UnderConstruction;
+			if (building is CropField field)
+				sprite.Texture = BuildingVisuals.CropFieldTexture(field.IsBuilt ? field.Stage : 0);
 			if (building is Tower tower)
 				sprite.Rotation = Mathf.Atan2(tower.AimY, tower.AimX);
 		}

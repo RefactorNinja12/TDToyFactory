@@ -27,6 +27,7 @@ public static class BuildingVisuals
 		[BuildingType.Junction] = "res://Assets/Sprites/Buildings/junction.png",
 		[BuildingType.Toolbox] = "res://Assets/Sprites/Buildings/toolbox.png",
 		[BuildingType.Warehouse] = "res://Assets/Sprites/Buildings/warehouse.png",
+		[BuildingType.CropField] = "res://Assets/Sprites/Farming/field_3_ripe.png",
 		[BuildingType.GolemWorkshop] = "res://Assets/Sprites/Buildings/factory_golem.png",
 		[BuildingType.CarFactory] = "res://Assets/Sprites/Buildings/factory_car.png",
 	};
@@ -40,6 +41,7 @@ public static class BuildingVisuals
 			BuildingType.BrickExtractor, BuildingType.PlasticExtractor, BuildingType.BatteryExtractor,
 			BuildingType.Assembler, BuildingType.Toolbox, BuildingType.Warehouse,
 		}),
+		("Mat", new[] { BuildingType.CropField }),
 		("Armé", new[] { BuildingType.SoldierFactory, BuildingType.GolemWorkshop, BuildingType.CarFactory }),
 		("Försvar", new[] { BuildingType.FoamTower, BuildingType.Catapult, BuildingType.WaterTower, BuildingType.LaserTower }),
 	};
@@ -52,6 +54,8 @@ public static class BuildingVisuals
 		[ItemType.Gear] = "res://Assets/Sprites/Items/gear.png",
 		[ItemType.Spring] = "res://Assets/Sprites/Items/spring.png",
 		[ItemType.CircuitBoard] = "res://Assets/Sprites/Items/circuit_board.png",
+		[ItemType.Crop] = "res://Assets/Sprites/Items/crop.png",
+		[ItemType.Food] = "res://Assets/Sprites/Items/food.png",
 	};
 
 	private static readonly Dictionary<string, Texture2D> Cache = new();
@@ -62,6 +66,15 @@ public static class BuildingVisuals
 	public static Texture2D GetTexture(BuildingType type) => Load(TexturePaths[type]);
 
 	public static Texture2D GetItemTexture(ItemType type) => Load(ItemTexturePaths[type]);
+
+	/// <summary>Crop field look for growth stage 0 (just planted) .. 3 (ripe).</summary>
+	public static Texture2D CropFieldTexture(int stage) => Load(stage switch
+	{
+		0 => "res://Assets/Sprites/Farming/field_0_empty.png",
+		1 => "res://Assets/Sprites/Farming/field_1_sprout.png",
+		2 => "res://Assets/Sprites/Farming/field_2_growing.png",
+		_ => "res://Assets/Sprites/Farming/field_3_ripe.png",
+	});
 
 	private static Texture2D Load(string path)
 	{
@@ -91,6 +104,7 @@ public static class BuildingVisuals
 		BuildingType.Junction => "Korsning",
 		BuildingType.Toolbox => "Verktygslåda",
 		BuildingType.Warehouse => "Lager",
+		BuildingType.CropField => "Odlingslåda",
 		BuildingType.GolemWorkshop => "Golemverkstad",
 		BuildingType.CarFactory => "Bilfabrik",
 		_ => type.ToString(),
@@ -111,6 +125,7 @@ public static class BuildingVisuals
 		BuildingType.WaterTower => "Ammo: batterier (1 batteri = 10 skott). Mycket snabb, räckvidd 4. Trippel skada mot elektronik (radiobilar). Halv skada mot golems.",
 		BuildingType.Junction => "Låter två band korsa varandra. Allt åker rakt igenom, banden blandas aldrig.",
 		BuildingType.Warehouse => $"2x2. Leksakshylla som lagrar allt som körs in på band, i samma förråd som leksakslådan. Varje lager ger plats för {PlayerState.WarehouseCapacity} till av varje sort.",
+		BuildingType.CropField => $"Plastmorötter växer här på {CropField.GrowTicks / World.TicksPerSecond} s och ger {CropField.Yield} morötter. En bonde skördar, sedan växer den igen.",
 		BuildingType.Toolbox => "2x2. Skruvar ihop en uppdragsrobot (byggare) av 2 plast + 2 klossar. Byggarna går själva till nya byggplatser och bygger dem. Max 20.",
 		BuildingType.LaserTower => "Ammo: batterier (1 batteri = 5 skott). Räckvidd 7. Dubbel skada mot klossgolems.",
 		BuildingType.GolemWorkshop => "2x2. Gör en klossgolem av 4 klossar + 2 kugghjul. Långsam och tålig, bryr sig inte om trupper, slår dubbelt så hårt på byggnader. Svag mot laser.",
@@ -165,6 +180,8 @@ public static class BuildingVisuals
 			ItemType.Brick => "kloss",
 			ItemType.Battery => "batteri",
 			ItemType.Spring => "fjäder",
+			ItemType.Crop => "morot",
+			ItemType.Food => "matlåda",
 			_ => ItemName(type).ToLowerInvariant(),
 		};
 		return $"1 {one}";
@@ -187,6 +204,8 @@ public static class BuildingVisuals
 		ItemType.Gear => "Kugghjul",
 		ItemType.Spring => "Fjädrar",
 		ItemType.CircuitBoard => "Kretskort",
+		ItemType.Crop => "Morötter",
+		ItemType.Food => "Matlådor",
 		_ => type.ToString(),
 	};
 
