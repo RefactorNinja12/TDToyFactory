@@ -200,7 +200,7 @@ public sealed partial class World
 			var (tx, ty) = unit.Path[unit.PathIndex];
 			int goalX = tx * UnitStats.SubTile + half, goalY = ty * UnitStats.SubTile + half;
 			TryStep(unit, goalX, goalY);
-			if (unit.X == goalX && unit.Y == goalY)
+			if (CloseTo(unit, goalX, goalY))
 				unit.PathIndex++;
 		}
 	}

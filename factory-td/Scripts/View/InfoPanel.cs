@@ -11,12 +11,13 @@ namespace FactoryTD.View;
 /// </summary>
 public partial class InfoPanel : CanvasLayer
 {
-	private const float IconSize = 26f;
+	private const float IconSize = 18f;
 	private const double RefreshSeconds = 0.15;
 
-	private static readonly Color Dim = new(1, 1, 1, 0.65f);
-	private static readonly Color Good = new(0.55f, 1f, 0.55f);
-	private static readonly Color Missing = new(1f, 0.6f, 0.5f);
+	private static readonly Color Dim = UiTheme.TextDim;
+	private static readonly Color Good = UiTheme.Good;
+	private static readonly Color Missing = UiTheme.Bad;
+	private BuildingType _shownType;
 
 	private World _world;
 	private BuildController _builder;
@@ -92,6 +93,7 @@ public partial class InfoPanel : CanvasLayer
 			_rows.RemoveChild(child);
 			child.QueueFree();
 		}
+		_shownType = building.Type;
 		foreach (var row in InfoRows.For(_world, building, _localPlayer))
 		{
 			var color = row.Tone switch { Tone.Dim => Dim, Tone.Good => Good, Tone.Missing => Missing, _ => Colors.White };
@@ -118,11 +120,25 @@ public partial class InfoPanel : CanvasLayer
 		_rows.AddChild(bar);
 	}
 
+	/// <summary>The title row: the building's own picture and its name, in the accent colour.</summary>
 	private void Title(string text)
 	{
-		var label = new Label { Text = text, MouseFilter = Control.MouseFilterEnum.Ignore };
-		label.AddThemeFontSizeOverride("font_size", 18);
-		_rows.AddChild(label);
+		var row = new HBoxContainer { MouseFilter = Control.MouseFilterEnum.Ignore };
+		row.AddThemeConstantOverride("separation", 6);
+		row.AddChild(new TextureRect
+		{
+			Texture = BuildingVisuals.GetTexture(_shownType),
+			ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize,
+			StretchMode = TextureRect.StretchModeEnum.KeepAspectCentered,
+			CustomMinimumSize = new Vector2(28, 28),
+			MouseFilter = Control.MouseFilterEnum.Ignore,
+		});
+		var label = new Label { Text = text, VerticalAlignment = VerticalAlignment.Center, MouseFilter = Control.MouseFilterEnum.Ignore };
+		label.AddThemeFontSizeOverride("font_size", 16);
+		label.AddThemeColorOverride("font_color", UiTheme.Accent);
+		row.AddChild(label);
+		_rows.AddChild(row);
+		_rows.AddChild(new HSeparator { MouseFilter = Control.MouseFilterEnum.Ignore });
 	}
 
 	private void Text(string text, Color? color = null)

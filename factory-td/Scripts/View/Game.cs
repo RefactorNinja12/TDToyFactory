@@ -56,6 +56,9 @@ public partial class Game : Node2D
 		Info.Bind(World, Builder, LocalPlayer);
 
 		Buildings.LocalPlayer = Items.LocalPlayer = Units.LocalPlayer = Combat.LocalPlayer = LocalPlayer;
+		var treadmills = new TreadmillView { Name = "Treadmills" };
+		AddChild(treadmills);
+		treadmills.Bind(World, LocalPlayer);
 		var toys = new ObstacleView { Name = "Obstacles" };
 		AddChild(toys);
 		toys.Bind(World);
@@ -74,6 +77,11 @@ public partial class Game : Node2D
 		Menu.SelectionChanged += Builder.Select;
 		Builder.SelectionCleared += Menu.ClearSelection;
 		Builder.StatusChanged += Menu.ShowStatus;
+
+		// One look for every UI layer (and the window's tooltips).
+		var theme = UiTheme.Create();
+		GetWindow().Theme = theme;
+		UiTheme.ApplyTo(this, theme);
 	}
 
 	public override void _Process(double delta)

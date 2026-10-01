@@ -14,7 +14,8 @@ public partial class UnitView : Node2D
 	private const float SubTileToPixels = (float)BuildingVisuals.TileSize / UnitStats.SubTile;
 
 	// Placeholder until the team colour shader: tint the enemy's units.
-	private static readonly Color[] PlayerTints = { Colors.White, new(1f, 0.55f, 0.55f) };
+	/// <summary>Team colours (also used for the mouse running on a treadmill).</summary>
+	internal static readonly Color[] PlayerTints = { Colors.White, new(1f, 0.55f, 0.55f) };
 
 	private static readonly Dictionary<UnitType, (string Texture, float Size)> Looks = new()
 	{

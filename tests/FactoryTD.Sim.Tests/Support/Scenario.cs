@@ -47,6 +47,7 @@ public sealed class Scenario
 	public Scenario NoWorkers()
 	{
 		World.ClearUnits();
+		World.NoBuilderRespawn = true; // no builder popping out of the toybox either
 		return this;
 	}
 
