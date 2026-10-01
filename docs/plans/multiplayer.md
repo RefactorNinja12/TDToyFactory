@@ -60,7 +60,7 @@ there is no separate server program. "Spela lokalt" keeps today's game against t
          placements are drawn as ghosts until they land.
       Tests: codec round trip for every kind × type; Apply == the direct call; queued order; golden
       unchanged (local delay 0).
-- [ ] 2. Determinism audit for different machines (the golden test only proves the same machine):
+- [x] 2. Determinism audit for different machines (the golden test only proves the same machine):
       a guard test that scans `Scripts/Sim/*.cs` text for `float`, `double`, `Math.Sqrt`, `System.Random`,
       `DateTime`, `GetHashCode`, `HashSet<`/`Dictionary<` that are *iterated* over keys whose hash
       changes between processes (reference types, tuples: `HashCode` is seeded per process). Known spot:
@@ -132,3 +132,4 @@ there is no separate server program. "Spela lokalt" keeps today's game against t
 ## Log
 - Step 0: baseline `task check` green, 300 tests, golden 0x299E99DC031BB7E0, all tests 17.9 s.
 - Step 1: Sim/Commands.cs (PlayerCommand 8 bytes LE, Read rejects unknown kind/type/facing; ICommandSink, DirectCommands); World.Apply (ignores unknown player / off-map). BotPlayer.Tick(world, sink): with a delay it waits until its last order landed (no double configure). BuildController sends commands (drag judges with CanPlace). Pending ghosts moved to step 5 (needs the online loop to see). Golden unchanged. CommandTests 7.
+- Step 2: DeterminismGuardTests scans Scripts/Sim for float/double, Math.Sqrt & co, Random/Guid, clocks, GetHashCode/HashCode, threads (+ self-tests that the rules catch/leave alone). Sim was already clean. Dictionary/HashSet are NOT a risk: they enumerate their entry array in insertion order (hash only picks buckets), so the BotPlayer tuple sets are fine. The child-process test was dropped: the golden constant was recorded in an earlier process, so every run already compares across processes. Both players run the same exported build (bundled .NET runtime), so the same library code.
