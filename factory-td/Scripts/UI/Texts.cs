@@ -58,7 +58,7 @@ public static class Texts
 		BuildingType.CropField => $"Plastmorötter växer här på {CropField.GrowTicks / World.TicksPerSecond} s och ger {CropField.Yield} morötter. En bonde skördar, sedan växer den igen.",
 		BuildingType.Farmhouse => $"2x2. Leksaksladugård som vevar upp en bonde av 3 klossar. Bönder skördar mogna odlingslådor och bär morötterna till kök, lager eller leksakslådan. Gör bara så många bönder som odlingslådorna behöver (1 per {UnitStats.FieldsPerFarmer}), max {UnitStats.MaxFarmers}.",
 		BuildingType.Kitchen => $"Leksaksspis som lagar {ItemCount(ItemType.Crop, Kitchen.Recipe[0].Amount)} till en matlåda på {Kitchen.CookTicks / World.TicksPerSecond} s. Tar emot morötter från bönder och band, lämnar ut maten åt pilens håll (R roterar), t.ex. rakt in i ett lager.",
-		BuildingType.Toolbox => "2x2. Skruvar ihop en uppdragsrobot (byggare) av 2 plast + 2 klossar. Byggarna går själva till nya byggplatser och bygger dem. Max 20.",
+		BuildingType.Toolbox => "2x2. Lockar dit en byggarmus (gul bygghjälm) för 2 plast + 2 klossar. Byggarmössen går själva till nya byggplatser och bygger dem. Max 20.",
 		BuildingType.LaserTower => "Ammo: batterier (1 batteri = 5 skott). Räckvidd 7. Dubbel skada mot klossgolems.",
 		BuildingType.GolemWorkshop => "2x2. Gör en klossgolem av 4 klossar + 2 kugghjul. Långsam och tålig, bryr sig inte om trupper, slår dubbelt så hårt på byggnader. Svag mot laser.",
 		BuildingType.CarFactory => "2x2. Gör en radiobil av 1 kretskort + 2 kugghjul + 1 batteri. Snabb men skör. Svag mot vattenpistoler.",
@@ -115,9 +115,9 @@ public static class Texts
 		UnitType.PlasticSoldier => "Plastsoldat",
 		UnitType.BrickGolem => "Klossgolem",
 		UnitType.RcCar => "Radiobil",
-		UnitType.Builder => "Byggare (uppdragsrobot)",
-		UnitType.Farmer => "Bonde",
-		UnitType.Scout => "Spejare",
+		UnitType.Builder => "Byggarmus",
+		UnitType.Farmer => "Bondmus",
+		UnitType.Scout => "Spejarmus",
 		_ => type.ToString(),
 	};
 

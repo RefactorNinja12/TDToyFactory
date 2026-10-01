@@ -33,7 +33,7 @@ Art: workbench drawings or small generator scripts (tools/art/make_*.py) into to
 
 ## Progress
 - [x] 1. Mousetrap obstacle: kind, RoomToys (last), sprite (tools/art/make_mousetrap.py), ObstacleView. Tests: count, size, still connected.
-- [ ] 2. Mouse workers: sprites builder/farmer/scout (workbench, same size/facing as now: 64x64 facing east), Texts names. Screenshot.
+- [x] 2. Mouse workers: sprites builder/farmer/scout (workbench, same size/facing as now: 64x64 facing east), Texts names. Screenshot.
 - [ ] 3. Cheese: ResourceType.Cheese + deposits (mirrored, kept clear of obstacles), ItemType.MeltedCheese, BuildingType.CheeseMelter (extractor), costs/Texts/menu, sprites (deposit tile, item, melter). Tests: melter only on explored cheese, produces melted cheese, deposits mirrored.
 - [ ] 4. Kitchen: second recipe (melted cheese). Tests: cooks from cheese alone, from crops alone, crops first, InfoRows shows both.
 - [ ] 5. Treadmill + cheese hunter (Sim): BuildingType.Treadmill (UnitFactory variant needing a builder), builder called + consumed, UnitType.CheeseHunter def, melee attack on units and buildings. Tests: needs both cheese and a builder, builder walks in and is gone, hunter spawns, hunts units and hits buildings, starvation pause (no power needed), determinism.
@@ -44,3 +44,4 @@ Art: workbench drawings or small generator scripts (tools/art/make_*.py) into to
 
 ## Log
 - Step 1: ObstacleKind.MouseTrap (3x2, last in RoomToys), sprite by tools/art/make_mousetrap.py (wood board, snap bar, springs, cheese on the trigger), ObstacleView. 10 toys. 211/211.
+- Step 2: mouse workers (workbench 6122d711.. builder hard hat, feae4cc6.. farmer straw hat, 1d06a7f5.. scout pith helmet + binoculars) replace tools/art/source/Units/{builder,farmer,scout}.png, restyled; Texts: Byggarmus/Bondmus/Spejarmus, toolbox text. Screenshot ok (small, same 40 px size as before).
