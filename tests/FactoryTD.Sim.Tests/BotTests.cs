@@ -30,7 +30,7 @@ public class BotTests : IClassFixture<BotRuns>
 	/// <summary>A bot with plenty of resources, run until its plan has grown for a while.</summary>
 	internal static (Scenario, BotPlayer) RichBot(int player, int seconds)
 	{
-		var s = Scenario.Match().RealPower().RealFog().Rich(5000).Give(ItemType.Food, 500, player);
+		var s = Scenario.Match(obstacles: true).RealPower().RealFog().Rich(5000).Give(ItemType.Food, 500, player);
 		var bot = new BotPlayer(player);
 		s.World.Seconds(seconds, bot);
 		return (s, bot);

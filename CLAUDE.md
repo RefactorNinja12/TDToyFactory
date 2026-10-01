@@ -60,6 +60,14 @@ Kompakt fabrik, max 3 nivåer i produktionskedjan, matcher 15–25 min.
   fiender. Striderna i simuleringen är objektiva; dimman begränsar bara vad spelare/bot vet och var
   utvinnare får byggas. Minikarta uppe till höger (klicka för att flytta kameran). Konstanter i
   `VisionStats` (Sim/Vision.cs) och `ScoutStats` (Sim/Scouting.cs).
+- Hinder: stora leksaker (nalle 4x4, ABC-klossar 3x3, tygdocka 3x4) = `TileType.Obstacle`: stoppar gång,
+  flödesfält och bygge som väggar, men inte ljus. Placeras slumpat från ett frö (`MapLayout.CreateDefault
+  (obstacles, seed)`, xorshift, speglas till högra rummet), aldrig i basen, vid resurser, i dörrgången,
+  batterihörnet eller hallen; alltid en golvring runt och allt golv nåbart. `Scenario.Match()` = utan
+  hinder, `Match(obstacles: true)` / `World.CreateMatch()` = med (bot-tester och -matcher). Sprites ritas
+  snett uppifrån (en ruta överhäng) av `View/ObstacleView.cs`.
+- Grafik: `tools/art/restyle.py` gör om alla sprites från `tools/art/source/` (palett + svarta konturer)
+  och genererar golvet (stora brädor, 16x8 rutor). Nya sprites läggs i source och skriptet körs.
 
 ## Kodstruktur
 - `Scripts/Sim/` ren C#, deterministisk: `World` (tick 20/s, byggare/bönder/strid/underhåll), byggnader,
@@ -89,7 +97,8 @@ Kompakt fabrik, max 3 nivåer i produktionskedjan, matcher 15–25 min.
 ## Planer
 - Stora ändringar får en plan i `docs/plans/<namn>.md` med checklista + logg (överlever kontextslut):
   läs den först, fortsätt med första obockade steget, bocka av och logga i samma commit.
-- Klara: `docs/plans/power.md` (elnät), `docs/plans/fog.md` (dimma, ljus, spejare, minikarta).
+- Klara: `docs/plans/power.md` (elnät), `docs/plans/fog.md` (dimma, ljus, spejare, minikarta),
+  `docs/plans/obstacles.md` (stora leksaker som hinder).
 
 ## Arbetsflöde (tester är feedbackloopen)
 - `Taskfile.yaml` (go-task) samlar kommandona; `task` listar dem.

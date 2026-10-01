@@ -60,6 +60,9 @@ public static class LightSources
 	/// </summary>
 	public const float MaxCrowdBoost = 1.4f, BoostPerExtraUnit = 0.1f;
 
+	/// <summary>The small glow around a shot fired by a unit (soldiers, cars): radius in tiles, strength.</summary>
+	public const float ShotRadius = 1.2f, ShotStrength = 0.6f;
+
 	public static List<LightSource> For(World world, int player)
 	{
 		var lights = new List<LightSource>();
@@ -96,6 +99,18 @@ public static class LightSources
 				order.Add(key);
 			}
 		}
+		// Shots fired by units carry a small light while they fly (tower shots don't).
+		foreach (var shot in world.Projectiles)
+		{
+			if (shot.Kind != DamageKind.Bullet)
+				continue;
+			float t = shot.TotalTicks == 0 ? 1f : 1f - shot.TicksLeft / (float)shot.TotalTicks;
+			float x = Tile(shot.FromX) + (Tile(shot.ToX) - Tile(shot.FromX)) * t;
+			float y = Tile(shot.FromY) + (Tile(shot.ToY) - Tile(shot.FromY)) * t;
+			if (world.IsVisible(player, (int)x, (int)y))
+				lights.Add(new LightSource(x, y, ShotRadius, LightTone.Warm, ShotStrength));
+		}
+
 		foreach (var key in order)
 		{
 			var crowd = crowds[key];
@@ -133,7 +148,7 @@ public static class FogLevels
 public static class Minimap
 {
 	public const byte Unknown = 0, Wall = 1, Floor = 2, Bricks = 3, Plastic = 4, Batteries = 5,
-		OwnBuilding = 6, EnemyBuilding = 7, OwnUnit = 8, EnemyUnit = 9;
+		OwnBuilding = 6, EnemyBuilding = 7, OwnUnit = 8, EnemyUnit = 9, Toy = 10;
 	public const byte LitBit = 0x10;
 
 	public static byte Kind(byte cell) => (byte)(cell & 0x0F);
@@ -151,7 +166,7 @@ public static class Minimap
 				into[i] = Unknown;
 				continue;
 			}
-			byte kind = map[x, y] == TileType.Wall ? Wall : map.GetResource(x, y) switch
+			byte kind = map[x, y] == TileType.Wall ? Wall : map[x, y] == TileType.Obstacle ? Toy : map.GetResource(x, y) switch
 			{
 				ResourceType.Brick => Bricks,
 				ResourceType.Plastic => Plastic,

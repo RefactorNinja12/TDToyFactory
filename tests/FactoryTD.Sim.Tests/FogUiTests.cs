@@ -126,6 +126,19 @@ public class FogUiTests
 	}
 
 	[Fact]
+	public void UnitShots_CarryASmallLight()
+	{
+		var s = Fog();
+		s.Spawn(UnitType.PlasticSoldier, 30, 45);
+		s.Spawn(UnitType.PlasticSoldier, 32, 45, owner: 1);
+		s.World.Until(() => s.World.TickCount > VisionStats.VisionTicks && System.Linq.Enumerable.Any(s.World.Projectiles, p => p.Kind == DamageKind.Bullet), 5, "a shot after the first light update");
+		var shot = System.Linq.Enumerable.First(s.World.Projectiles, p => p.Kind == DamageKind.Bullet);
+		var lights = LightSources.For(s.World, 0);
+		Assert.Contains(lights, l => l.Radius == LightSources.ShotRadius
+			&& System.Math.Abs(l.Y - shot.FromY / (float)UnitStats.SubTile) < 1.5f);
+	}
+
+	[Fact]
 	public void Workers_CarryAWeakFlickeringTorch()
 	{
 		var s = Fog();
@@ -136,6 +149,16 @@ public class FogUiTests
 		var soldierLight = Assert.Single(lights, l => l.Seed == soldier.Id);
 		Assert.False(soldierLight.Flicker);
 		Assert.True(torch.Strength < soldierLight.Strength);
+	}
+
+	[Fact]
+	public void Minimap_ShowsBigToys()
+	{
+		var s = Scenario.Match(obstacles: true);
+		var toy = s.World.Map.Obstacles[0];
+		var map = Cells(s);
+		Minimap.Build(s.World, 0, map);
+		Assert.Equal(Minimap.Toy, Minimap.Kind(map[I(s, toy.X, toy.Y)]));
 	}
 
 	[Fact]

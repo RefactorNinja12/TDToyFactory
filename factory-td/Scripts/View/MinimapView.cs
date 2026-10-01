@@ -15,7 +15,7 @@ public partial class MinimapView : CanvasLayer
 
 	private static readonly Color[] Colours =
 	{
-		new(0.02f, 0.02f, 0.05f),   // unknown
+		new(0.03f, 0.06f, 0.19f),   // unknown: the fog's dark blue
 		new(0.35f, 0.30f, 0.40f),   // wall
 		new(0.42f, 0.29f, 0.22f),   // floor (dark wood)
 		new(0.90f, 0.30f, 0.25f),   // bricks
@@ -25,6 +25,7 @@ public partial class MinimapView : CanvasLayer
 		new(1.00f, 0.40f, 0.35f),   // enemy building
 		new(0.75f, 0.95f, 1.00f),   // own unit
 		new(1.00f, 0.15f, 0.15f),   // enemy unit
+		new(0.62f, 0.44f, 0.30f),   // big toy
 	};
 
 	private World _world;
