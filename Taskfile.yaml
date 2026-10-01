@@ -32,6 +32,11 @@ tasks:
     cmds:
       - "{{.PS}} tests/run.ps1 -Slow -Report {{.CLI_ARGS}}"
 
+  test:changed:
+    desc: Only the tests for what changed since the last commit (+ golden match for Sim changes)
+    cmds:
+      - "{{.PS}} tests/changed.ps1"
+
   test:timing:
     desc: Every test, plus the 10 slowest ones
     cmds:

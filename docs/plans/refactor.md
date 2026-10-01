@@ -46,7 +46,7 @@ step, tick + log + commit + push per step.
 - [x] 4. Coverage: tests for the least covered Sim/UI code from `task coverage` (expected: bot routing
       edge cases, splitter/sorter/junction corners, projectiles/area damage, power grid edges, texts,
       info rows for every building type). Target: Sim + UI line coverage ≥ 85 % (log before/after).
-- [ ] 5. Cheaper feedback:
+- [x] 5. Cheaper feedback:
       a) `task test:changed`: runs only the test areas for files changed since the last commit
          (a small map file → test filter, e.g. Power*.cs → Power, Vision/Scouting → Fog|Vision|Scout);
       b) slowest fast tests (from step 1c) made cheaper: share expensive setups via fixtures, shorter
@@ -69,3 +69,4 @@ step, tick + log + commit + push per step.
 - Step 2e (2): SelectTarget scans only the tiles in reach (GetBuilding + ScanMark), ties by Building.Serial = placement order = old list order. Golden unchanged; sim 789 -> 697 ms per simulated minute (baseline 1266, -45%).
 - Step 3: UiTheme.Icon replaces 4 TextureRect blocks + ResourceBar.IconRect; unit pictures in one table (BuildingVisuals.GetUnitTexture) used by UnitView, ResourceBar, TreadmillView (UnitView keeps only sizes). Build 0 warnings (no unused members). Screenshot unchanged.
 - Step 4: coverage.ps1 -File X.cs -Reuse prints the lines no test runs as ranges (one line, reads the last report). CoverageTests.cs (table-driven over every buildable type: hover rows site/finished/enemy, checksum sees each building, all texts, outputs, sorter cycle; 55 tests, 2.6 s). Coverage Sim 97.0 -> 97.7%, UI 86.3 -> 97.9%. 300/300.
+- Step 5: a) tests/changed.ps1 + `task test:changed`: changed .cs since HEAD (+ untracked) -> area filters (table in the script) + Golden for any Sim file; core Sim files / test Support -> all fast; changed test files -> their classes; View -> build. run.ps1 Name accepts `A|B` (OR). Treadmill.cs change: 14 tests in 4 s. b) slowest fast tests are the BotRuns fixture (shared already, ~1.6 s); the sim speed-up did the rest: fast 9.8 -> 5.9 s, all (fast+slow) 38 -> 16 s. c) xUnit default (classes in parallel, threads = cores) is fine; nothing serialised. d) FAIL summary says `all in <Class>` when one class failed.

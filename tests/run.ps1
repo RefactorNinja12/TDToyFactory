@@ -31,7 +31,8 @@ $filters = @()
 if ($Slow) { $filters += "Speed=Slow"; $scope = "slow" }
 elseif (-not $All) { $filters += "Speed!=Slow"; $scope = "fast" }
 else { $scope = "all" }
-if ($Name) { $filters += "FullyQualifiedName~$Name"; $scope += ", ~$Name" }
+# "A|B|C" = tests whose name contains A, B or C.
+if ($Name) { $filters += "(" + ((($Name -split "\|") | ForEach-Object { "FullyQualifiedName~$_" }) -join "|") + ")"; $scope += ", ~$Name" }
 
 $arguments = @("test", $project, "--nologo", "-v", "q", "--logger", "trx;LogFileName=run.trx", "--results-directory", $results)
 if ($filters.Count -gt 0) { $arguments += @("--filter", ($filters -join "&")) }
@@ -108,5 +109,7 @@ if ($Timing) {
 
 if ($total -eq 0) { Write-Output "NO TESTS MATCHED ($scope) in ${seconds}s"; exit 1 }
 if ($failed.Count -eq 0) { Write-Output "PASS $total/$total ($scope) in ${seconds}s"; exit 0 }
-Write-Output "FAIL $($failed.Count)/$total ($scope) in ${seconds}s"
+$classes = @($failed | ForEach-Object { (Short $_.testName) -replace '\..*$', '' } | Sort-Object -Unique)
+$where = if ($classes.Count -eq 1) { ", all in $($classes[0])" } else { "" }
+Write-Output "FAIL $($failed.Count)/$total ($scope$where) in ${seconds}s"
 exit 1
