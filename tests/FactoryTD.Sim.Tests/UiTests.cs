@@ -340,3 +340,62 @@ public class PowerUiTests
 		Assert.Empty(PowerOverlay.PreviewLinks(s.World, 1, 37, 20));
 	}
 }
+
+public class BuildHotkeyTests
+{
+	private static BuildHotkeys Keys() => new(new[]
+	{
+		new[] { BuildingType.Conveyor, BuildingType.Splitter, BuildingType.Sorter, BuildingType.Junction },
+		new[] { BuildingType.BatteryCharger, BuildingType.Pylon },
+	});
+
+	[Fact]
+	public void NumberThenLetter_PicksTheBuilding()
+	{
+		var keys = Keys();
+		Assert.Equal(new HotkeyResult(HotkeyOutcome.CategoryOpened, 0), keys.Press('1'));
+		Assert.True(keys.Armed);
+		Assert.Equal(new HotkeyResult(HotkeyOutcome.Selected, 0, BuildingType.Sorter), keys.Press('e'));
+		Assert.False(keys.Armed);
+		keys.Press('2');
+		Assert.Equal(BuildingType.Pylon, keys.Press('W').Type);
+	}
+
+	[Fact]
+	public void LettersAlone_StayWithTheCameraAndRotation()
+	{
+		var keys = Keys();
+		Assert.False(keys.Press('W').Consumed);
+		Assert.False(keys.Press('R').Consumed);
+		Assert.False(keys.BlocksCamera('W'));
+	}
+
+	[Fact]
+	public void WhileArmed_TheLettersBelongToTheHotkeys_UntilLetGo()
+	{
+		var keys = Keys();
+		keys.Press('1');
+		Assert.True(keys.BlocksCamera('A'));
+		Assert.False(keys.BlocksCamera('9'));
+		keys.Press('W');                     // picked: no longer armed, but W is still held down
+		Assert.True(keys.BlocksCamera('W'));
+		Assert.False(keys.BlocksCamera('A'));
+		keys.Release('W');
+		Assert.False(keys.BlocksCamera('W'));
+	}
+
+	[Fact]
+	public void EmptyPlace_IsSwallowed_StillWaiting_EscCancels()
+	{
+		var keys = Keys();
+		keys.Press('2');
+		Assert.Equal(HotkeyOutcome.Swallowed, keys.Press('F').Outcome); // only two buildings in this category
+		Assert.True(keys.Armed);
+		Assert.Equal(HotkeyOutcome.Cancelled, keys.Press(BuildHotkeys.Escape).Outcome);
+		Assert.False(keys.Armed);
+		Assert.False(keys.Press('9').Consumed); // no ninth category
+	}
+
+	[Fact]
+	public void LettersInOrder() => Assert.Equal("QWERASDF", string.Concat(System.Linq.Enumerable.Range(0, 8).Select(BuildHotkeys.LetterFor)));
+}

@@ -69,6 +69,8 @@ public partial class Game : Node2D
 		_minimap = new MinimapView { Name = "Minimap" };
 		AddChild(_minimap);
 		_minimap.Bind(World, LocalPlayer, GetNode<Camera2D>("Camera"));
+		if (GetNode("Camera") is CameraController camera)
+			camera.Hotkeys = Menu.Hotkeys;
 
 		_power = new PowerView { Name = "Power" };
 		AddChild(_power);

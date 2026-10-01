@@ -74,6 +74,9 @@ Kompakt fabrik, max 3 nivåer i produktionskedjan, matcher 15–25 min.
   på enheter och byggnader. Byggare på väg till ett löpband räknas inte; en kallad byggare som skulle
   bli den sista kliver inte in. Dör sista byggaren kommer en ny ur leksakslådan (`ReplaceLostBuilders`,
   av i `Scenario.NoWorkers()`). Musfälla = hinder. Närstrid (räckvidd ≤ 1,5 ruta) = `DamageKind.Punch`.
+- Kortkommandon för bygge: siffra 1–7 väljer kategori (flik), sedan Q W E R A S D F byggnaden på den
+  platsen. Medan kategorin väntar (och tills bokstaven släpps) tar kameran (WASD/QE) och R inte bokstäverna.
+  Logik i `Scripts/UI/BuildHotkeys.cs`, BuildMenu läser den i `_Input`.
 - Grafik: `tools/art/restyle.py` gör om alla sprites från `tools/art/source/` (palett + svarta konturer)
   och genererar golvet (stora brädor, 16x8 rutor). Nya sprites läggs i source och skriptet körs.
 
