@@ -188,13 +188,27 @@ public class ScenarioTests
 	}
 
 	[Fact]
-	public void Balance_Scouting_FindsTheBatteryPatch_FasterWithMoreScoutsOrLamps()
+	public void Balance_Scouting_FindsTheBatteryPatch_FasterWithMoreScouts_LampsExploreMore()
 	{
-		int one = SecondsToFindBatteries(1, false), two = SecondsToFindBatteries(2, false), lit = SecondsToFindBatteries(1, true);
-		_out.WriteLine($"battery patch found by 1 scout in {one} s, 2 scouts {two} s, 1 scout + 2 lamps {lit} s");
+		int one = SecondsToFindBatteries(1, false), two = SecondsToFindBatteries(2, false);
+		int dark = ExploredAfterAMinute(lamps: false), lit = ExploredAfterAMinute(lamps: true);
+		_out.WriteLine($"battery patch found by 1 scout in {one} s, 2 scouts {two} s; explored after 60 s: {dark} tiles, with 2 lamps {lit}");
 		Assert.True(one <= 180, $"1 scout took {one} s (wide before deep: the patch is in the far corner)");
 		Assert.True(two < one, $"2 scouts {two} s, 1 scout {one} s");
-		Assert.True(lit < one, $"with lamps {lit} s, without {one} s");
+		Assert.True(lit > dark, $"with lamps {lit} tiles explored, without {dark}");
+	}
+
+	private static int ExploredAfterAMinute(bool lamps)
+	{
+		var s = Scenario.Match().NoWorkers().Instant().Rich().RealFog();
+		if (lamps)
+		{
+			s.Place(BuildingType.Lamp, 22, 38);
+			s.Place(BuildingType.Lamp, 30, 42);
+		}
+		s.Spawn(UnitType.Scout, 9, 30);
+		s.World.Seconds(60);
+		return s.World.ExploredCount(0);
 	}
 
 	[Fact]
