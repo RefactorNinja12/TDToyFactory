@@ -387,3 +387,57 @@ public class BuildHotkeyTests
 	[Fact]
 	public void LettersInOrder() => Assert.Equal("ZXCFGT", string.Concat(System.Linq.Enumerable.Range(0, 6).Select(BuildHotkeys.LetterFor)));
 }
+
+public class HudModelTests
+{
+	[Fact]
+	public void ResourceBar_RawStocksAlways_OthersOnlyWhenThere()
+	{
+		var s = Scenario.Match().NoWorkers();
+		var bar = ResourceBarModel.For(s.World, 0);
+		Assert.Contains(bar.Stocks, e => e.Item == ItemType.Battery && e.Count == 0);
+		Assert.DoesNotContain(bar.Stocks, e => e.Item == ItemType.Gear);
+		s.Give(ItemType.Gear, PlayerState.CoreCapacity);
+		bar = ResourceBarModel.For(s.World, 0);
+		Assert.Contains(bar.Stocks, e => e.Item == ItemType.Gear && e.Full);
+	}
+
+	[Fact]
+	public void ResourceBar_ShortGauges_LongTextInTooltips()
+	{
+		var s = Scenario.Match().NoWorkers();
+		for (int i = 0; i < 10; i++) s.Spawn(UnitType.PlasticSoldier, 2, 5 + i); // eat 10/min, nothing cooked
+		s.World.Tick();
+		var bar = ResourceBarModel.For(s.World, 0);
+		Assert.Equal("-10/min", bar.Food.Short);
+		Assert.Contains("äts", bar.Food.Tooltip);
+		Assert.EndsWith("⚡", bar.Power.Short);
+		Assert.Equal(new Bar(s.World.GetCore(0).MaxHealth, s.World.GetCore(0).MaxHealth), bar.OwnCore);
+		Assert.Contains(bar.Workers, w => w.Type == UnitType.Builder && w.Max == UnitStats.MaxBuilders);
+	}
+
+	[Fact]
+	public void BuildCard_CostPerItem_RedWhereThereIsTooLittle()
+	{
+		var s = Scenario.Match().NoWorkers().Empty(ItemType.Plastic);
+		var card = BuildCardModel.For(BuildingType.Assembler, 2, s.P0);
+		Assert.Equal('C', card.Hotkey);
+		Assert.Contains(card.Cost, c => c.Item == ItemType.Brick && c.Affordable);
+		Assert.Contains(card.Cost, c => c.Item == ItemType.Plastic && !c.Affordable);
+		Assert.False(card.Affordable);
+		Assert.Equal(Texts.DisplayName(BuildingType.Assembler), card.Name);
+	}
+
+	[Fact]
+	public void Toast_ShowsThenFades_NewestReplaces()
+	{
+		var toasts = new Toasts();
+		Assert.Equal(0f, toasts.At(0).Alpha);
+		toasts.Show("Inte tillräckligt", 10);
+		Assert.Equal(("Inte tillräckligt", 1f), toasts.At(11));
+		Assert.InRange(toasts.At(10 + Toasts.ShowSeconds - Toasts.FadeSeconds / 2).Alpha, 0.4f, 0.6f);
+		Assert.Equal(0f, toasts.At(10 + Toasts.ShowSeconds).Alpha);
+		toasts.Show("Nytt", 20);
+		Assert.Equal("Nytt", toasts.At(20.5).Text);
+	}
+}

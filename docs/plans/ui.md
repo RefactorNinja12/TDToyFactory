@@ -36,7 +36,7 @@ tick + log + commit + push per step.
 
 ## Progress
 - [x] 1. Hotkeys: letters Z X C F G T, no camera blocking (BuildHotkeys + tests, CameraController back to plain, menu labels/hint).
-- [ ] 2. UI models (pure, tested): `ResourceBarModel` (entries: item, count, cap, full; food/power gauges; core health), `BuildCardModel` (name, cost stacks with affordable flag per item, hotkey letter, selected), `Toasts` (message queue with timeouts).
+- [x] 2. UI models (pure, tested): `ResourceBarModel` (entries: item, count, cap, full; food/power gauges; core health), `BuildCardModel` (name, cost stacks with affordable flag per item, hotkey letter, selected), `Toasts` (message queue with timeouts).
 - [ ] 3. Theme: `View/UiTheme.cs` (Godot Theme: panel/button/tab/progress styleboxes with frame, inner highlight and shadow, default font + outline, sizes) applied to every CanvasLayer root. Screenshot (crop).
 - [ ] 4. Resource bar redesign on ResourceBarModel. Screenshot (crop top-left).
 - [ ] 5. Build menu redesign on BuildCardModel (tabs, cards, badges, cost icons). Screenshot (crop bottom).
@@ -45,3 +45,4 @@ tick + log + commit + push per step.
 
 ## Log
 - Step 1: BuildHotkeys letters ZXCFGT, Release/BlocksCamera removed (nothing clashes), CameraController plain again, menu labels/hint/status updated. 239/239.
+- Step 2: Scripts/UI/Hud.cs: ResourceBarModel (StockEntry raw+food always, others when >0; Food/Power Gauge short+mood+tooltip; core Bars; WorkerCount builders/farmers/scouts), BuildCardModel (CostEntry affordable per item, hotkey letter, tooltip), Toasts (3 s, fade 0.6 s). 243/243.
