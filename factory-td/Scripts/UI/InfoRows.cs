@@ -124,6 +124,24 @@ public sealed class InfoRows
 				Network(building);
 				break;
 
+			case Treadmill mill:
+				Text($"Tränar: {Texts.UnitName(UnitType.CheeseHunter)}");
+				Text("Behöver per ostjägare:", Tone.Dim);
+				Needs(Treadmill.Recipe, mill.Crafter);
+				if (mill.HasTrainee)
+				{
+					Text("En byggarmus springer efter osten.", Tone.Good);
+					Progress(mill.Crafter.Progress, UnitStats.BuildTicks(UnitType.CheeseHunter));
+				}
+				else if (_world.BuildersOn(mill) > 0)
+					Text("En byggarmus är på väg.", Tone.Good);
+				else if (mill.Crafter.CanWork(Treadmill.Recipe))
+					Text("Väntar på en ledig byggarmus (tar aldrig din sista).", Tone.Missing);
+				else
+					Text("Väntar på smält ost.", Tone.Dim);
+				Text("Drivs av musen: ingen ström.", Tone.Dim);
+				break;
+
 			case Pylon:
 				Text($"Ger ström inom {PowerStats.PylonRadius} rutor, sladd till master/laddare inom {PowerStats.LinkRange}.", Tone.Dim);
 				Network(building);

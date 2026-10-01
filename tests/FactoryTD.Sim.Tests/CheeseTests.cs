@@ -167,3 +167,26 @@ public class CheeseHunterTests
 	}
 }
 
+public class TreadmillInfoTests
+{
+	private static string All(Scenario s, Treadmill mill) =>
+		string.Join(" | ", System.Linq.Enumerable.Select(FactoryTD.UI.InfoRows.For(s.World, mill, 0), r => r.Text));
+
+	[Fact]
+	public void SaysWhatItIsWaitingFor()
+	{
+		var s = Scenario.Match().NoWorkers().Instant().Rich();
+		var mill = s.Place<Treadmill>(BuildingType.Treadmill, 20, 20);
+		Assert.Contains("Väntar på smält ost.", All(s, mill));
+		Assert.Contains(FactoryTD.UI.InfoRows.For(s.World, mill, 0), r => r.Item == ItemType.MeltedCheese);
+		s.Feed(mill, ItemType.MeltedCheese, 2);
+		Assert.Contains("Väntar på en ledig byggarmus", All(s, mill));
+		s.Spawn(UnitType.Builder, 26, 20);
+		s.Spawn(UnitType.Builder, 26, 22);
+		s.World.Ticks(2);
+		Assert.Contains("En byggarmus är på väg.", All(s, mill));
+		s.World.Until(() => mill.HasTrainee, 20, "trainee");
+		Assert.Contains("En byggarmus springer efter osten.", All(s, mill));
+	}
+}
+
