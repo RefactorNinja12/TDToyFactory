@@ -174,15 +174,7 @@ public sealed partial class World
 				return;
 			}
 		}
-		if (unit.PathIndex < unit.Path.Count)
-		{
-			const int half = UnitStats.SubTile / 2;
-			var (tx, ty) = unit.Path[unit.PathIndex];
-			int goalX = tx * UnitStats.SubTile + half, goalY = ty * UnitStats.SubTile + half;
-			TryStep(unit, goalX, goalY);
-			if (CloseTo(unit, goalX, goalY))
-				unit.PathIndex++;
-		}
+		StepAlongPath(unit);
 	}
 
 	private List<(int X, int Y)> FindPathToTile(int fromX, int fromY, int toX, int toY) =>

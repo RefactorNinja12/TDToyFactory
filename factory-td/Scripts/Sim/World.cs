@@ -754,7 +754,13 @@ public sealed partial class World
 				return Walk.Unreachable;
 		}
 
-		// Walk to the centre of the next tile on the path (a step never overshoots it).
+		StepAlongPath(unit);
+		return Walk.Walking;
+	}
+
+	/// <summary>Walks to the centre of the next tile on the unit's path (a step never overshoots it).</summary>
+	private void StepAlongPath(Unit unit)
+	{
 		if (unit.PathIndex < unit.Path.Count)
 		{
 			const int half = UnitStats.SubTile / 2;
@@ -764,7 +770,6 @@ public sealed partial class World
 			if (CloseTo(unit, goalX, goalY))
 				unit.PathIndex++;
 		}
-		return Walk.Walking;
 	}
 
 	private static void Face(Unit unit, Building building)

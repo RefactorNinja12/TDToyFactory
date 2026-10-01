@@ -62,3 +62,4 @@ step, tick + log + commit + push per step.
 - Step 1: golden checksum (2 min bot vs bot, 0x299E99DC031BB7E0) in DeterminismTests; task coverage (coverlet, IncludeTestAssembly: Sim code is linked into the test assembly; ~100 s, summary only); task test:timing (10 slowest); slow SimSpeed test. BASELINE: coverage Sim 97% UI 86.5% (Texts 55%, InfoRows 86%, Logistics 87%, Treadmill 82%); fast suite see next line; slow 28.4 s; sim 1266 ms per simulated minute (53 units, 419 buildings); slowest: BotVsBot 15 min 14.1 s, determinism 5 min 11.1 s, SimSpeed 6.2 s, bot vs idle 3.8 s, BotRuns fixture ~3.7 s.
 - Baseline fast suite 9.8 s.
 - Step 2a: Sim/GridSearch.cs (PathTo, Distances; arrays, same neighbour order) replaces FindPathTo, FindPathToTile, HomeDistance BFS, AllFloorConnected flood fill. Golden unchanged.
+- Step 2b: StepAlongPath shared by WalkTo (buildings) and WalkToTile (scouts); when to re-plan stays separate (different rules). Golden unchanged.
