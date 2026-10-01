@@ -25,6 +25,19 @@ there is no separate server program. "Spela lokalt" keeps today's game against t
     free) and connect as on a LAN.
   - NOT in this plan: a relay server or NAT hole punching. That would need a server on the internet,
     which conflicts with "host = server"; it can be added later as its own plan.
+- **Port and password, chosen by the host:**
+  - Port: the host picks it when starting a match (default 7777, allowed 1024–65535, remembered).
+    The friend types `ip:port`.
+  - Password: required, minimum 4 characters. The host types it and tells the friend.
+  - The password never travels over the network, not even hashed and replayable. The host sends a
+    random challenge (32 bytes, `RandomNumberGenerator`). The client replies with
+    HMAC-SHA256(password, challenge + its own nonce), and the host checks it with
+    `CryptographicOperations.FixedTimeEquals`.
+  - Until the reply is approved the host sends no game data and ignores everything except the reply.
+  - Wrong password → "Fel lösenord" and the connection is closed. After 3 failures from the same IP that
+    IP is blocked for 30 s, so the password can't be guessed quickly.
+  - The match traffic itself is not encrypted (ENet has no encryption). That's fine, because it only
+    contains build commands, but it is stated in the plan.
 - **Bot stays local only** (local mode). An online match is 2 humans.
 
 ## Test loop (token budget)
@@ -54,41 +67,49 @@ there is no separate server program. "Spela lokalt" keeps today's game against t
       `BotPlayer.cs` HashSet<(int,int)> (check iteration; only `Contains` is safe). Fix what turns up.
       Test: the same match in two fresh processes (`dotnet test` child run) gives the same checksum.
 - [ ] 3. Lockstep core (pure, `Scripts/Net/`):
-      a) Messages + codec: Hello(protocol version, game build hash, name), Welcome(player index, map seed,
-         settings), Reject(reason), Start(start tick), Turn(tick, commands), Hash(tick, checksum),
+      a) Messages + codec: Hello(protocol version, game build hash, name, client nonce), Challenge(32 random
+         bytes), Proof(HMAC), Welcome(player index, map seed, settings), Reject(reason: version / wrong
+         password / blocked / full), Start(start tick), Turn(tick, commands), Hash(tick, checksum),
          Ping/Pong, Bye.
       b) `ITransport` (Send(peer, bytes), Poll → Connected/Data/Disconnected) + `FakeNetwork` for tests
          (seeded latency, jitter, ordering kept like ENet's reliable channel).
-      c) `HostSession` / `ClientSession`: handshake, version check, input delay (start 3 ticks = 150 ms,
+      c) `HostSession` / `ClientSession`: handshake (version → challenge → password proof), version check, input delay (start 3 ticks = 150 ms,
          adjusted from measured ping, the same for both sides), turn buffer, `CanStep(tick)`, stall when
          input is missing (never guess).
       Tests: 2 players + bots via commands over the fake network at 0/150/400 ms with jitter, 2 simulated
-      minutes → equal checksums every tick; the wrong version is rejected; a stall resumes when the late
+      minutes → equal checksums every tick; the wrong version is rejected; the right password gets in, a wrong
+      one gets "Fel lösenord" and no game data, the 4th attempt within 30 s is blocked, and a replayed old
+      Proof doesn't work (new challenge every time); the password bytes never appear in any sent packet
+      (the test searches the fake network's traffic); a stall resumes when the late
       packet arrives; a tampered world → desync is reported with the tick.
 - [ ] 4. Disconnect and desync handling (pure + tests): no packets for 10 s → "Motståndaren tappade
       anslutningen" (the remaining player wins, or goes back to the menu); "väntar på motståndaren…"
       after 1 s of stall; desync → stop + log file (`user://desync-<tick>.txt` with both checksums and the
       last commands).
-- [ ] 5. Godot adapter (View): `View/Net/ENetTransport.cs` (CreateServer(7777, max 1 client),
+- [ ] 5. Godot adapter (View): `View/Net/ENetTransport.cs` (CreateServer(port, max 1 client),
       CreateClient(ip, port), Poll/PutPacket). Game.cs takes a `MatchSetup` (mode, seed, local player,
       session); the tick loop steps only when the session allows it. The client is player 1: the camera
       starts in the right-hand room, and LocalPlayer flows to every view (check the views that assume
-      player 0). Command-line switches `--host`, `--join <ip>`, `--bot` (for the smoke test).
+      player 0). Command-line switches `--host [--port N]`, `--join <ip:port>`, `--password X`, `--bot` (for the smoke test).
       `task build` + a screenshot as player 1.
 - [ ] 6. Start menu (`Scenes/Menu.tscn` = new main scene, `View/MainMenu.cs`, UiTheme style). The logic is
       in `Scripts/UI/MenuModel.cs` (states, address parsing/validation, remembered address) with tests:
       - "Spela lokalt" (difficulty: armyDelayTicks)
-      - "Hosta match" (shows LAN IPs + public IP/UPnP status, "Väntar på motståndare…", Start when
+      - "Hosta match": a port field (default 7777, validated) and a password field (required, at least 4
+        characters, a "visa" eye toggle), then shows LAN IPs:port + public IP/UPnP status, "Väntar på motståndare…", Start when
         connected)
-      - "Anslut" (IP[:port] field, remembered in `user://settings.cfg`, "Ansluter…", errors in plain
-        Swedish)
+      - "Anslut": an IP[:port] field (remembered in `user://settings.cfg`) and a password field (never
+        saved), "Ansluter…", errors in plain Swedish ("Fel lösenord", "Fel version av spelet", "Ingen
+        svarar på adressen", "Spärrad en stund efter för många försök")
+      MenuModel tests: port validation (text, 0, 80, 70000 → error), address parsing (`ip`, `ip:port`,
+      bad ones), a password under 4 characters → error, the password not in the settings file.
       - "Avsluta"
       In-game Esc menu: "Lämna match" back to the menu.
-- [ ] 7. `task mp:smoke`: a script starts a headless host (`--host --bot`) and a client
-      (`--join 127.0.0.1 --bot`), lets them play 60 s, each writes the final tick and checksum, and the
+- [ ] 7. `task mp:smoke`: a script starts a headless host (`--host --port 7790 --password test --bot`) and a
+      client (`--join 127.0.0.1:7790 --password test --bot`), lets them play 60 s, each writes the final tick and checksum, and the
       script compares them → one line. Run before every multiplayer commit.
-- [ ] 8. Internet: UPnP port mapping on hosting (status line in the host screen: "Port öppnad" /
-      "Öppna UDP 7777 i routern eller använd Tailscale"), public IP via the UPnP gateway. Test against
+- [ ] 8. Internet: UPnP mapping of the chosen port on hosting, removed when the match ends (status line in
+      the host screen: "Port öppnad" / "Öppna UDP <port> i routern eller använd Tailscale"), public IP via the UPnP gateway. Test against
       a real friend.
 - [ ] 9. Cross-platform builds: install Godot 4.7 .NET export templates; `export_presets.cfg` for
       Windows x86_64, Linux x86_64, macOS (universal); `task export` → `builds/Leksakskrig-<os>.zip` (one
@@ -97,6 +118,8 @@ there is no separate server program. "Spela lokalt" keeps today's game against t
 - [ ] 10. CLAUDE.md (network design, Net tests, mp:smoke, export), `task check`, merge.
 
 ## Risks
+- Password: the host chooses it, so a weak password can be guessed, but the IP blocking makes that slow.
+  The match traffic is unencrypted (build commands only).
 - Determinism between OS/CPU: the sim is integer-only and has a golden checksum; step 2 adds a guard
   test. .NET integer math is the same on x64/ARM.
 - Feel: with lockstep your own building appears after the input delay (~150 ms); ghosts cover it
