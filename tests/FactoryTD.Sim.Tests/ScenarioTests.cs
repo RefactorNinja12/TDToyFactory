@@ -196,4 +196,17 @@ public class ScenarioTests
 		Assert.True(two < one, $"2 scouts {two} s, 1 scout {one} s");
 		Assert.True(lit < one, $"with lamps {lit} s, without {one} s");
 	}
+
+	[Fact]
+	public void Balance_OneCheeseMelter_KeepsAKitchenCooking()
+	{
+		var s = Scenario.Match().NoWorkers().Instant().Rich();
+		s.Place(BuildingType.CheeseMelter, 50, 11);                 // on the cheese patch
+		s.Place(BuildingType.Kitchen, 49, 11, Direction.West);      // filled straight by the melter
+		s.Place(BuildingType.Warehouse, 47, 10);                    // the food goes into storage
+		s.World.Minutes(2);
+		int perMinute = s.P0.FoodProducedLastMinute;
+		_out.WriteLine($"one cheese melter + kitchen: {perMinute} food/min");
+		Assert.True(perMinute >= 15, $"only {perMinute} food/min");
+	}
 }

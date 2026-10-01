@@ -40,7 +40,7 @@ Art: workbench drawings or small generator scripts (tools/art/make_*.py) into to
 - [x] 6. UI/vision: Texts, InfoRows for treadmill (cheese, builder on the way), light radius, minimap, menu tab, checksum fields. Tests.
 - [x] 7. Sprites: treadmill (wheel with cheese on a stick), cheese hunter mouse (headband, fists), cheese melter, melted cheese item, cheese deposit. Screenshot.
 - [x] 8. Bot: cheese module + treadmill. Tests: bot builds them and gets hunters; slow bot matches still healthy.
-- [ ] 9. Balance (slow guards: hunter vs soldier duel, cheese food rate) + CLAUDE.md; commit, push, PR link.
+- [x] 9. Balance (slow guards: hunter vs soldier duel, cheese food rate) + CLAUDE.md; commit, push, PR link.
 
 ## Log
 - Step 1: ObstacleKind.MouseTrap (3x2, last in RoomToys), sprite by tools/art/make_mousetrap.py (wood board, snap bar, springs, cheese on the trigger), ObstacleView. 10 toys. 211/211.
@@ -51,3 +51,4 @@ Art: workbench drawings or small generator scripts (tools/art/make_*.py) into to
 - Step 6: InfoRows Treadmill (needs cheese, trainee/on the way/waiting for a free builder/waiting for cheese, no power). Texts/menu/light/checksum were done in step 5. 227/227.
 - Step 7: workbench cheese hunter 7d4ca28a.. (mouse, red headband, boxing gloves), treadmill c8c60519.. (belt with slats, rails, rollers, panel, cheese on a string), replacing the placeholders; cheese melter/item/deposit came in step 3. 227/227.
 - Step 8: bot module "ostjägare" right after "soldater" (army +2 min): treadmill 53,10 + melters 52,10 / 52,11 filling it directly (normal module growth stalls after golems for lack of bricks, so it had to come early). CallBuilder now takes the nearest busy builder if none is idle (bot builders are never idle). Bot vs bot: hunters 5 / 3, p0 wins 703 s; guard >= 1 hunter each. 228/228.
+- Step 9: slow Balance_OneCheeseMelter_KeepsAKitchenCooking (20 food/min, guard >= 15); hunter < soldier is a fast test. CLAUDE.md (Möss och ost). PLAN DONE.
