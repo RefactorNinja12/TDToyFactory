@@ -114,6 +114,7 @@ Kompakt fabrik, max 3 nivåer i produktionskedjan, matcher 15–25 min.
   läs den först, fortsätt med första obockade steget, bocka av och logga i samma commit.
 - Klara: `docs/plans/power.md` (elnät), `docs/plans/fog.md` (dimma, ljus, spejare, minikarta),
   `docs/plans/obstacles.md` (stora leksaker som hinder), `docs/plans/mice.md` (möss, ost, ostjägare, musfälla), `docs/plans/ui.md` (UI-stil, kortkommandon).
+  `docs/plans/refactor.md` (GridSearch, smutsflaggor för fält, rumslig målsökning, test:changed).
 
 ## Arbetsflöde (tester är feedbackloopen)
 - `Taskfile.yaml` (go-task) samlar kommandona; `task` listar dem.
@@ -128,6 +129,12 @@ Kompakt fabrik, max 3 nivåer i produktionskedjan, matcher 15–25 min.
 - `task check` (lint + alla tester) före varje commit. `task fmt` fixar formatering.
 - Lint = `dotnet format` mot `.editorconfig` (tabbar, LF) + analyzers; 0 varningar är normalläget.
   `.gitattributes` håller `.cs` i LF trots `core.autocrlf=true`.
+- Snabbast: `task test:changed` kör bara testerna för ändrade .cs-filer sedan senaste commit
+  (tabell i `tests/changed.ps1`; kärnfiler som World → alla snabba; View → build). Flera områden: `task test -- "A|B"`.
+- Golden-checksumman (`DeterminismTests.GoldenBotMatch`, 2 min bot mot bot) vaktar refaktorer: får bara
+  ändras när beteendet medvetet ändrats (felet skriver ut det nya värdet). Ren refaktor = oförändrad.
+- `task coverage` = täckning Sim/UI + 10 sämsta filer (~100 s); `-File X.cs -Reuse` (ps1) visar otestade rader.
+  `task test:timing` = 10 långsammaste testerna. Sim-hastighet: slow-testet `SimSpeed_*` (ms per sim-minut).
 - Buggfix: skriv först ett test som fallerar, sedan fixen. Ny funktion: tester i samma ändring.
 - Ny logik hamnar i `Scripts/Sim` eller `Scripts/UI` (testbart), inte i View.
 - Balansändring: kör `task test:report` och uppdatera trösklarna medvetet om designen ändrats.
