@@ -62,6 +62,11 @@ tasks:
     cmds:
       - "{{.PS}} tests/lint.ps1"
 
+  export:
+    desc: "Windows/Linux/macOS builds as one zip each in builds/ (needs Godot .NET export templates)"
+    cmds:
+      - "{{.PS}} tests/export.ps1"
+
   mp:smoke:
     desc: "Two headless games (host + client over localhost, bots) must end with equal checksums (~40 s)"
     cmds:

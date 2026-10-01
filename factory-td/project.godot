@@ -10,7 +10,7 @@ config_version=5
 
 [application]
 
-config/name="FactoryTD"
+config/name="Leksakskrig"
 run/main_scene="res://Scenes/Menu.tscn"
 config/features=PackedStringArray("4.7", "C#", "Forward Plus")
 config/icon="res://icon.svg"
@@ -34,3 +34,4 @@ project/assembly_name="FactoryTD"
 [rendering]
 
 rendering_device/driver.windows="d3d12"
+textures/vram_compression/import_etc2_astc=true

@@ -1,0 +1,22 @@
+LEKSAKSKRIG - så spelar ni online
+=================================
+
+Starta spelet
+- Windows: packa upp zip-filen och starta Leksakskrig.exe.
+  Första gången frågar Windows-brandväggen: tillåt (privata nätverk räcker hemma).
+  Säger Windows "Datorn skyddades": klicka "Mer information" -> "Kör ändå" (spelet är inte signerat).
+- macOS: packa upp, högerklicka på Leksakskrig.app -> Öppna -> Öppna (spelet är inte notariserat).
+- Linux: packa upp och kör ./Leksakskrig.x86_64 (chmod +x om det behövs).
+
+Spela tillsammans
+1. Den ena väljer "Hosta match", väljer port (t.ex. 7777) och ett lösenord (minst 4 tecken),
+   och trycker "Starta värd". Menyn visar adressen kompisen ska skriva.
+2. Den andra väljer "Anslut till match" och skriver adressen (ip:port) och lösenordet.
+3. När kompisen är ansluten trycker värden "Starta matchen".
+
+Samma nätverk: använd adressen som börjar med 192.168... (eller 10...).
+Över internet: värdens spel försöker öppna porten i routern själv (UPnP) och visar då en publik
+adress. Går det inte: öppna UDP-porten i routern, eller installera Tailscale (gratis) på båda
+datorerna och anslut till värdens Tailscale-adress (100...).
+
+Båda måste köra exakt samma version av spelet (samma zip).
