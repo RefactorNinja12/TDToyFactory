@@ -81,6 +81,17 @@ Kompakt fabrik, max 3 nivåer i produktionskedjan, matcher 15–25 min.
   textkontur; standardtypsnitt) sätts på varje UI-rot via `UiTheme.ApplyTo` (fönstrets tema når inte
   kontroller under CanvasLayers). Lite text: siffror vid små ikoner, förklaringar i verktygstips.
   Modeller i `Scripts/UI/Hud.cs` (ResourceBarModel, BuildCardModel, Toasts); vyerna ritar bara dem.
+- Multiplayer (online, 2 spelare): deterministisk lockstep där värden är servern. Bara kommandon går över
+  nätet (`PlayerCommand`: bygg/riv/ställ in; allt spelare och bot gör går via `ICommandSink` → `World.Apply`).
+  Kommando skickat vid steg s körs vid s + InputDelay (3–12 steg efter ping) på båda maskinerna; värden
+  slår ihop båda spelarnas kommandon till en tur per steg, ingen kör ett steg utan sin tur (sen tur = vänta).
+  Kontrollsumma var 20:e steg, olika = matchen stoppas + `user://desync-TICK.txt`. Värden väljer port
+  (standard 7777) och lösenord (minst 4 tecken); lösenordet går aldrig över nätet (HMAC-SHA256 på en ny
+  utmaning varje gång), 3 fel på 60 s = IP:n spärras 30 s. Samma bygge krävs (`Protocol.BuildId` = assemblyns
+  MVID, lika på alla plattformar i exporten, annat i editorn). ENet (UDP) som rått paketrör; UPnP öppnar porten
+  i routern (2 h lease) och visar publik adress, annars port forwarding eller Tailscale. Startmeny (`Scenes/
+  Menu.tscn`, huvudscen): spela lokalt (Lätt/Normal), hosta, anslut. Online går inte att pausa; 10 s tystnad =
+  anslutningen bröts. Sim-koden får inte ha flyttal, klockor, slump, hashkoder eller trådar (`DeterminismGuardTests`).
 - Grafik: `tools/art/restyle.py` gör om alla sprites från `tools/art/source/` (palett + svarta konturer)
   och genererar golvet (stora brädor, 16x8 rutor). Nya sprites läggs i source och skriptet körs.
 
@@ -104,6 +115,10 @@ Kompakt fabrik, max 3 nivåer i produktionskedjan, matcher 15–25 min.
 - `Scripts/View/PowerView.cs` ritar sladdar, täckning, placeringsförhandsvisning, ikon utan ström, laddstaplar.
 - `Scripts/UI/` ren C# utan Godot-typer: texter (`Texts`), bandkurvor (`ConveyorLook`), dragväg
   (`DragPath`), matmätaren (`FoodMeter`), hoverpanelens rader (`InfoRows`). View ritar bara det.
+- `Scripts/Net/` ren C# (testas): `Protocol` (meddelanden, `PacketWriter/Reader` som aldrig kastar, lösenordsbevis),
+  `MatchSession` (lockstep, ping, timeout, desync), `HostSession`, `ClientSession`, `ITransport`. Godot-sidan:
+  `View/Net/ENetTransport.cs`, `MatchSetup` (statisk: sessionen genom scenbytet), `PortOpener` (UPnP);
+  `View/MainMenu.cs` (logik/texter i `UI/MenuModel.cs`, även `LaunchArgs`), `View/MatchOverlay.cs` (vänta, slut, Esc).
 - `tests/FactoryTD.Sim.Tests/` xUnit, kompilerar `Scripts/Sim` + `Scripts/UI` direkt (internals syns).
   `Support/Scenario.cs` bygger scenarier (`Match().NoWorkers().Instant().Rich()`, `Place`, `Belt`,
   `Spawn`, `Feed`), `WorldRunner` kör tid (`Seconds`, `Until(villkor, maxSek, "vad")`).
@@ -114,6 +129,7 @@ Kompakt fabrik, max 3 nivåer i produktionskedjan, matcher 15–25 min.
   läs den först, fortsätt med första obockade steget, bocka av och logga i samma commit.
 - Klara: `docs/plans/power.md` (elnät), `docs/plans/fog.md` (dimma, ljus, spejare, minikarta),
   `docs/plans/obstacles.md` (stora leksaker som hinder), `docs/plans/mice.md` (möss, ost, ostjägare, musfälla), `docs/plans/ui.md` (UI-stil, kortkommandon).
+  `docs/plans/multiplayer.md` (online-lockstep, lösenord, startmeny, UPnP, export).
   `docs/plans/refactor.md` (GridSearch, smutsflaggor för fält, rumslig målsökning, test:changed).
 
 ## Arbetsflöde (tester är feedbackloopen)
@@ -143,6 +159,12 @@ Kompakt fabrik, max 3 nivåer i produktionskedjan, matcher 15–25 min.
 - Balansändring: kör `task test:report` och uppdatera trösklarna medvetet om designen ändrats.
 - Lint FAIL med ENDOFLINE/WHITESPACE → `task fmt`, sedan `task lint`. Analyzer-varningar (t.ex.
   xUnit2013) fixas för hand. `task build` bara för View-ändringar (testerna bygger inte View).
+- Nätverk: `task test -- Net` (falskt nät med latens/jitter i `Support/FakeNetwork.cs`, `NetPlayer` kör en maskin).
+  `task mp:smoke` (~40 s) = två headless spel via localhost (riktig meny, ENet, lösenord, botar) ska sluta med
+  samma kontrollsumma; kör före commits som rör nät/lockstep. Startargument: `-- --host --port N --password X
+  --bot --steps N --out FIL` / `-- --join ip:port ...`.
+- `task export` = zip per plattform i `builds/` (Godot .NET export templates krävs, `tools/build/zip_build.py`
+  behåller körrättigheter, `docs/LAS-MIG.txt` följer med). Båda spelarna måste köra samma zip.
 - Godot bara för det visuella: `Scripts/_Test/VisualProbe.cs` + skärmdump (headless `--write-movie`).
   `Scenes/_Probe*.tscn` är gitignorerade.
 
