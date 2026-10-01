@@ -189,3 +189,51 @@ public class TreadmillInfoTests
 	}
 }
 
+public class LastBuilderTests
+{
+	[Fact]
+	public void TwoTreadmills_TwoBuilders_TheLastOneStays()
+	{
+		var s = Scenario.Match().NoWorkers().Instant().Rich();
+		var a = s.Place<Treadmill>(BuildingType.Treadmill, 20, 20);
+		var b = s.Place<Treadmill>(BuildingType.Treadmill, 20, 24);
+		s.Spawn(UnitType.Builder, 24, 21);
+		s.Spawn(UnitType.Builder, 24, 23);
+		s.Feed(a, ItemType.MeltedCheese, 2);
+		s.Feed(b, ItemType.MeltedCheese, 2);
+		s.World.Seconds(20);
+		Assert.Equal(1, s.World.CountUnits(0, UnitType.Builder));
+		Assert.Equal(1, s.World.CountUnits(0, UnitType.CheeseHunter));
+	}
+
+	[Fact]
+	public void CalledBuilder_TurnsBack_IfTheOthersDiedMeanwhile()
+	{
+		var s = Scenario.Match().NoWorkers().Instant().Rich();
+		var mill = s.Place<Treadmill>(BuildingType.Treadmill, 20, 20);
+		var called = s.Spawn(UnitType.Builder, 30, 21);
+		var other = s.Spawn(UnitType.Builder, 40, 40);
+		s.Feed(mill, ItemType.MeltedCheese, 2);
+		s.World.Ticks(2);
+		Assert.Same(mill, called.Job);
+		other.Health = 0;
+		s.World.Seconds(10);
+		Assert.Equal(1, s.World.CountUnits(0, UnitType.Builder));
+		Assert.False(mill.HasTrainee);
+	}
+
+	[Fact]
+	public void LastBuilderLost_ANewOneComesOutOfTheToybox()
+	{
+		var s = Scenario.Match(); // the starting builders, respawn on
+		foreach (var u in s.World.Units)
+			if (u.Type == UnitType.Builder)
+				u.Health = 0;
+		s.World.Tick();
+		var builder = Assert.Single(s.World.Units, u => u.Owner == 0 && u.Type == UnitType.Builder);
+		var core = s.World.GetCore(0);
+		Assert.Equal((core.X + 1, core.Y + 1), (builder.TileX, builder.TileY));
+		Assert.Equal(1, s.World.CountUnits(1, UnitType.Builder)); // the other player too
+	}
+}
+

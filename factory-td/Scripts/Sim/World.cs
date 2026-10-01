@@ -299,6 +299,7 @@ public sealed partial class World
 		if (TickCount % VisionStats.VisionTicks == 0)
 			_vision.Recompute(this);
 		_units.RemoveAll(u => u.Health <= 0);
+		ReplaceLostBuilders();
 
 		for (int p = 0; p < _cores.Length && Winner < 0; p++)
 			if (_cores[p] != null && _cores[p].Health == 0)
@@ -388,6 +389,26 @@ public sealed partial class World
 	/// <summary>Removes every unit (tests start from a clean slate with this).</summary>
 	internal void ClearUnits() => _units.Clear();
 
+	/// <summary>Turns off <see cref="ReplaceLostBuilders"/> (tests that want no units at all).</summary>
+	internal bool NoBuilderRespawn { get; set; }
+
+	/// <summary>
+	/// A player is never left without a builder: if the last one is gone, a new one comes out of the toybox,
+	/// so the player can always build again.
+	/// </summary>
+	private void ReplaceLostBuilders()
+	{
+		if (NoBuilderRespawn)
+			return;
+		for (int p = 0; p < _cores.Length; p++)
+		{
+			var core = _cores[p];
+			if (core == null || core.Health <= 0 || CountUnits(p, UnitType.Builder) > 0)
+				continue;
+			SpawnUnit(UnitType.Builder, p, core.X + core.Width / 2, core.Y + core.Height / 2);
+		}
+	}
+
 	/// <summary>
 	/// A treadmill with cheese wants a builder: the nearest idle one of its owner walks over, or if all are
 	/// busy the nearest one that is building (never the last builder, so the player can always still build).
@@ -395,18 +416,18 @@ public sealed partial class World
 	/// </summary>
 	internal void CallBuilder(Treadmill mill)
 	{
-		int builders = 0;
+		int staying = 0; // builders not already on their way to a treadmill
 		Unit idle = null, busy = null;
 		long bestIdle = long.MaxValue, bestBusy = long.MaxValue;
 		foreach (var unit in _units)
 		{
 			if (unit.Owner != mill.Owner || unit.Type != UnitType.Builder || unit.Health <= 0)
 				continue;
-			builders++;
 			if (unit.Job == mill)
 				return;
 			if (unit.Job is Treadmill)
 				continue; // already going to another treadmill
+			staying++;
 			long dx = unit.X - mill.CenterX, dy = unit.Y - mill.CenterY, d = dx * dx + dy * dy;
 			if (unit.Job == null && d < bestIdle)
 				(idle, bestIdle) = (unit, d);
@@ -414,7 +435,8 @@ public sealed partial class World
 				(busy, bestBusy) = (unit, d);
 		}
 		var nearest = idle ?? busy;
-		if (builders <= 1 || nearest == null)
+		// The one called must leave at least one builder behind (two treadmills can't take the last two).
+		if (staying <= 1 || nearest == null)
 			return;
 		nearest.Job = mill;
 		nearest.Path = null;
@@ -513,6 +535,8 @@ public sealed partial class World
 				switch (WalkTo(builder, mill))
 				{
 					case Walk.Arrived:
+						if (CountUnits(builder.Owner, UnitType.Builder) <= 1)
+							break; // the others died meanwhile: the last builder never goes in
 						mill.Enter();
 						builder.Health = 0; // used up: gone at the end of the tick
 						return;

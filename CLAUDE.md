@@ -71,7 +71,9 @@ Kompakt fabrik, max 3 nivåer i produktionskedjan, matcher 15–25 min.
   Köket gör matlådor av 2 morötter eller 1 smält ost (morötter först). Löpbandet (2x2, ingen ström,
   pausar vid svält) tar 2 smält ost + en byggarmus (kallas dit, aldrig den sista; ledig först, annars
   närmaste som bygger) och tränar en ostjägare: billig närkämpe (lågnivå, svagare än soldat) som slår
-  på enheter och byggnader. Musfälla = hinder. Närstrid (räckvidd ≤ 1,5 ruta) = `DamageKind.Punch`.
+  på enheter och byggnader. Byggare på väg till ett löpband räknas inte; en kallad byggare som skulle
+  bli den sista kliver inte in. Dör sista byggaren kommer en ny ur leksakslådan (`ReplaceLostBuilders`,
+  av i `Scenario.NoWorkers()`). Musfälla = hinder. Närstrid (räckvidd ≤ 1,5 ruta) = `DamageKind.Punch`.
 - Grafik: `tools/art/restyle.py` gör om alla sprites från `tools/art/source/` (palett + svarta konturer)
   och genererar golvet (stora brädor, 16x8 rutor). Nya sprites läggs i source och skriptet körs.
 
