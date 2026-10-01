@@ -35,7 +35,7 @@ step, tick + log + commit + push per step.
       c) `task test:timing` (runner `-Timing`): the 10 slowest tests, one line each;
       d) sim speed guard (slow test): ms per simulated minute of bot vs bot, logged.
       Record baseline numbers (coverage %, fast/slow suite seconds, sim ms/min) in the log.
-- [ ] 2. Sim dedup (golden checksum must stay equal):
+- [x] 2. Sim dedup (golden checksum must stay equal):
       a) `Sim/GridSearch.cs` (BFS path + distances + connected), used by the four searches;
       b) one path follower for buildings and tiles;
       c) `Building.Footprint()` / footprint helpers, used by Vision, Knowledge, NetworkOf, CheckLocation;
@@ -66,3 +66,4 @@ step, tick + log + commit + push per step.
 - Step 2c: Footprint.Any + Building.AnyTile replace the tile loops in Vision.AnyVisible, World.NetworkOf, Knowledge.ShowBuilding/Ghosts (CheckLocation keeps its own loop: it returns which rule failed). Golden unchanged.
 - Step 2d skipped: UnitFactory/Treadmill share only the starving line; not worth a helper.
 - Step 2e (perf, measured): World.Tick profile 1 min mid-game: flow fields 584 ms, units 391 (army 292), vision 122, buildings 54, separation 34; bots only 15. Split dirty flags: power grid on place/remove/finish, a player's flow field only when an ENEMY building is placed/removed (finishing changes no field). Golden unchanged; sim 1266 -> 789 ms per simulated minute.
+- Step 2e (2): SelectTarget scans only the tiles in reach (GetBuilding + ScanMark), ties by Building.Serial = placement order = old list order. Golden unchanged; sim 789 -> 697 ms per simulated minute (baseline 1266, -45%).

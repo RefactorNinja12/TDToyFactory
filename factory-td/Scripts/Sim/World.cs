@@ -25,6 +25,8 @@ public sealed partial class World
 	// removed or finished; a player's flow field only when an ENEMY building appears or goes (own buildings
 	// cost nothing to walk through, and a construction site already counts as a building).
 	private bool _powerDirty = true;
+	private int _nextBuildingSerial;
+	private int _scanMark;
 	private bool[] _flowDirty;
 	private readonly PowerGrid _power;
 	private readonly Vision _vision;
@@ -218,6 +220,7 @@ public sealed partial class World
 
 		_players[owner].TrySpend(BuildingRules.Cost(type));
 		var building = BuildingRules.Create(type, x, y, facing, owner, this);
+		building.Serial = _nextBuildingSerial++;
 		SetFootprint(building, building);
 		_buildings.Add(building);
 		if (building is Core core)
@@ -990,33 +993,42 @@ public sealed partial class World
 				return (enemyUnit, null);
 		}
 
+		// Only the tiles that can be in range (a building counts when its nearest edge is in range). Ties go to
+		// the building placed first, exactly as a scan over the whole building list would choose.
 		Building tower = null, other = null, core = null;
 		long towerDistance = range2, otherDistance = range2;
-		foreach (var building in _buildings)
-		{
-			if (building.Owner == unit.Owner)
-				continue;
-			long distance = DistanceSquaredTo(building, unit.X, unit.Y);
-			if (distance > range2)
-				continue;
+		int reach = range / UnitStats.SubTile + 2, mark = ++_scanMark;
+		for (int ty = unit.TileY - reach; ty <= unit.TileY + reach; ty++)
+			for (int tx = unit.TileX - reach; tx <= unit.TileX + reach; tx++)
+			{
+				var building = GetBuilding(tx, ty);
+				if (building == null || building.Owner == unit.Owner || building.ScanMark == mark)
+					continue;
+				building.ScanMark = mark;
+				long distance = DistanceSquaredTo(building, unit.X, unit.Y);
+				if (distance > range2)
+					continue;
 
-			if (building is Tower)
-			{
-				if (tower == null || distance < towerDistance)
-					(tower, towerDistance) = (building, distance);
+				if (building is Tower)
+				{
+					if (tower == null || Closer(distance, building, towerDistance, tower))
+						(tower, towerDistance) = (building, distance);
+				}
+				else if (building is Core)
+				{
+					if (includeCore)
+						core = building;
+				}
+				else if (other == null || Closer(distance, building, otherDistance, other))
+				{
+					(other, otherDistance) = (building, distance);
+				}
 			}
-			else if (building is Core)
-			{
-				if (includeCore)
-					core = building;
-			}
-			else if (other == null || distance < otherDistance)
-			{
-				(other, otherDistance) = (building, distance);
-			}
-		}
 		return (null, tower ?? other ?? core);
 	}
+
+	private static bool Closer(long distance, Building building, long bestDistance, Building best) =>
+		distance < bestDistance || (distance == bestDistance && building.Serial < best.Serial);
 
 	/// <summary>Squared distance from a point to the nearest edge of the building's footprint (0 if inside).</summary>
 	private static long DistanceSquaredTo(Building building, int x, int y)

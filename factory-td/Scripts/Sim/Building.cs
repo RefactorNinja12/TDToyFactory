@@ -81,6 +81,12 @@ public static class Footprint
 
 public abstract class Building
 {
+	/// <summary>Placement order (the order of World.Buildings): breaks ties the same way a list scan would.</summary>
+	internal int Serial { get; set; }
+
+	/// <summary>Scratch mark so a search over tiles sees a 2x2 building only once.</summary>
+	internal int ScanMark { get; set; }
+
 	/// <summary>Whether <paramref name="test"/> holds for any of the tiles the building covers.</summary>
 	public bool AnyTile(System.Func<int, int, bool> test) => Footprint.Any(X, Y, Width, Height, test);
 
