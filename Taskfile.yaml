@@ -62,6 +62,11 @@ tasks:
     cmds:
       - "{{.PS}} tests/lint.ps1"
 
+  mp:smoke:
+    desc: "Two headless games (host + client over localhost, bots) must end with equal checksums (~40 s)"
+    cmds:
+      - "{{.PS}} tests/mp_smoke.ps1"
+
   dupes:
     desc: "Copy-paste check (jscpd via npx, .jscpd.json): any repeated block of 50+ tokens fails"
     cmds:

@@ -1,9 +1,14 @@
+using FactoryTD.Net;
 using FactoryTD.Sim;
+using FactoryTD.View.Net;
 using Godot;
 
 namespace FactoryTD.View;
 
-/// <summary>Root of the main scene: creates the World, runs its fixed tick and wires the views to it.</summary>
+/// <summary>
+/// Root of the match scene: takes the World (local, or from the online session in MatchSetup), runs its fixed
+/// tick (online: only when the lockstep turn is there) and wires the views to it.
+/// </summary>
 public partial class Game : Node2D
 {
 	private const double TickSeconds = 1.0 / World.TicksPerSecond;
@@ -25,13 +30,17 @@ public partial class Game : Node2D
 	/// <summary>Let a simple bot play the other side.</summary>
 	[Export] public bool EnableBot = true;
 
-	private BotPlayer _bot;
+	private BotPlayer _bot, _localBot;
+	private MatchSession _session;
+	private ICommandSink _commands;
+	private MatchOverlay _overlay;
+	private bool _desyncLogged;
+	private double _quitIn = -1;
 	private PowerView _power;
 	private FogView _fog;
 	private MinimapView _minimap;
 
-	// TODO: comes from the network session later.
-	private const int LocalPlayer = 0;
+	private int LocalPlayer;
 
 	private double _accumulator;
 
@@ -40,9 +49,24 @@ public partial class Game : Node2D
 	// Children are ready before their parent, so everything below exists here.
 	public override void _Ready()
 	{
-		World = World.CreateMatch();
-		if (EnableBot)
-			_bot = new BotPlayer(World.EnemyOf(LocalPlayer));
+		_session = MatchSetup.Session;
+		if (_session != null)
+		{
+			World = _session.World;
+			LocalPlayer = _session.LocalPlayer;
+			_commands = _session.Commands;
+			DebugKeys = false; // a debug wave would exist on one machine only
+		}
+		else
+		{
+			World = World.CreateMatch();
+			_commands = new DirectCommands(World);
+			if (EnableBot)
+				_bot = new BotPlayer(World.EnemyOf(LocalPlayer), MatchSetup.BotArmyDelayTicks);
+		}
+		if (MatchSetup.LocalBot)
+			_localBot = new BotPlayer(LocalPlayer);
+		Builder.Commands = _commands;
 
 		Map.Render(World.Map);
 		Buildings.Bind(World);
@@ -74,6 +98,14 @@ public partial class Game : Node2D
 		AddChild(_power);
 		_power.Bind(World, Builder, LocalPlayer);
 
+		// The scene's camera looks at the left room; the right-hand player gets the mirror image.
+		var camera = GetNode<CameraController>("Camera");
+		if (World.GetCore(LocalPlayer).X > World.Map.Width / 2)
+			camera.StartAt(new Vector2(World.Map.Width * BuildingVisuals.TileSize - camera.Position.X, camera.Position.Y));
+		_overlay = new MatchOverlay { Name = "Overlay" };
+		AddChild(_overlay);
+		_overlay.Bind(World, _session, LeaveMatch);
+
 		Menu.SelectionChanged += Builder.Select;
 		Builder.SelectionCleared += Menu.ClearSelection;
 		Builder.StatusChanged += Menu.ShowStatus;
@@ -86,12 +118,24 @@ public partial class Game : Node2D
 
 	public override void _Process(double delta)
 	{
+		_session?.Update((long)Time.GetTicksMsec());
+		LogDesync();
+		if (QuitWhenDone(delta) || _overlay.PausesGame)
+			return;
+
 		_accumulator += delta;
 		int ticks = 0;
-		while (_accumulator >= TickSeconds && ticks < MaxTicksPerFrame)
+		while (_accumulator >= TickSeconds && ticks < MaxTicksPerFrame && !ReachedQuitStep())
 		{
 			_bot?.Tick(World);
-			World.Tick();
+			_localBot?.Tick(World, _commands);
+			if (_session == null)
+				World.Tick();
+			else if (!_session.TryStep())
+			{
+				_accumulator = System.Math.Min(_accumulator, TickSeconds); // waiting: don't rush afterwards
+				break;
+			}
 			_accumulator -= TickSeconds;
 			ticks++;
 		}
@@ -104,6 +148,51 @@ public partial class Game : Node2D
 		Combat.Alpha = alpha;
 		_power.Alpha = alpha;
 		_fog.Alpha = alpha;
+	}
+
+	private void LeaveMatch()
+	{
+		MatchSetup.EndOnline();
+		GetTree().ChangeSceneToFile("res://Scenes/Menu.tscn");
+	}
+
+	/// <summary>On a desync, both checksums and the last commands go to user://desync-TICK.txt (once).</summary>
+	private void LogDesync()
+	{
+		if (_desyncLogged || _session is not { EndReason: EndReason.Desync })
+			return;
+		_desyncLogged = true;
+		using var file = FileAccess.Open($"user://desync-{_session.DesyncStep}.txt", FileAccess.ModeFlags.Write);
+		file?.StoreString(_session.DesyncReport());
+		GD.PrintErr($"desync at tick {_session.DesyncStep}, log in {OS.GetUserDataDir()}");
+	}
+
+	private bool ReachedQuitStep() => MatchSetup.QuitAfterSteps > 0 && World.TickCount >= MatchSetup.QuitAfterSteps;
+
+	/// <summary>
+	/// Smoke test (--steps N): at step N write "tick checksum" (or why the match ended) and quit a few seconds
+	/// later, so the other side also gets its last turns before this one hangs up.
+	/// </summary>
+	private bool QuitWhenDone(double delta)
+	{
+		if (MatchSetup.QuitAfterSteps <= 0)
+			return false;
+		if (_quitIn < 0 && (ReachedQuitStep() || _session is { State: SessionState.Ended }))
+		{
+			string line = ReachedQuitStep() ? $"{World.TickCount} {World.Checksum():X16}" : $"ended {_session.EndReason} {_session.DesyncStep}";
+			using (var file = FileAccess.Open(MatchSetup.ChecksumFile, FileAccess.ModeFlags.Write))
+				file?.StoreString(line + "\n");
+			_quitIn = 3;
+		}
+		if (_quitIn < 0)
+			return false;
+		_quitIn -= delta;
+		if (_quitIn <= 0)
+		{
+			MatchSetup.EndOnline();
+			GetTree().Quit();
+		}
+		return true;
 	}
 
 	public override void _UnhandledInput(InputEvent @event)

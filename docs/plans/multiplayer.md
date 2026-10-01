@@ -86,13 +86,13 @@ there is no separate server program. "Spela lokalt" keeps today's game against t
       anslutningen" (the remaining player wins, or goes back to the menu); "väntar på motståndaren…"
       after 1 s of stall; desync → stop + log file (`user://desync-<tick>.txt` with both checksums and the
       last commands).
-- [ ] 5. Godot adapter (View): `View/Net/ENetTransport.cs` (CreateServer(port, max 1 client),
+- [x] 5. Godot adapter (View): `View/Net/ENetTransport.cs` (CreateServer(port, max 1 client),
       CreateClient(ip, port), Poll/PutPacket). Game.cs takes a `MatchSetup` (mode, seed, local player,
       session); the tick loop steps only when the session allows it. The client is player 1: the camera
       starts in the right-hand room, and LocalPlayer flows to every view (check the views that assume
       player 0). Command-line switches `--host [--port N]`, `--join <ip:port>`, `--password X`, `--bot` (for the smoke test).
       `task build` + a screenshot as player 1.
-- [ ] 6. Start menu (`Scenes/Menu.tscn` = new main scene, `View/MainMenu.cs`, UiTheme style). The logic is
+- [x] 6. Start menu (`Scenes/Menu.tscn` = new main scene, `View/MainMenu.cs`, UiTheme style). The logic is
       in `Scripts/UI/MenuModel.cs` (states, address parsing/validation, remembered address) with tests:
       - "Spela lokalt" (difficulty: armyDelayTicks)
       - "Hosta match": a port field (default 7777, validated) and a password field (required, at least 4
@@ -105,7 +105,7 @@ there is no separate server program. "Spela lokalt" keeps today's game against t
       bad ones), a password under 4 characters → error, the password not in the settings file.
       - "Avsluta"
       In-game Esc menu: "Lämna match" back to the menu.
-- [ ] 7. `task mp:smoke`: a script starts a headless host (`--host --port 7790 --password test --bot`) and a
+- [x] 7. `task mp:smoke`: a script starts a headless host (`--host --port 7790 --password test --bot`) and a
       client (`--join 127.0.0.1:7790 --password test --bot`), lets them play 60 s, each writes the final tick and checksum, and the
       script compares them → one line. Run before every multiplayer commit.
 - [ ] 8. Internet: UPnP mapping of the chosen port on hosting, removed when the match ends (status line in
@@ -134,3 +134,6 @@ there is no separate server program. "Spela lokalt" keeps today's game against t
 - Step 1: Sim/Commands.cs (PlayerCommand 8 bytes LE, Read rejects unknown kind/type/facing; ICommandSink, DirectCommands); World.Apply (ignores unknown player / off-map). BotPlayer.Tick(world, sink): with a delay it waits until its last order landed (no double configure). BuildController sends commands (drag judges with CanPlace). Pending ghosts moved to step 5 (needs the online loop to see). Golden unchanged. CommandTests 7.
 - Step 2: DeterminismGuardTests scans Scripts/Sim for float/double, Math.Sqrt & co, Random/Guid, clocks, GetHashCode/HashCode, threads (+ self-tests that the rules catch/leave alone). Sim was already clean. Dictionary/HashSet are NOT a risk: they enumerate their entry array in insertion order (hash only picks buckets), so the BotPlayer tuple sets are fine. The child-process test was dropped: the golden constant was recorded in an earlier process, so every run already compares across processes. Both players run the same exported build (bundled .NET runtime), so the same library code.
 - Step 3+4: Scripts/Net (pure, linked into the tests): Transport (ITransport, NetEvent), Protocol (messages, PacketWriter/Reader that never throw, HMAC proof, BuildId = assembly MVID), MatchSession (lockstep: turn per step, input for step+delay made final when stepping, stall without turn, hash every 20 steps, ping/RTT, 10 s timeout, IsWaiting after 1 s, DesyncReport), HostSession (version/build check, challenge/proof, 3 wrong in 60 s -> address blocked 30 s, Full, Reject then hang up after 0.5 s, client may only command player 1, DelayFor(rtt) 3..12), ClientSession. Tests/Support/FakeNetwork (seeded latency/jitter, ordered, freeze/drop, records all packets). NetTests 26 (~3 s): 2 bots at 0/150/400 ms play 1 min with identical checksums every step; stall + resume; desync caught within 20 steps on both sides; replayed proof rejected; password bytes in no packet; wrong build; full; leave/silence/no host; junk packets ignored. Fix found by tests: an empty packet read as Bye. The desync log file and "you win when the opponent leaves" are UI (step 5). test:changed: Scripts/Net -> Net|Command.
+- Step 5: View/Net/ENetTransport (ENetMultiplayerPeer as a raw reliable pipe; a client that never gets through = Disconnected; Close flushes first), View/Net/MatchSetup (static: session/transport, bot delay, --bot, --steps/--out). Game: world/local player/commands from the session; steps only via TryStep (waiting keeps at most one tick in hand); camera mirrored for the right-hand player; desync -> user://desync-TICK.txt; debug keys off online. MatchOverlay: "Väntar på X…", end panel (MenuModel.EndText), Esc menu (local play pauses, online not), leave -> Menu. BuildController draws sent placements faintly until they land (the 1c ghosts).
+- Step 6: Scenes/Menu.tscn is the main scene (View/MainMenu.cs in UiTheme style): local (Lätt = armies wait 3 min / Normal), host (name, port, password + show, LAN addresses:port, Starta matchen when someone is in), join (name, ip:port, password). Remembered in user://settings.cfg (name, address, port; never the password). UI/MenuModel (port/address/password rules, LAN address filter, status and end texts, MenuSettings, LaunchArgs) + MenuModelTests 23.
+- Step 7: tests/mp_smoke.ps1 + `task mp:smoke`: headless host (--host --port 7790 --password, --bot, --steps, --out) and client (--join 127.0.0.1:7790) through the real menu path and ENet; compares the "tick checksum" lines. 1200 steps: MP OK in 66 s; default 600 steps. Screenshot of the client: player 1 in the right room, its bot's belts land through lockstep.

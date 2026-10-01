@@ -39,6 +39,10 @@ public partial class BuildController : Node2D
 	private Vector2I _dragCell;
 	private bool _dragPlacedLast; // whether the tile at _dragCell was built by this drag
 
+	// Online, a placement lands a few ticks after the click: drawn faintly until then.
+	private readonly List<(BuildingType Type, Vector2I Cell, Direction Facing, long Until)> _sent = new();
+	private static readonly Color SentColor = new(1f, 1f, 1f, 0.45f);
+
 	// Tiles where the selected building can go, outlined while it needs a specific deposit.
 	private readonly List<Vector2I> _highlights = new();
 
@@ -94,6 +98,15 @@ public partial class BuildController : Node2D
 
 		foreach (var cell in _highlights)
 			DrawRect(new Rect2(cell.X * ts + 3, cell.Y * ts + 3, ts - 6, ts - 6), HighlightColor, filled: false, width: 4);
+
+		foreach (var (type, cell, facing, _) in _sent)
+		{
+			var texture = BuildingVisuals.GetTexture(type);
+			var (w, h) = BuildingRules.Size(type);
+			DrawSetTransform(new Vector2((cell.X + w / 2f) * ts, (cell.Y + h / 2f) * ts), BuildingVisuals.Rotation(facing));
+			DrawTexture(texture, -texture.GetSize() / 2, SentColor);
+		}
+		DrawSetTransform(Vector2.Zero, 0);
 	}
 
 	private void RefreshHighlights()
@@ -110,7 +123,14 @@ public partial class BuildController : Node2D
 		QueueRedraw();
 	}
 
-	public override void _Process(double delta) => UpdateGhost();
+	public override void _Process(double delta)
+	{
+		UpdateGhost();
+		if (_sent.Count == 0)
+			return;
+		_sent.RemoveAll(s => _world.TickCount > s.Until || _world.GetBuilding(s.Cell.X, s.Cell.Y) != null);
+		QueueRedraw();
+	}
 
 	public override void _UnhandledInput(InputEvent @event)
 	{
@@ -163,9 +183,12 @@ public partial class BuildController : Node2D
 	private bool Place(BuildingType type, Vector2I cell, Direction facing)
 	{
 		bool ok = _world.CanPlace(type, cell.X, cell.Y, LocalPlayer);
-		if (ok)
-			Commands.Send(PlayerCommand.Place(LocalPlayer, type, cell.X, cell.Y, facing));
-		return ok;
+		if (!ok)
+			return false;
+		Commands.Send(PlayerCommand.Place(LocalPlayer, type, cell.X, cell.Y, facing));
+		if (Commands.DelayTicks > 0)
+			_sent.Add((type, cell, facing, _world.TickCount + Commands.DelayTicks + World.TicksPerSecond));
+		return true;
 	}
 
 	/// <summary>
