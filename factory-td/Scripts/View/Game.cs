@@ -150,6 +150,12 @@ public partial class Game : Node2D
 		_fog.Alpha = alpha;
 	}
 
+	public override void _Notification(int what)
+	{
+		if (what == NotificationWMCloseRequest)
+			MatchSetup.EndOnline(); // tells the other side and closes the router port
+	}
+
 	private void LeaveMatch()
 	{
 		MatchSetup.EndOnline();

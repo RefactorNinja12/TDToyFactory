@@ -24,6 +24,8 @@ public partial class MainMenu : Control
 	private MatchSession _session;
 	private ENetTransport _transport;
 	private bool _autoStart;
+	private Label _internet;
+	private int _hostPort;
 	private int _seed;
 
 	public override void _Ready()
@@ -57,6 +59,8 @@ public partial class MainMenu : Control
 
 	public override void _Process(double delta)
 	{
+		if (_internet != null && MatchSetup.Port != null)
+			_internet.Text = MenuModel.InternetStatus(MatchSetup.Port.State, MatchSetup.Port.PublicAddress, _hostPort);
 		if (_session == null)
 			return;
 		_session.Update((long)Time.GetTicksMsec());
@@ -89,11 +93,18 @@ public partial class MainMenu : Control
 		}
 	}
 
+	public override void _Notification(int what)
+	{
+		if (what == NotificationWMCloseRequest)
+			MatchSetup.EndOnline();
+	}
+
 	// ---- pages ----
 
 	private void ShowMain()
 	{
 		Clear();
+		_internet = null;
 		AddButton("Spela lokalt", ShowLocal);
 		AddButton("Hosta match", ShowHost);
 		AddButton("Anslut till match", ShowJoin);
@@ -126,6 +137,8 @@ public partial class MainMenu : Control
 		var password = AddPassword();
 		_status = AddLabel("Välj ett lösenord och berätta det för din kompis.");
 		var addresses = AddLabel("");
+		_internet = AddLabel("");
+		_internet.Modulate = UiTheme.TextDim;
 		_startMatch = null;
 		Button host = null;
 		host = AddButton("Starta värd", () =>
@@ -139,6 +152,8 @@ public partial class MainMenu : Control
 			SaveSettings();
 			if (!Host(p, password.Text, name.Text))
 				return;
+			_hostPort = p;
+			MatchSetup.Port = PortOpener.Open(p);
 			host.Visible = false;
 			var lan = MenuModel.LanAddresses(IP.GetLocalAddresses());
 			addresses.Text = lan.Count == 0 ? $"Port {p}." : $"Din kompis ansluter till:\n{string.Join("\n", lan.ConvertAll(a => $"{a}:{p}"))}";
@@ -207,6 +222,9 @@ public partial class MainMenu : Control
 	{
 		_session?.Leave();
 		_transport?.Close();
+		MatchSetup.Port?.Close();
+		MatchSetup.Port = null;
+		_internet = null;
 		_session = null;
 		_transport = null;
 		ShowMain();

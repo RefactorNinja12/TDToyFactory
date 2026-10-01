@@ -62,10 +62,11 @@ public class MenuModelTests
 	}
 
 	[Fact]
-	public void LanAddresses_Ipv4WithoutLoopback_PrivateFirst()
+	public void LanAddresses_HomeNetworkFirst_VirtualAdaptersLater()
 	{
-		var shown = MenuModel.LanAddresses(new[] { "127.0.0.1", "fe80::1", "85.10.2.3", "169.254.3.3", "192.168.1.20", "172.20.0.5", "172.40.0.1" });
-		Assert.Equal(new[] { "192.168.1.20", "172.20.0.5", "85.10.2.3", "172.40.0.1" }, shown);
+		var shown = MenuModel.LanAddresses(new[] { "127.0.0.1", "fe80::1", "85.10.2.3", "169.254.3.3", "172.28.224.1",
+			"192.168.56.1", "10.0.0.7", "192.168.0.27", "172.40.0.1" });
+		Assert.Equal(new[] { "192.168.0.27", "10.0.0.7", "172.28.224.1", "192.168.56.1", "85.10.2.3", "172.40.0.1" }, shown);
 	}
 
 	[Fact]
@@ -82,6 +83,17 @@ public class MenuModelTests
 		var net = new Support.FakeNetwork();
 		Assert.Equal("Väntar på motståndare…", MenuModel.Status(new HostSession(net.Host, "pass", "v", seed => null), isHost: true));
 		Assert.Equal("Ansluter…", MenuModel.Status(new ClientSession(net.Connect("x"), "pass", "x", seed => null), isHost: false));
+	}
+
+	[Fact]
+	public void InternetStatus_SaysWhereFriendsConnect_OrWhatToDo()
+	{
+		Assert.Contains("85.10.2.3:7790", MenuModel.InternetStatus(PortState.Opened, "85.10.2.3", 7790));
+		Assert.Contains("UDP 7790", MenuModel.InternetStatus(PortState.Opened, "", 7790));
+		var failed = MenuModel.InternetStatus(PortState.Failed, "", 7790);
+		Assert.Contains("UDP 7790", failed);
+		Assert.Contains("Tailscale", failed);
+		Assert.NotEqual(failed, MenuModel.InternetStatus(PortState.Pending, "", 7790));
 	}
 
 	[Fact]

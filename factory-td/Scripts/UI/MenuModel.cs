@@ -25,6 +25,13 @@ public sealed record MenuSettings(string Name = "Spelare", string Address = "", 
 	}
 }
 
+public enum PortState
+{
+	Pending,
+	Opened,
+	Failed,
+}
+
 /// <summary>The start menu's rules and texts (Swedish), kept out of the Godot view so they can be tested.</summary>
 public static class MenuModel
 {
@@ -70,19 +77,24 @@ public static class MenuModel
 	public static string PasswordProblem(string password) =>
 		(password ?? "").Length < MinPasswordLength ? $"Lösenordet ska ha minst {MinPasswordLength} tecken." : null;
 
-	/// <summary>The addresses a friend on the same network can use: IPv4, not loopback, private ranges first.</summary>
+	/// <summary>
+	/// The addresses a friend on the same network can use: IPv4, not loopback. Home networks (192.168.x) first,
+	/// then 10.x, then 172.16-31.x (often a virtual adapter: WSL, Docker), VirtualBox's 192.168.56.x, public last.
+	/// </summary>
 	public static List<string> LanAddresses(IEnumerable<string> all) =>
 		all.Where(a => a.Count(c => c == '.') == 3 && !a.StartsWith("127.", StringComparison.Ordinal)
 				&& !a.StartsWith("169.254.", StringComparison.Ordinal))
-			.OrderBy(a => IsPrivate(a) ? 0 : 1)
+			.OrderBy(Rank)
 			.ToList();
 
-	private static bool IsPrivate(string a)
+	private static int Rank(string a)
 	{
-		if (a.StartsWith("10.", StringComparison.Ordinal) || a.StartsWith("192.168.", StringComparison.Ordinal))
-			return true;
 		var parts = a.Split('.');
-		return parts[0] == "172" && int.TryParse(parts[1], out int second) && second is >= 16 and <= 31;
+		if (parts[0] == "192" && parts[1] == "168")
+			return parts[2] == "56" ? 3 : 0;
+		if (parts[0] == "10")
+			return 1;
+		return parts[0] == "172" && int.TryParse(parts[1], out int second) && second is >= 16 and <= 31 ? 2 : 4;
 	}
 
 	/// <summary>One line about where the connection is, for the host/join screens.</summary>
@@ -123,6 +135,16 @@ public static class MenuModel
 		},
 		EndReason.Desync => $"Spelen kom ur synk vid tick {desyncStep}. Matchen stoppades (en logg sparades).",
 		_ => "",
+	};
+
+	/// <summary>How friends outside the home network get in (the router's port forwarding via UPnP).</summary>
+	public static string InternetStatus(PortState state, string publicAddress, int port) => state switch
+	{
+		PortState.Pending => "Internet: frågar routern om porten…",
+		PortState.Opened when !string.IsNullOrEmpty(publicAddress) =>
+			$"Internet: porten är öppnad i routern. Kompisar utanför ditt nätverk ansluter till {publicAddress}:{port}",
+		PortState.Opened => $"Internet: UDP {port} är öppnad i routern (den publika adressen gick inte att ta reda på).",
+		_ => $"Internet: routern öppnade inte porten själv. Öppna UDP {port} i routern, eller använd Tailscale/ZeroTier och anslut som på samma nätverk.",
 	};
 
 	private static string Name(string name) => string.IsNullOrWhiteSpace(name) ? "Motståndaren" : name;
