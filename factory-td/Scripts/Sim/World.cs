@@ -388,14 +388,15 @@ public sealed partial class World
 	internal void ClearUnits() => _units.Clear();
 
 	/// <summary>
-	/// A treadmill with cheese wants a builder: the nearest idle one of its owner walks over (never the last
-	/// builder, so the player can always still build). Nothing if one is already on the way.
+	/// A treadmill with cheese wants a builder: the nearest idle one of its owner walks over, or if all are
+	/// busy the nearest one that is building (never the last builder, so the player can always still build).
+	/// Nothing if one is already on the way.
 	/// </summary>
 	internal void CallBuilder(Treadmill mill)
 	{
 		int builders = 0;
-		Unit nearest = null;
-		long best = long.MaxValue;
+		Unit idle = null, busy = null;
+		long bestIdle = long.MaxValue, bestBusy = long.MaxValue;
 		foreach (var unit in _units)
 		{
 			if (unit.Owner != mill.Owner || unit.Type != UnitType.Builder || unit.Health <= 0)
@@ -403,15 +404,15 @@ public sealed partial class World
 			builders++;
 			if (unit.Job == mill)
 				return;
-			if (unit.Job != null)
-				continue;
+			if (unit.Job is Treadmill)
+				continue; // already going to another treadmill
 			long dx = unit.X - mill.CenterX, dy = unit.Y - mill.CenterY, d = dx * dx + dy * dy;
-			if (d < best)
-			{
-				best = d;
-				nearest = unit;
-			}
+			if (unit.Job == null && d < bestIdle)
+				(idle, bestIdle) = (unit, d);
+			else if (unit.Job != null && d < bestBusy)
+				(busy, bestBusy) = (unit, d);
 		}
+		var nearest = idle ?? busy;
 		if (builders <= 1 || nearest == null)
 			return;
 		nearest.Job = mill;

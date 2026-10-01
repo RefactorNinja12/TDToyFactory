@@ -139,4 +139,12 @@ public class BotTests : IClassFixture<BotRuns>
 		var (right, _) = _runs.Right;
 		Assert.True(right.World.CountBuildings(1, BuildingType.BatteryExtractor) >= 1, "no battery extractor after 4 minutes");
 	}
+
+	[Fact]
+	public void PlansCheeseHunters()
+	{
+		var (_, bot) = _runs.Right;
+		Assert.Contains(bot.PlannedSteps, p => p.Type == BuildingType.Treadmill);
+		Assert.Contains(bot.PlannedSteps, p => p.Type == BuildingType.CheeseMelter);
+	}
 }

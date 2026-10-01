@@ -39,7 +39,7 @@ Art: workbench drawings or small generator scripts (tools/art/make_*.py) into to
 - [x] 5. Treadmill + cheese hunter (Sim): BuildingType.Treadmill (UnitFactory variant needing a builder), builder called + consumed, UnitType.CheeseHunter def, melee attack on units and buildings. Tests: needs both cheese and a builder, builder walks in and is gone, hunter spawns, hunts units and hits buildings, starvation pause (no power needed), determinism.
 - [x] 6. UI/vision: Texts, InfoRows for treadmill (cheese, builder on the way), light radius, minimap, menu tab, checksum fields. Tests.
 - [x] 7. Sprites: treadmill (wheel with cheese on a stick), cheese hunter mouse (headband, fists), cheese melter, melted cheese item, cheese deposit. Screenshot.
-- [ ] 8. Bot: cheese module + treadmill. Tests: bot builds them and gets hunters; slow bot matches still healthy.
+- [x] 8. Bot: cheese module + treadmill. Tests: bot builds them and gets hunters; slow bot matches still healthy.
 - [ ] 9. Balance (slow guards: hunter vs soldier duel, cheese food rate) + CLAUDE.md; commit, push, PR link.
 
 ## Log
@@ -50,3 +50,4 @@ Art: workbench drawings or small generator scripts (tools/art/make_*.py) into to
 - Step 5: Sim/Treadmill.cs (cheese crafter 2/hunter, HasTrainee, no power, starving pause), World.CallBuilder (nearest idle builder, never the last), TickBuilder walks a called builder in and uses it up (Health 0). UnitType.CheeseHunter (hp 20, dmg 3/16 ticks, range 1 tile, speed 28, sight 6, light 4). Melee = Punch when Range <= 1.5 tiles (golem unchanged). Placeholder art: treadmill = toolbox, hunter = builder (step 7). 226/226.
 - Step 6: InfoRows Treadmill (needs cheese, trainee/on the way/waiting for a free builder/waiting for cheese, no power). Texts/menu/light/checksum were done in step 5. 227/227.
 - Step 7: workbench cheese hunter 7d4ca28a.. (mouse, red headband, boxing gloves), treadmill c8c60519.. (belt with slats, rails, rollers, panel, cheese on a string), replacing the placeholders; cheese melter/item/deposit came in step 3. 227/227.
+- Step 8: bot module "ostjägare" right after "soldater" (army +2 min): treadmill 53,10 + melters 52,10 / 52,11 filling it directly (normal module growth stalls after golems for lack of bricks, so it had to come early). CallBuilder now takes the nearest busy builder if none is idle (bot builders are never idle). Bot vs bot: hunters 5 / 3, p0 wins 703 s; guard >= 1 hunter each. 228/228.
