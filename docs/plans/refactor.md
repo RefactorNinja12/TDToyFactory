@@ -64,3 +64,5 @@ step, tick + log + commit + push per step.
 - Step 2a: Sim/GridSearch.cs (PathTo, Distances; arrays, same neighbour order) replaces FindPathTo, FindPathToTile, HomeDistance BFS, AllFloorConnected flood fill. Golden unchanged.
 - Step 2b: StepAlongPath shared by WalkTo (buildings) and WalkToTile (scouts); when to re-plan stays separate (different rules). Golden unchanged.
 - Step 2c: Footprint.Any + Building.AnyTile replace the tile loops in Vision.AnyVisible, World.NetworkOf, Knowledge.ShowBuilding/Ghosts (CheckLocation keeps its own loop: it returns which rule failed). Golden unchanged.
+- Step 2d skipped: UnitFactory/Treadmill share only the starving line; not worth a helper.
+- Step 2e (perf, measured): World.Tick profile 1 min mid-game: flow fields 584 ms, units 391 (army 292), vision 122, buildings 54, separation 34; bots only 15. Split dirty flags: power grid on place/remove/finish, a player's flow field only when an ENEMY building is placed/removed (finishing changes no field). Golden unchanged; sim 1266 -> 789 ms per simulated minute.

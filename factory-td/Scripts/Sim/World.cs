@@ -21,7 +21,11 @@ public sealed partial class World
 
 	// _fields[p] leads player p's units to the enemy core. Rebuilt lazily when buildings change.
 	private readonly FlowField[] _fields;
-	private bool _fieldsDirty = true;
+	// What has to be worked out again before it is used. The power grid changes whenever a node is placed,
+	// removed or finished; a player's flow field only when an ENEMY building appears or goes (own buildings
+	// cost nothing to walk through, and a construction site already counts as a building).
+	private bool _powerDirty = true;
+	private bool[] _flowDirty;
 	private readonly PowerGrid _power;
 	private readonly Vision _vision;
 	private readonly FlowField[] _powerFields; // per player: towards the nearest tile its grid powers
@@ -58,6 +62,8 @@ public sealed partial class World
 		_cores = new Core[playerCount];
 		_fields = new FlowField[playerCount];
 		_power = new PowerGrid(map.Width, map.Height, playerCount);
+		_flowDirty = new bool[playerCount];
+		System.Array.Fill(_flowDirty, true);
 		_vision = new Vision(map.Width, map.Height, playerCount);
 		_powerFields = new FlowField[playerCount];
 		_powerFieldDirty = new bool[playerCount];
@@ -216,7 +222,7 @@ public sealed partial class World
 		_buildings.Add(building);
 		if (building is Core core)
 			_cores[owner] = core;
-		_fieldsDirty = true;
+		MarkChanged(building);
 		BuildingPlaced?.Invoke(building);
 		return true;
 	}
@@ -253,7 +259,7 @@ public sealed partial class World
 		_players[building.Owner].Refund(BuildingRules.Cost(building.Type));
 		SetFootprint(building, null);
 		_buildings.Remove(building);
-		_fieldsDirty = true;
+		MarkChanged(building);
 		BuildingRemoved?.Invoke(building);
 		return true;
 	}
@@ -557,7 +563,7 @@ public sealed partial class World
 				job.AddWork(UnitStats.BuilderWorkPerTick);
 				Face(builder, job);
 				if (job.IsBuilt)
-					_fieldsDirty = true;
+					_powerDirty = true; // finished: it may be a pylon or charger now
 				break;
 			case Walk.Unreachable:
 				builder.Job = null; // try something else next tick
@@ -1079,22 +1085,37 @@ public sealed partial class World
 	{
 		SetFootprint(building, null);
 		_buildings.Remove(building);
-		_fieldsDirty = true;
+		MarkChanged(building);
 		BuildingRemoved?.Invoke(building);
+	}
+
+	/// <summary>A building appeared or went: the power grid and the enemies' flow fields are out of date.</summary>
+	private void MarkChanged(Building building)
+	{
+		_powerDirty = true;
+		for (int p = 0; p < _flowDirty.Length; p++)
+			if (p != building.Owner)
+				_flowDirty[p] = true;
 	}
 
 	private void RebuildFieldsIfDirty()
 	{
-		if (!_fieldsDirty)
-			return;
-		_fieldsDirty = false;
-		_power.Rebuild(_buildings);
+		if (_powerDirty)
+		{
+			_powerDirty = false;
+			_power.Rebuild(_buildings);
+			for (int p = 0; p < _players.Length; p++)
+				_powerFieldDirty[p] = true;
+		}
 		for (int p = 0; p < _players.Length; p++)
 		{
+			if (!_flowDirty[p])
+				continue;
+			_flowDirty[p] = false;
 			var target = _cores[EnemyOf(p)];
 			if (target != null)
 				_fields[p].Build(this, target, p);
-			_powerFieldDirty[p] = true;
+			_powerFieldDirty[p] = true; // the way back to the grid crosses enemy buildings too
 		}
 	}
 
