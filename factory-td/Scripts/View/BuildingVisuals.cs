@@ -36,6 +36,7 @@ public static class BuildingVisuals
 		[BuildingType.BatteryCharger] = "res://Assets/Sprites/Power/charger.png",
 		[BuildingType.Lamp] = "res://Assets/Sprites/Fog/lamp.png",
 		[BuildingType.Tent] = "res://Assets/Sprites/Fog/tent.png",
+		[BuildingType.CheeseMelter] = "res://Assets/Sprites/Buildings/cheese_melter.png",
 	};
 
 	/// <summary>Build menu tabs, in order.</summary>
@@ -44,7 +45,7 @@ public static class BuildingVisuals
 		("Logistik", new[] { BuildingType.Conveyor, BuildingType.Splitter, BuildingType.Sorter, BuildingType.Junction }),
 		("Produktion", new[]
 		{
-			BuildingType.BrickExtractor, BuildingType.PlasticExtractor, BuildingType.BatteryExtractor,
+			BuildingType.BrickExtractor, BuildingType.PlasticExtractor, BuildingType.BatteryExtractor, BuildingType.CheeseMelter,
 			BuildingType.Assembler, BuildingType.Toolbox,
 		}),
 		("Ström", new[] { BuildingType.BatteryCharger, BuildingType.Pylon }),
@@ -64,6 +65,7 @@ public static class BuildingVisuals
 		[ItemType.CircuitBoard] = "res://Assets/Sprites/Items/circuit_board.png",
 		[ItemType.Crop] = "res://Assets/Sprites/Items/crop.png",
 		[ItemType.Food] = "res://Assets/Sprites/Items/food.png",
+		[ItemType.MeltedCheese] = "res://Assets/Sprites/Items/melted_cheese.png",
 	};
 
 	private static readonly Dictionary<string, Texture2D> Cache = new();

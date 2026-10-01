@@ -148,7 +148,7 @@ public static class FogLevels
 public static class Minimap
 {
 	public const byte Unknown = 0, Wall = 1, Floor = 2, Bricks = 3, Plastic = 4, Batteries = 5,
-		OwnBuilding = 6, EnemyBuilding = 7, OwnUnit = 8, EnemyUnit = 9, Toy = 10;
+		OwnBuilding = 6, EnemyBuilding = 7, OwnUnit = 8, EnemyUnit = 9, Toy = 10, Cheese = 11;
 	public const byte LitBit = 0x10;
 
 	public static byte Kind(byte cell) => (byte)(cell & 0x0F);
@@ -171,6 +171,7 @@ public static class Minimap
 				ResourceType.Brick => Bricks,
 				ResourceType.Plastic => Plastic,
 				ResourceType.Battery => Batteries,
+				ResourceType.Cheese => Cheese,
 				_ => Floor,
 			};
 			into[i] = (byte)(kind | (world.IsVisible(player, x, y) ? LitBit : 0));

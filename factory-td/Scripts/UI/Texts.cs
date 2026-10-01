@@ -28,6 +28,7 @@ public static class Texts
 		BuildingType.BatteryCharger => "Batteriladdare",
 		BuildingType.Lamp => "Leksakslampa",
 		BuildingType.Tent => "Tält",
+		BuildingType.CheeseMelter => "Ostsmältare",
 		BuildingType.CropField => "Odlingslåda",
 		BuildingType.Farmhouse => "Bondgård",
 		BuildingType.Kitchen => "Kök",
@@ -42,6 +43,7 @@ public static class Texts
 		BuildingType.BrickExtractor => "Måste stå på klossar.",
 		BuildingType.PlasticExtractor => "Måste stå på plast.",
 		BuildingType.BatteryExtractor => "Måste stå på batterier.",
+		BuildingType.CheeseMelter => "Måste stå på ost. Smälter osten till smält ost: mat i köket och träning på löpbandet.",
 		BuildingType.Splitter => "Tar emot från alla håll och delar ut i tur och ordning rakt fram, höger och vänster.",
 		BuildingType.Sorter => "Tar emot från alla håll. Vald sort fortsätter rakt fram, allt annat svänger av åt sidorna. Klicka på den för att byta sort.",
 		BuildingType.Assembler => "Gör kugghjul (2 klossar + 1 plast), fjädrar (2 plast) eller kretskort (1 batteri + 1 plast). Tar emot från alla håll, lämnar ut åt pilens håll (R roterar). Klicka på den för att byta.",
@@ -81,6 +83,7 @@ public static class Texts
 		ResourceType.Brick => "klossar",
 		ResourceType.Plastic => "plast",
 		ResourceType.Battery => "batterier",
+		ResourceType.Cheese => "ost",
 		_ => "",
 	};
 
@@ -131,6 +134,7 @@ public static class Texts
 		ItemType.CircuitBoard => "Kretskort",
 		ItemType.Crop => "Morötter",
 		ItemType.Food => "Matlådor",
+		ItemType.MeltedCheese => "Smält ost",
 		_ => type.ToString(),
 	};
 }

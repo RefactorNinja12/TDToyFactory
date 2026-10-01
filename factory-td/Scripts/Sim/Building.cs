@@ -27,6 +27,7 @@ public enum BuildingType : byte
 	BatteryCharger,
 	Lamp,
 	Tent,
+	CheeseMelter,
 }
 
 /// <summary>Facing / output direction. Clockwise order, matching Godot's y-down rotation.</summary>
@@ -178,6 +179,7 @@ public static class BuildingRules
 		BuildingType.BrickExtractor,
 		BuildingType.PlasticExtractor,
 		BuildingType.BatteryExtractor,
+		BuildingType.CheeseMelter,
 		BuildingType.Assembler,
 		BuildingType.Toolbox,
 		BuildingType.Warehouse,
@@ -235,6 +237,7 @@ public static class BuildingRules
 	private static readonly ItemStack[] BatteryChargerCost = { new(ItemType.Brick, 20), new(ItemType.Plastic, 15) };
 	private static readonly ItemStack[] LampCost = { new(ItemType.Brick, 3), new(ItemType.Plastic, 3) };
 	private static readonly ItemStack[] TentCost = { new(ItemType.Brick, 5), new(ItemType.Plastic, 10) };
+	private static readonly ItemStack[] CheeseMelterCost = { new(ItemType.Brick, 10), new(ItemType.Plastic, 10) };
 
 	public static ItemStack[] Cost(BuildingType type) => type switch
 	{
@@ -262,6 +265,7 @@ public static class BuildingRules
 		BuildingType.BatteryCharger => BatteryChargerCost,
 		BuildingType.Lamp => LampCost,
 		BuildingType.Tent => TentCost,
+		BuildingType.CheeseMelter => CheeseMelterCost,
 		_ => Free,
 	};
 	// -------------------------------------------------------------------------------------
@@ -272,7 +276,7 @@ public static class BuildingRules
 		BuildingType.Core => 1000,
 		BuildingType.Conveyor => 20,
 		BuildingType.Splitter or BuildingType.Sorter or BuildingType.Junction or BuildingType.CropField or BuildingType.Pylon or BuildingType.Lamp => 40,
-		BuildingType.BrickExtractor or BuildingType.PlasticExtractor or BuildingType.BatteryExtractor => 60,
+		BuildingType.BrickExtractor or BuildingType.PlasticExtractor or BuildingType.BatteryExtractor or BuildingType.CheeseMelter => 60,
 		BuildingType.Assembler or BuildingType.Kitchen or BuildingType.BatteryCharger => 80,
 		BuildingType.SoldierFactory or BuildingType.GolemWorkshop or BuildingType.CarFactory or BuildingType.Toolbox or BuildingType.Warehouse or BuildingType.Farmhouse => 150,
 		BuildingType.FoamTower or BuildingType.WaterTower or BuildingType.LaserTower => 100,
@@ -287,7 +291,7 @@ public static class BuildingRules
 		BuildingType.Conveyor => 10,
 		BuildingType.Splitter or BuildingType.Sorter or BuildingType.Junction or BuildingType.Pylon or BuildingType.Lamp => 30,
 		BuildingType.CropField => 40,
-		BuildingType.BrickExtractor or BuildingType.PlasticExtractor or BuildingType.BatteryExtractor => 60,
+		BuildingType.BrickExtractor or BuildingType.PlasticExtractor or BuildingType.BatteryExtractor or BuildingType.CheeseMelter => 60,
 		BuildingType.Assembler or BuildingType.Kitchen or BuildingType.BatteryCharger => 100,
 		BuildingType.FoamTower or BuildingType.WaterTower or BuildingType.LaserTower => 120,
 		BuildingType.Catapult => 140,
@@ -310,6 +314,7 @@ public static class BuildingRules
 		BuildingType.BrickExtractor => ResourceType.Brick,
 		BuildingType.PlasticExtractor => ResourceType.Plastic,
 		BuildingType.BatteryExtractor => ResourceType.Battery,
+		BuildingType.CheeseMelter => ResourceType.Cheese,
 		_ => ResourceType.None,
 	};
 
