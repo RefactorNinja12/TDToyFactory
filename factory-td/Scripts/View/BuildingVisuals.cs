@@ -91,6 +91,9 @@ public static class BuildingVisuals
 
 	public static Texture2D GetItemTexture(ItemType type) => Load(ItemTexturePaths[type]);
 
+	/// <summary>A moving part drawn over a building (UI/BuildingParts), from Assets/Sprites/Parts.</summary>
+	public static Texture2D GetPartTexture(string name) => Load($"res://Assets/Sprites/Parts/{name}.png");
+
 	/// <summary>Crop field look for growth stage 0 (just planted) .. 3 (ripe).</summary>
 	public static Texture2D CropFieldTexture(int stage) => Load(stage switch
 	{

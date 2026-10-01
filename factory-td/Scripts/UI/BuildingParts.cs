@@ -29,7 +29,34 @@ public readonly record struct Pose(float X, float Y, float Angle, float Scale, f
 /// <summary>The moving parts of each building and how they move. Pure: the view only draws the poses.</summary>
 public static class BuildingParts
 {
-	private static readonly Dictionary<BuildingType, Part[]> Table = new();
+	// Drawn by tools/art/buildings/*.py; anchors are sprite pixels from the centre, east = the output side.
+	private static readonly Dictionary<BuildingType, Part[]> Table = new()
+	{
+		[BuildingType.BrickExtractor] = new[]
+		{
+			new Part("brick_ride", 5, 0, Motion.Slide, Speed: 0.8f, DX: 17),
+			new Part("digger_arm", -3, 4, Motion.Swing, Speed: 0.8f, Amount: 0.35f),
+		},
+		[BuildingType.PlasticExtractor] = new[]
+		{
+			new Part("gumball_beads", 2, -2, Motion.Spin, Speed: 0.5f),
+			new Part("gumball_crank", 18, 8, Motion.Spin, Speed: 1f),
+		},
+		[BuildingType.BatteryExtractor] = new[]
+		{
+			new Part("charge_light", -14, 6, Motion.Blink, Speed: 1.5f),
+			new Part("charge_light", -4, 6, Motion.Blink, Speed: 1.5f, Phase: 0.33f),
+			new Part("charge_light", 6, 6, Motion.Blink, Speed: 1.5f, Phase: 0.66f),
+			new Part("magnet", -5, -12, Motion.Bob, Speed: 0.6f, DY: 10),
+		},
+		[BuildingType.CheeseMelter] = new[]
+		{
+			new Part("fondue_bubble", -6, 1, Motion.Puff, Speed: 1.1f, DY: -4),
+			new Part("fondue_bubble", 3, -6, Motion.Puff, Speed: 1.1f, DY: -4, Phase: 0.4f),
+			new Part("fondue_bubble", 4, 4, Motion.Puff, Speed: 1.1f, DY: -4, Phase: 0.7f),
+			new Part("fondue_spoon", -1, -2, Motion.Spin, Speed: 0.4f),
+		},
+	};
 
 	private static readonly Part[] None = Array.Empty<Part>();
 

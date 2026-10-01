@@ -50,11 +50,11 @@ and they move while they work (and stand still when they don't: starving, no pow
 - [x] 2. Parts and motion (pure): `BuildingParts` table + `Pose(part, t)` (spin, bob, slide path loop,
       blink, puff rising and fading); tests: periodic, within the footprint, every animated type has parts
       whose sprites exist in `BuildingVisuals`.
-- [ ] 3. Art kit + sheet tool: `tools/art/kit.py` (shaded plastic shapes, outlines left to restyle, mouse
+- [x] 3. Art kit + sheet tool: `tools/art/kit.py` (shaded plastic shapes, outlines left to restyle, mouse
       with hats), `tools/art/sheet.py`; restyle handles `source/Parts/`.
-- [ ] 4. View: `BuildingAnimator` draws the parts for working, visible buildings (rotation with the
+- [x] 4. View: `BuildingAnimator` draws the parts for working, visible buildings (rotation with the
       building, team tint where the base has it); TreadmillView keeps its own special drawing.
-- [ ] 5. Extractors + cheese melter (4 sprites + parts), sheet + screenshot.
+- [x] 5. Extractors + cheese melter (4 sprites + parts), sheet + screenshot.
 - [ ] 6. Assembler + kitchen.
 - [ ] 7. The three army factories (2x2).
 - [ ] 8. Toolbox + farmhouse.
@@ -64,3 +64,6 @@ and they move while they work (and stand still when they don't: starving, no pow
 - Step 0: baseline sheet: the 11 are flat coloured squares with one round detail each (extractors 64 px, factories 128 px).
 - Step 1: UI/Activity.cs: working = extractor/crafter progress moved within 0.5 s (kitchen: both crafters); first sight = not working; forgets removed buildings. ActivityTests 5 (fed/unfed assembler, extractor until full, no power, kitchen, site).
 - Step 2: UI/BuildingParts.cs: Part record (anchor, Motion Spin/Swing/Bob/Slide/Orbit/Blink/Puff, speed, travel, phase), PoseAt, table per type (filled in steps 5-8); AnimationClocks (runs while working, eases in/out over 0.3 s, per-building start offset). Tests: loops seamless, motions as named, every part stays on its building and has Parts/<sprite>.png (Support/ArtFiles).
+- Step 3: tools/art/kit.py (box/disc/stud/gear/wood/chute/mouse with hats, baseplate with corner studs: a full stud ring was too busy), tools/art/sheet.py (review sheet, 1x + 2x), restyle.py takes a file list and creates folders. Lessons: colours under luminance 0.2 become outline black (battery cells), light blues mute to grey (glass needs a strong blue), separate small blobs in a part all get outlines (draw them on one filled shape).
+- Step 4: View/BuildingAnimator (activity + clocks, rotates with the building, culls off-screen and unseen), BuildingVisuals.GetPartTexture. VisualProbe: PROBE_CAM="x,y,zoom" env var to look anywhere.
+- Step 5: tools/art/buildings/extractors.py: digger (arm swings, brick rides to the chute), gumball machine (beads spin, crank), magnet crane (magnet bobs, three charge lights blink), fondue pot (spoon stirs, bubbles). In game: the bot's brick diggers dig in step.

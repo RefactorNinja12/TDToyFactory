@@ -83,6 +83,9 @@ public partial class Game : Node2D
 		var treadmills = new TreadmillView { Name = "Treadmills" };
 		AddChild(treadmills);
 		treadmills.Bind(World, LocalPlayer);
+		var animator = new BuildingAnimator { Name = "BuildingParts" };
+		AddChild(animator);
+		animator.Bind(World, LocalPlayer);
 		var toys = new ObstacleView { Name = "Obstacles" };
 		AddChild(toys);
 		toys.Bind(World);
