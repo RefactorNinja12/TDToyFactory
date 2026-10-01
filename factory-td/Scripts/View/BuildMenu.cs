@@ -8,7 +8,7 @@ namespace FactoryTD.View;
 
 /// <summary>
 /// Bottom bar: category tabs (Logistik / Produktion / Försvar) and one toggle button per building
-/// in the open category. Keyboard: a number opens a category, then Q W E R A S D F picks the building
+/// in the open category. Keyboard: a number opens a category, then Z X C F G T picks the building
 /// (UI.BuildHotkeys).
 /// </summary>
 public partial class BuildMenu : CanvasLayer
@@ -19,8 +19,7 @@ public partial class BuildMenu : CanvasLayer
 	private PlayerState _player;
 	private BuildHotkeys _hotkeys;
 
-	/// <summary>The two-step build keys; the camera asks it which keys to leave alone.</summary>
-	public BuildHotkeys Hotkeys => _hotkeys;
+
 
 	/// <summary>The chosen building, or null when the selection is cleared.</summary>
 	public event Action<BuildingType?> SelectionChanged;
@@ -89,7 +88,7 @@ public partial class BuildMenu : CanvasLayer
 
 		column.AddChild(new Label
 		{
-			Text = "1–7 + Q W E R A S D F: välj byggnad   Vänsterklick: bygg   Dra: bandet följer musen   R: rotera   Högerklick: avbryt / riv   Klick på sorterare/maskin: byt sort",
+			Text = "1–7 + Z X C F G T: välj byggnad   Vänsterklick: bygg   Dra: bandet följer musen   R: rotera   Högerklick: avbryt / riv   Klick på sorterare/maskin: byt sort",
 			HorizontalAlignment = HorizontalAlignment.Center,
 			Modulate = new Color(1, 1, 1, 0.7f),
 		});
@@ -99,8 +98,7 @@ public partial class BuildMenu : CanvasLayer
 
 	public void Bind(PlayerState player) => _player = player;
 
-	// _Input (not _UnhandledInput): while a category waits for its letter, Q/E/R/W... must not reach the
-	// build controller (rotate) first.
+	// _Input: the hotkeys see the keys before the build controller and the camera.
 	public override void _Input(InputEvent @event)
 	{
 		if (_hotkeys == null || @event is not InputEventKey key || key.Echo)
@@ -110,10 +108,7 @@ public partial class BuildMenu : CanvasLayer
 		if (c == '\0')
 			return;
 		if (!key.Pressed)
-		{
-			_hotkeys.Release(c);
 			return;
-		}
 		var result = _hotkeys.Press(c);
 		switch (result.Outcome)
 		{
@@ -121,7 +116,7 @@ public partial class BuildMenu : CanvasLayer
 				return;
 			case HotkeyOutcome.CategoryOpened:
 				ShowCategory(result.Category);
-				ShowStatus($"{BuildingVisuals.MenuCategories[result.Category].Name}: välj med Q W E R A S D F (Esc avbryter)");
+				ShowStatus($"{BuildingVisuals.MenuCategories[result.Category].Name}: välj med Z X C F G T (Esc avbryter)");
 				break;
 			case HotkeyOutcome.Selected:
 				ShowCategory(result.Category);

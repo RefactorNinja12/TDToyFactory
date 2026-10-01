@@ -12,18 +12,17 @@ public readonly record struct HotkeyResult(HotkeyOutcome Outcome, int Category =
 }
 
 /// <summary>
-/// Two-step build hotkeys: a number picks a menu category (1 = the first tab), then one of
-/// Q W E R A S D F picks the building in that place of the category. While a category is chosen (and until
-/// the letter is let go) those letters belong to the hotkeys, not to the camera or rotating. Esc cancels.
-/// Keys are plain characters ('1', 'Q', Escape = '\u001b'), so this works without Godot.
+/// Two-step build hotkeys: a number picks a menu category (1 = the first tab), then one of Z X C F G T
+/// picks the building in that place of the category. None of those letters is used by anything else
+/// (WASD pans, Q/E zoom, R rotates, V shows the power grid), so the camera never has to give way. Esc
+/// cancels. Keys are plain characters ('1', 'Z', Escape = '\u001b'), so this works without Godot.
 /// </summary>
 public sealed class BuildHotkeys
 {
-	public const string Letters = "QWERASDF";
+	public const string Letters = "ZXCFGT";
 	public const char Escape = '\u001b';
 
 	private readonly BuildingType[][] _categories;
-	private readonly HashSet<char> _held = new();
 
 	public BuildHotkeys(IReadOnlyList<BuildingType[]> categories)
 	{
@@ -37,7 +36,7 @@ public sealed class BuildHotkeys
 
 	public bool Armed => ArmedCategory >= 0;
 
-	/// <summary>The letter that picks a building (by its place in the category), e.g. 'Q' for the first.</summary>
+	/// <summary>The letter that picks a building by its place in the category, e.g. 'Z' for the first.</summary>
 	public static char LetterFor(int place) => place < Letters.Length ? Letters[place] : ' ';
 
 	public HotkeyResult Press(char key)
@@ -57,22 +56,12 @@ public sealed class BuildHotkeys
 		}
 		int place = Letters.IndexOf(key);
 		if (place < 0)
-			return default;
-		_held.Add(key);
+			return default; // anything else (WASD, Q/E, R...) keeps working while a category waits
 		var category = _categories[ArmedCategory];
 		if (place >= category.Length)
 			return new HotkeyResult(HotkeyOutcome.Swallowed, ArmedCategory); // no building there: still waiting
 		int chosen = ArmedCategory;
 		ArmedCategory = -1;
 		return new HotkeyResult(HotkeyOutcome.Selected, chosen, category[place]);
-	}
-
-	public void Release(char key) => _held.Remove(char.ToUpperInvariant(key));
-
-	/// <summary>Whether the camera (pan/zoom) should ignore this key right now.</summary>
-	public bool BlocksCamera(char key)
-	{
-		key = char.ToUpperInvariant(key);
-		return (Armed && Letters.IndexOf(key) >= 0) || _held.Contains(key);
 	}
 }

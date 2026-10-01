@@ -74,8 +74,8 @@ Kompakt fabrik, max 3 nivåer i produktionskedjan, matcher 15–25 min.
   på enheter och byggnader. Byggare på väg till ett löpband räknas inte; en kallad byggare som skulle
   bli den sista kliver inte in. Dör sista byggaren kommer en ny ur leksakslådan (`ReplaceLostBuilders`,
   av i `Scenario.NoWorkers()`). Musfälla = hinder. Närstrid (räckvidd ≤ 1,5 ruta) = `DamageKind.Punch`.
-- Kortkommandon för bygge: siffra 1–7 väljer kategori (flik), sedan Q W E R A S D F byggnaden på den
-  platsen. Medan kategorin väntar (och tills bokstaven släpps) tar kameran (WASD/QE) och R inte bokstäverna.
+- Kortkommandon för bygge: siffra 1–7 väljer kategori (flik), sedan Z X C F G T byggnaden på den
+  platsen. Bokstäverna krockar inte med kameran (WASD/QE), R (rotera) eller V (elnät).
   Logik i `Scripts/UI/BuildHotkeys.cs`, BuildMenu läser den i `_Input`.
 - Grafik: `tools/art/restyle.py` gör om alla sprites från `tools/art/source/` (palett + svarta konturer)
   och genererar golvet (stora brädor, 16x8 rutor). Nya sprites läggs i source och skriptet körs.
@@ -110,6 +110,7 @@ Kompakt fabrik, max 3 nivåer i produktionskedjan, matcher 15–25 min.
   läs den först, fortsätt med första obockade steget, bocka av och logga i samma commit.
 - Klara: `docs/plans/power.md` (elnät), `docs/plans/fog.md` (dimma, ljus, spejare, minikarta),
   `docs/plans/obstacles.md` (stora leksaker som hinder), `docs/plans/mice.md` (möss, ost, ostjägare, musfälla).
+- Pågående: `docs/plans/ui.md` (snyggare UI, kortkommandon; gren `ui`).
 
 ## Arbetsflöde (tester är feedbackloopen)
 - `Taskfile.yaml` (go-task) samlar kommandona; `task` listar dem.

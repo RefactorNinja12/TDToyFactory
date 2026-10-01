@@ -24,25 +24,20 @@ public partial class CameraController : Camera2D
 		_startZoom = Zoom;
 	}
 
-	/// <summary>Build hotkeys: while they want a letter (or it is still held), the camera leaves it alone.</summary>
-	public FactoryTD.UI.BuildHotkeys Hotkeys { get; set; }
-
-	private bool Held(Key key) => Input.IsKeyPressed(key) && (Hotkeys == null || !Hotkeys.BlocksCamera((char)(long)key));
-
 	public override void _Process(double delta)
 	{
 		var dir = Vector2.Zero;
-		if (Held(Key.A) || Input.IsKeyPressed(Key.Left)) dir.X -= 1;
-		if (Held(Key.D) || Input.IsKeyPressed(Key.Right)) dir.X += 1;
-		if (Held(Key.W) || Input.IsKeyPressed(Key.Up)) dir.Y -= 1;
-		if (Held(Key.S) || Input.IsKeyPressed(Key.Down)) dir.Y += 1;
+		if (Input.IsKeyPressed(Key.A) || Input.IsKeyPressed(Key.Left)) dir.X -= 1;
+		if (Input.IsKeyPressed(Key.D) || Input.IsKeyPressed(Key.Right)) dir.X += 1;
+		if (Input.IsKeyPressed(Key.W) || Input.IsKeyPressed(Key.Up)) dir.Y -= 1;
+		if (Input.IsKeyPressed(Key.S) || Input.IsKeyPressed(Key.Down)) dir.Y += 1;
 
 		// Divide by zoom so panning feels the same at every zoom level.
 		Position += dir.Normalized() * PanSpeed * (float)delta / Zoom.X;
 
 		float zoomDir = 0;
-		if (Held(Key.E) || Input.IsKeyPressed(Key.Equal) || Input.IsKeyPressed(Key.KpAdd)) zoomDir += 1;
-		if (Held(Key.Q) || Input.IsKeyPressed(Key.Minus) || Input.IsKeyPressed(Key.KpSubtract)) zoomDir -= 1;
+		if (Input.IsKeyPressed(Key.E) || Input.IsKeyPressed(Key.Equal) || Input.IsKeyPressed(Key.KpAdd)) zoomDir += 1;
+		if (Input.IsKeyPressed(Key.Q) || Input.IsKeyPressed(Key.Minus) || Input.IsKeyPressed(Key.KpSubtract)) zoomDir -= 1;
 		if (zoomDir != 0)
 			SetZoom(Zoom.X * Mathf.Pow(KeyZoomSpeed, zoomDir * (float)delta));
 	}
