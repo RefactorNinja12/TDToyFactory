@@ -204,14 +204,8 @@ public sealed class Vision
 		}
 	}
 
-	private bool AnyVisible(int player, int x, int y, int width, int height)
-	{
-		for (int ty = y; ty < y + height; ty++)
-			for (int tx = x; tx < x + width; tx++)
-				if (IsVisible(player, tx, ty))
-					return true;
-		return false;
-	}
+	private bool AnyVisible(int player, int x, int y, int width, int height) =>
+		Footprint.Any(x, y, width, height, (tx, ty) => IsVisible(player, tx, ty));
 
 	private void Light(MapLayout map, int player, int x, int y, Ray[] shape)
 	{

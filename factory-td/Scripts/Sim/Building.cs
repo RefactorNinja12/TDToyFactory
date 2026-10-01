@@ -65,8 +65,25 @@ public enum PlaceError : byte
 /// <summary>
 /// Base for everything placed on the grid. (X, Y) is the top-left tile; Facing is the main output side.
 /// </summary>
+/// <summary>Helpers for a rectangle of tiles (a building's or a remembered building's footprint).</summary>
+public static class Footprint
+{
+	/// <summary>Whether <paramref name="test"/> holds for any tile of the rectangle, row by row.</summary>
+	public static bool Any(int x, int y, int width, int height, System.Func<int, int, bool> test)
+	{
+		for (int ty = y; ty < y + height; ty++)
+			for (int tx = x; tx < x + width; tx++)
+				if (test(tx, ty))
+					return true;
+		return false;
+	}
+}
+
 public abstract class Building
 {
+	/// <summary>Whether <paramref name="test"/> holds for any of the tiles the building covers.</summary>
+	public bool AnyTile(System.Func<int, int, bool> test) => Footprint.Any(X, Y, Width, Height, test);
+
 	public BuildingType Type { get; }
 	public int X { get; }
 	public int Y { get; }

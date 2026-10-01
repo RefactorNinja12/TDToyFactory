@@ -63,3 +63,4 @@ step, tick + log + commit + push per step.
 - Baseline fast suite 9.8 s.
 - Step 2a: Sim/GridSearch.cs (PathTo, Distances; arrays, same neighbour order) replaces FindPathTo, FindPathToTile, HomeDistance BFS, AllFloorConnected flood fill. Golden unchanged.
 - Step 2b: StepAlongPath shared by WalkTo (buildings) and WalkToTile (scouts); when to re-plan stays separate (different rules). Golden unchanged.
+- Step 2c: Footprint.Any + Building.AnyTile replace the tile loops in Vision.AnyVisible, World.NetworkOf, Knowledge.ShowBuilding/Ghosts (CheckLocation keeps its own loop: it returns which rule failed). Golden unchanged.

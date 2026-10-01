@@ -106,14 +106,9 @@ public sealed partial class World
 	public PowerNetwork NetworkOf(Building building)
 	{
 		var grid = Power;
-		for (int y = building.Y; y < building.Y + building.Height; y++)
-			for (int x = building.X; x < building.X + building.Width; x++)
-			{
-				var network = grid.NetworkAt(building.Owner, x, y);
-				if (network != null)
-					return network;
-			}
-		return null;
+		PowerNetwork found = null;
+		building.AnyTile((x, y) => (found = grid.NetworkAt(building.Owner, x, y)) != null);
+		return found;
 	}
 
 	private bool Draw(PowerNetwork network, int amount)
