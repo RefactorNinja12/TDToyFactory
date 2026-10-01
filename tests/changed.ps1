@@ -38,6 +38,7 @@ foreach ($file in $changed) {
 		if ($areas.ContainsKey($name)) { $filters.Add($areas[$name]); $filters.Add("Golden") } else { $core = $true }
 	}
 	elseif ($file -match "^factory-td/Scripts/UI/") { $filters.Add("Ui|Hud|Hotkey|EveryType|InfoRows|Fog|Power|ConveyorLook|DragPath|FoodMeter|Texts") }
+	elseif ($file -match "^factory-td/Scripts/Net/") { $filters.Add("Net|Command") }
 	elseif ($file -match "^factory-td/Scripts/") { $build = $true }
 	elseif ($file -match "^tests/FactoryTD\.Sim\.Tests/Support/") { $core = $true }
 	elseif ($file -match "^tests/FactoryTD\.Sim\.Tests/.+\.cs$") {

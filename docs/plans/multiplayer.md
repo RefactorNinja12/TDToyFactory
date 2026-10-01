@@ -66,7 +66,7 @@ there is no separate server program. "Spela lokalt" keeps today's game against t
       changes between processes (reference types, tuples: `HashCode` is seeded per process). Known spot:
       `BotPlayer.cs` HashSet<(int,int)> (check iteration; only `Contains` is safe). Fix what turns up.
       Test: the same match in two fresh processes (`dotnet test` child run) gives the same checksum.
-- [ ] 3. Lockstep core (pure, `Scripts/Net/`):
+- [x] 3. Lockstep core (pure, `Scripts/Net/`):
       a) Messages + codec: Hello(protocol version, game build hash, name, client nonce), Challenge(32 random
          bytes), Proof(HMAC), Welcome(player index, map seed, settings), Reject(reason: version / wrong
          password / blocked / full), Start(start tick), Turn(tick, commands), Hash(tick, checksum),
@@ -82,7 +82,7 @@ there is no separate server program. "Spela lokalt" keeps today's game against t
       Proof doesn't work (new challenge every time); the password bytes never appear in any sent packet
       (the test searches the fake network's traffic); a stall resumes when the late
       packet arrives; a tampered world → desync is reported with the tick.
-- [ ] 4. Disconnect and desync handling (pure + tests): no packets for 10 s → "Motståndaren tappade
+- [x] 4. Disconnect and desync handling (pure + tests): no packets for 10 s → "Motståndaren tappade
       anslutningen" (the remaining player wins, or goes back to the menu); "väntar på motståndaren…"
       after 1 s of stall; desync → stop + log file (`user://desync-<tick>.txt` with both checksums and the
       last commands).
@@ -133,3 +133,4 @@ there is no separate server program. "Spela lokalt" keeps today's game against t
 - Step 0: baseline `task check` green, 300 tests, golden 0x299E99DC031BB7E0, all tests 17.9 s.
 - Step 1: Sim/Commands.cs (PlayerCommand 8 bytes LE, Read rejects unknown kind/type/facing; ICommandSink, DirectCommands); World.Apply (ignores unknown player / off-map). BotPlayer.Tick(world, sink): with a delay it waits until its last order landed (no double configure). BuildController sends commands (drag judges with CanPlace). Pending ghosts moved to step 5 (needs the online loop to see). Golden unchanged. CommandTests 7.
 - Step 2: DeterminismGuardTests scans Scripts/Sim for float/double, Math.Sqrt & co, Random/Guid, clocks, GetHashCode/HashCode, threads (+ self-tests that the rules catch/leave alone). Sim was already clean. Dictionary/HashSet are NOT a risk: they enumerate their entry array in insertion order (hash only picks buckets), so the BotPlayer tuple sets are fine. The child-process test was dropped: the golden constant was recorded in an earlier process, so every run already compares across processes. Both players run the same exported build (bundled .NET runtime), so the same library code.
+- Step 3+4: Scripts/Net (pure, linked into the tests): Transport (ITransport, NetEvent), Protocol (messages, PacketWriter/Reader that never throw, HMAC proof, BuildId = assembly MVID), MatchSession (lockstep: turn per step, input for step+delay made final when stepping, stall without turn, hash every 20 steps, ping/RTT, 10 s timeout, IsWaiting after 1 s, DesyncReport), HostSession (version/build check, challenge/proof, 3 wrong in 60 s -> address blocked 30 s, Full, Reject then hang up after 0.5 s, client may only command player 1, DelayFor(rtt) 3..12), ClientSession. Tests/Support/FakeNetwork (seeded latency/jitter, ordered, freeze/drop, records all packets). NetTests 26 (~3 s): 2 bots at 0/150/400 ms play 1 min with identical checksums every step; stall + resume; desync caught within 20 steps on both sides; replayed proof rejected; password bytes in no packet; wrong build; full; leave/silence/no host; junk packets ignored. Fix found by tests: an empty packet read as Bye. The desync log file and "you win when the opponent leaves" are UI (step 5). test:changed: Scripts/Net -> Net|Command.
