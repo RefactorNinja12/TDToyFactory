@@ -57,6 +57,17 @@ public static class UiTheme
 		return theme;
 	}
 
+	/// <summary>A small picture for the UI: kept square, pixel-sharp, and it never takes mouse clicks.</summary>
+	public static TextureRect Icon(Texture2D texture, float size) => new()
+	{
+		Texture = texture,
+		ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize,
+		StretchMode = TextureRect.StretchModeEnum.KeepAspectCentered,
+		CustomMinimumSize = new Vector2(size, size),
+		MouseFilter = Control.MouseFilterEnum.Ignore,
+		TextureFilter = CanvasItem.TextureFilterEnum.Nearest,
+	};
+
 	/// <summary>
 	/// Gives the theme to every UI tree: each Control whose parent isn't a Control (the roots under the
 	/// CanvasLayers, which don't pass a theme down from the window). Call after the UI is built.

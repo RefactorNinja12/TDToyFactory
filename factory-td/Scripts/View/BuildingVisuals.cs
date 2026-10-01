@@ -56,6 +56,19 @@ public static class BuildingVisuals
 		("Försvar", new[] { BuildingType.FoamTower, BuildingType.Catapult, BuildingType.WaterTower, BuildingType.LaserTower }),
 	};
 
+	private static readonly Dictionary<UnitType, string> UnitTexturePaths = new()
+	{
+		[UnitType.PlasticSoldier] = "res://Assets/Sprites/Units/soldier.png",
+		[UnitType.BrickGolem] = "res://Assets/Sprites/Units/golem.png",
+		[UnitType.RcCar] = "res://Assets/Sprites/Units/rc_car.png",
+		[UnitType.Builder] = "res://Assets/Sprites/Units/builder.png",
+		[UnitType.Farmer] = "res://Assets/Sprites/Units/farmer.png",
+		[UnitType.Scout] = "res://Assets/Sprites/Units/scout.png",
+		[UnitType.CheeseHunter] = "res://Assets/Sprites/Units/cheese_hunter.png",
+	};
+
+	public static Texture2D GetUnitTexture(UnitType type) => Load(UnitTexturePaths[type]);
+
 	private static readonly Dictionary<ItemType, string> ItemTexturePaths = new()
 	{
 		[ItemType.Brick] = "res://Assets/Sprites/Resources/brick.png",

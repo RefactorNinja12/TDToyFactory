@@ -56,14 +56,9 @@ public partial class ResourceBar : CanvasLayer
 		_ownCore = CoreBar(bottom, "Din leksakslåda", UiTheme.Good);
 		_enemyCore = CoreBar(bottom, "Fiendens leksakslåda", UiTheme.Bad);
 		bottom.AddChild(new VSeparator());
-		foreach (var (type, path) in new[]
+		foreach (var type in new[] { UnitType.Builder, UnitType.Farmer, UnitType.Scout })
 		{
-			(UnitType.Builder, "res://Assets/Sprites/Units/builder.png"),
-			(UnitType.Farmer, "res://Assets/Sprites/Units/farmer.png"),
-			(UnitType.Scout, "res://Assets/Sprites/Units/scout.png"),
-		})
-		{
-			var chip = Chip(bottom, GD.Load<Texture2D>(path));
+			var chip = Chip(bottom, BuildingVisuals.GetUnitTexture(type));
 			chip.Box.TooltipText = Texts.UnitName(type);
 			_workers[type] = chip;
 		}
@@ -128,7 +123,7 @@ public partial class ResourceBar : CanvasLayer
 		box.AddThemeConstantOverride("separation", 1);
 		var line = new HBoxContainer { MouseFilter = Control.MouseFilterEnum.Ignore };
 		line.AddThemeConstantOverride("separation", 3);
-		line.AddChild(IconRect(BuildingVisuals.GetItemTexture(item)));
+		line.AddChild(UiTheme.Icon(BuildingVisuals.GetItemTexture(item), Icon));
 		var count = new Label { MouseFilter = Control.MouseFilterEnum.Ignore, CustomMinimumSize = new Vector2(30, 0) };
 		line.AddChild(count);
 		box.AddChild(line);
@@ -142,7 +137,7 @@ public partial class ResourceBar : CanvasLayer
 	{
 		var box = new HBoxContainer { MouseFilter = Control.MouseFilterEnum.Pass };
 		box.AddThemeConstantOverride("separation", 3);
-		box.AddChild(IconRect(icon));
+		box.AddChild(UiTheme.Icon(icon, Icon));
 		var value = new Label { MouseFilter = Control.MouseFilterEnum.Ignore };
 		box.AddChild(value);
 		parent.AddChild(box);
@@ -153,7 +148,7 @@ public partial class ResourceBar : CanvasLayer
 	{
 		var box = new HBoxContainer { MouseFilter = Control.MouseFilterEnum.Pass, TooltipText = name };
 		box.AddThemeConstantOverride("separation", 3);
-		box.AddChild(IconRect(BuildingVisuals.GetTexture(BuildingType.Core)));
+		box.AddChild(UiTheme.Icon(BuildingVisuals.GetTexture(BuildingType.Core), Icon));
 		var bar = new ProgressBar
 		{
 			ShowPercentage = false,
@@ -166,16 +161,6 @@ public partial class ResourceBar : CanvasLayer
 		parent.AddChild(box);
 		return bar;
 	}
-
-	private static TextureRect IconRect(Texture2D texture) => new()
-	{
-		Texture = texture,
-		ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize,
-		StretchMode = TextureRect.StretchModeEnum.KeepAspectCentered,
-		CustomMinimumSize = new Vector2(Icon, Icon),
-		MouseFilter = Control.MouseFilterEnum.Ignore,
-		TextureFilter = CanvasItem.TextureFilterEnum.Nearest,
-	};
 
 	private static void SetGauge((Control Box, Label Value) chip, Gauge gauge)
 	{

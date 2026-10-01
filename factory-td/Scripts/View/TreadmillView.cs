@@ -30,7 +30,7 @@ public partial class TreadmillView : Node2D
 	{
 		_world = world;
 		_localPlayer = localPlayer;
-		_mouse = GD.Load<Texture2D>("res://Assets/Sprites/Units/builder.png");
+		_mouse = BuildingVisuals.GetUnitTexture(UnitType.Builder);
 		TextureFilter = TextureFilterEnum.Nearest;
 	}
 

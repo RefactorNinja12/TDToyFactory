@@ -41,7 +41,7 @@ step, tick + log + commit + push per step.
       c) `Building.Footprint()` / footprint helpers, used by Vision, Knowledge, NetworkOf, CheckLocation;
       d) shared army-factory gate for UnitFactory and Treadmill;
       e) per-tick unit/building count cache (perf; compare sim ms/min before/after).
-- [ ] 3. View/UI dedup: `UiTheme.Icon`, `UiTheme.Badge`, texture loading through BuildingVisuals only;
+- [x] 3. View/UI dedup: `UiTheme.Icon`, `UiTheme.Badge`, texture loading through BuildingVisuals only;
       remove leftover unused code (grep for unreferenced private members / old constants). `task build`.
 - [ ] 4. Coverage: tests for the least covered Sim/UI code from `task coverage` (expected: bot routing
       edge cases, splitter/sorter/junction corners, projectiles/area damage, power grid edges, texts,
@@ -67,3 +67,4 @@ step, tick + log + commit + push per step.
 - Step 2d skipped: UnitFactory/Treadmill share only the starving line; not worth a helper.
 - Step 2e (perf, measured): World.Tick profile 1 min mid-game: flow fields 584 ms, units 391 (army 292), vision 122, buildings 54, separation 34; bots only 15. Split dirty flags: power grid on place/remove/finish, a player's flow field only when an ENEMY building is placed/removed (finishing changes no field). Golden unchanged; sim 1266 -> 789 ms per simulated minute.
 - Step 2e (2): SelectTarget scans only the tiles in reach (GetBuilding + ScanMark), ties by Building.Serial = placement order = old list order. Golden unchanged; sim 789 -> 697 ms per simulated minute (baseline 1266, -45%).
+- Step 3: UiTheme.Icon replaces 4 TextureRect blocks + ResourceBar.IconRect; unit pictures in one table (BuildingVisuals.GetUnitTexture) used by UnitView, ResourceBar, TreadmillView (UnitView keeps only sizes). Build 0 warnings (no unused members). Screenshot unchanged.

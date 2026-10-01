@@ -17,15 +17,16 @@ public partial class UnitView : Node2D
 	/// <summary>Team colours (also used for the mouse running on a treadmill).</summary>
 	internal static readonly Color[] PlayerTints = { Colors.White, new(1f, 0.55f, 0.55f) };
 
-	private static readonly Dictionary<UnitType, (string Texture, float Size)> Looks = new()
+	/// <summary>Drawn size of each unit type (pictures: BuildingVisuals.GetUnitTexture).</summary>
+	private static readonly Dictionary<UnitType, float> Sizes = new()
 	{
-		[UnitType.PlasticSoldier] = ("res://Assets/Sprites/Units/soldier.png", 48f),
-		[UnitType.BrickGolem] = ("res://Assets/Sprites/Units/golem.png", 60f),
-		[UnitType.RcCar] = ("res://Assets/Sprites/Units/rc_car.png", 44f),
-		[UnitType.Builder] = ("res://Assets/Sprites/Units/builder.png", 40f),
-		[UnitType.Farmer] = ("res://Assets/Sprites/Units/farmer.png", 40f),
-		[UnitType.Scout] = ("res://Assets/Sprites/Units/scout.png", 40f),
-		[UnitType.CheeseHunter] = ("res://Assets/Sprites/Units/cheese_hunter.png", 40f),
+		[UnitType.PlasticSoldier] = 48f,
+		[UnitType.BrickGolem] = 60f,
+		[UnitType.RcCar] = 44f,
+		[UnitType.Builder] = 40f,
+		[UnitType.Farmer] = 40f,
+		[UnitType.Scout] = 40f,
+		[UnitType.CheeseHunter] = 40f,
 	};
 
 	private readonly Dictionary<UnitType, MultiMesh> _meshes = new();
@@ -44,7 +45,7 @@ public partial class UnitView : Node2D
 	{
 		foreach (var type in Enum.GetValues<UnitType>())
 		{
-			var (texture, size) = Looks[type];
+			float size = Sizes[type];
 			var mesh = new MultiMesh
 			{
 				TransformFormat = MultiMesh.TransformFormatEnum.Transform2D,
@@ -52,7 +53,7 @@ public partial class UnitView : Node2D
 				// QuadMesh is y-up; a negative height flips it to match 2D textures.
 				Mesh = new QuadMesh { Size = new Vector2(size, -size) },
 			};
-			AddChild(new MultiMeshInstance2D { Multimesh = mesh, Texture = GD.Load<Texture2D>(texture) });
+			AddChild(new MultiMeshInstance2D { Multimesh = mesh, Texture = BuildingVisuals.GetUnitTexture(type) });
 			_meshes[type] = mesh;
 		}
 	}
