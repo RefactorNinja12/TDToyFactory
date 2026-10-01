@@ -19,9 +19,9 @@ there is no separate server program. "Spela lokalt" keeps today's game against t
   in `Scripts/Net/` behind an `ITransport` interface, so it is tested with a fake network in xUnit,
   like the rest of the sim.
 - **Reaching the host:**
-  - On the same LAN: connect to the host's IP (the menu shows it), port 7777.
+  - On the same LAN: connect to the host's IP (the menu shows it), the chosen port (default 7777).
   - Over the internet: the host tries UPnP (Godot's `Upnp` class) to open the port automatically. If
-    the router refuses: forward UDP 7777 by hand, or both players join a virtual LAN (Tailscale/ZeroTier,
+    the router refuses: forward the chosen UDP port by hand, or both players join a virtual LAN (Tailscale/ZeroTier,
     free) and connect as on a LAN.
   - NOT in this plan: a relay server or NAT hole punching. That would need a server on the internet,
     which conflicts with "host = server"; it can be added later as its own plan.
