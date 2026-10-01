@@ -175,7 +175,7 @@ public class ScenarioTests
 		Assert.True(unpowered * 100 <= working * 5, $"without power {unpowered * 100 / working}% of the time");
 	}
 
-	private static int SecondsToFindBatteries(int scouts, bool lamps)
+	private static Scenario Fog(bool lamps)
 	{
 		var s = Scenario.Match().NoWorkers().Instant().Rich().RealFog();
 		if (lamps)
@@ -183,6 +183,12 @@ public class ScenarioTests
 			s.Place(BuildingType.Lamp, 22, 38);
 			s.Place(BuildingType.Lamp, 30, 42);
 		}
+		return s;
+	}
+
+	private static int SecondsToFindBatteries(int scouts, bool lamps)
+	{
+		var s = Fog(lamps);
 		for (int i = 0; i < scouts; i++) s.Spawn(UnitType.Scout, 9, 30 + i);
 		return s.World.Until(() => s.World.IsExplored(0, 41, 47), 300, "the battery patch explored") / WorldRunner.TicksPerSecond;
 	}
@@ -200,12 +206,7 @@ public class ScenarioTests
 
 	private static int ExploredAfterAMinute(bool lamps)
 	{
-		var s = Scenario.Match().NoWorkers().Instant().Rich().RealFog();
-		if (lamps)
-		{
-			s.Place(BuildingType.Lamp, 22, 38);
-			s.Place(BuildingType.Lamp, 30, 42);
-		}
+		var s = Fog(lamps);
 		s.Spawn(UnitType.Scout, 9, 30);
 		s.World.Seconds(60);
 		return s.World.ExploredCount(0);

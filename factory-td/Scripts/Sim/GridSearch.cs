@@ -28,31 +28,24 @@ internal static class GridSearch
 		previous[start] = start;
 		var queue = new Queue<int>();
 		queue.Enqueue(start);
-		while (queue.Count > 0)
+		int goal = -1;
+		Flood(width, height, queue, (tile, next) =>
 		{
-			int tile = queue.Dequeue();
-			int x = tile % width, y = tile / width;
-			foreach (var (dx, dy) in Steps)
-			{
-				int nx = x + dx, ny = y + dy;
-				if (nx < 0 || ny < 0 || nx >= width || ny >= height)
-					continue;
-				int next = ny * width + nx;
-				if (previous[next] >= 0 || !walkable(nx, ny))
-					continue;
-				previous[next] = tile;
-				if (isGoal(nx, ny))
-				{
-					var path = new List<(int X, int Y)>();
-					for (int at = next; at != start; at = previous[at])
-						path.Add((at % width, at / width));
-					path.Reverse();
-					return path;
-				}
-				queue.Enqueue(next);
-			}
-		}
-		return null;
+			if (previous[next] >= 0 || !walkable(next % width, next / width))
+				return Visit.Skip;
+			previous[next] = tile;
+			if (!isGoal(next % width, next / width))
+				return Visit.Enqueue;
+			goal = next;
+			return Visit.Stop;
+		});
+		if (goal < 0)
+			return null;
+		var path = new List<(int X, int Y)>();
+		for (int at = goal; at != start; at = previous[at])
+			path.Add((at % width, at / width));
+		path.Reverse();
+		return path;
 	}
 
 	/// <summary>
@@ -71,6 +64,22 @@ internal static class GridSearch
 			queue.Enqueue(source);
 		}
 		int reached = queue.Count;
+		Flood(width, height, queue, (tile, next) =>
+		{
+			if (distance[next] >= 0 || !walkable(next % width, next / width))
+				return Visit.Skip;
+			distance[next] = distance[tile] + 1;
+			reached++;
+			return Visit.Enqueue;
+		});
+		return reached;
+	}
+
+	private enum Visit { Skip, Enqueue, Stop }
+
+	/// <summary>Breadth-first over the grid from what is queued; <paramref name="visit"/> judges each neighbour.</summary>
+	private static void Flood(int width, int height, Queue<int> queue, Func<int, int, Visit> visit)
+	{
 		while (queue.Count > 0)
 		{
 			int tile = queue.Dequeue();
@@ -81,13 +90,12 @@ internal static class GridSearch
 				if (nx < 0 || ny < 0 || nx >= width || ny >= height)
 					continue;
 				int next = ny * width + nx;
-				if (distance[next] >= 0 || !walkable(nx, ny))
-					continue;
-				distance[next] = distance[tile] + 1;
-				reached++;
-				queue.Enqueue(next);
+				var result = visit(tile, next);
+				if (result == Visit.Stop)
+					return;
+				if (result == Visit.Enqueue)
+					queue.Enqueue(next);
 			}
 		}
-		return reached;
 	}
 }

@@ -230,6 +230,15 @@ public class PowerSupplyTests
 
 public class PowerConsumerTests
 {
+	/// <summary>A soldier factory next to a pylon and a charger holding <paramref name="energy"/>.</summary>
+	private static (Scenario, UnitFactory, BatteryCharger) PoweredFactory(int energy)
+	{
+		var s = Scenario.Match().NoWorkers().Instant().Rich().RealPower();
+		var factory = s.Place<UnitFactory>(BuildingType.SoldierFactory, 30, 20);
+		s.Pylon(33, 20);
+		return (s, factory, s.Charger(34, 20, energy));
+	}
+
 	private static void FeedRecipe(Scenario s, UnitFactory factory)
 	{
 		foreach (var input in factory.Recipe)
@@ -250,10 +259,7 @@ public class PowerConsumerTests
 	[Fact]
 	public void Factory_OnAChargedGrid_ProducesAndUsesEnergy()
 	{
-		var s = Scenario.Match().NoWorkers().Instant().Rich().RealPower();
-		var factory = s.Place<UnitFactory>(BuildingType.SoldierFactory, 30, 20);
-		s.Pylon(33, 20);
-		var charger = s.Charger(34, 20, energy: 10000);
+		var (s, factory, charger) = PoweredFactory(10000);
 		FeedRecipe(s, factory);
 		int ticks = UnitStats.BuildTicks(UnitType.PlasticSoldier);
 		s.World.Ticks(ticks + 1);
@@ -265,10 +271,7 @@ public class PowerConsumerTests
 	[Fact]
 	public void IdleFactory_UsesNothing()
 	{
-		var s = Scenario.Match().NoWorkers().Instant().Rich().RealPower();
-		var factory = s.Place<UnitFactory>(BuildingType.SoldierFactory, 30, 20);
-		s.Pylon(33, 20);
-		var charger = s.Charger(34, 20, energy: 1000);
+		var (s, factory, charger) = PoweredFactory(1000);
 		s.World.Seconds(5);
 		Assert.Equal(1000, charger.Energy);
 		Assert.False(factory.NoPower);
@@ -323,11 +326,8 @@ public class PowerConsumerTests
 	[Fact]
 	public void Shortage_PausesProgress_ResumesWhenRecharged()
 	{
-		var s = Scenario.Match().NoWorkers().Instant().Rich().RealPower();
-		var factory = s.Place<UnitFactory>(BuildingType.SoldierFactory, 30, 20);
-		s.Pylon(33, 20);
 		int ticks = UnitStats.BuildTicks(UnitType.PlasticSoldier);
-		var charger = s.Charger(34, 20, energy: ticks / 2 * PowerStats.FactoryEnergyPerTick);
+		var (s, factory, charger) = PoweredFactory(ticks / 2 * PowerStats.FactoryEnergyPerTick);
 		FeedRecipe(s, factory);
 		s.World.Ticks(ticks * 2);
 		Assert.Empty(s.World.Units);

@@ -1,7 +1,7 @@
 # Local dev tasks. Run `task` for the list.
 #   task test               fast tests (~8 s)
 #   task test -- Farming    fast tests whose name contains "Farming"
-#   task check              lint + all tests (run before committing)
+#   task check              lint + copy-paste check + all tests (run before committing)
 # Every task prints only problems plus one summary line (PASS/FAIL, LINT OK/FAIL, BUILD OK/FAIL),
 # so the output stays small enough to paste into or read from an AI session.
 version: "3"
@@ -62,6 +62,11 @@ tasks:
     cmds:
       - "{{.PS}} tests/lint.ps1"
 
+  dupes:
+    desc: "Copy-paste check (jscpd via npx, .jscpd.json): any repeated block of 50+ tokens fails"
+    cmds:
+      - "{{.PS}} tests/dupes.ps1"
+
   fmt:
     desc: Apply the automatic lint fixes
     cmds:
@@ -71,4 +76,5 @@ tasks:
     desc: Lint, then all tests (before committing)
     cmds:
       - task: lint
+      - task: dupes
       - task: test:all

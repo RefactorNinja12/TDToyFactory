@@ -126,7 +126,7 @@ Kompakt fabrik, max 3 nivåer i produktionskedjan, matcher 15–25 min.
 - Allt skriver bara problem + en sammanfattningsrad (grön körning ≈ 10 tokens). Fel med samma
   meddelande grupperas, lint grupperas per fil/regel, max ~10 rader. Läs inte råutdata från
   `dotnet test/format/build` (en CRLF-fil = ~34k tokens rått).
-- `task check` (lint + alla tester) före varje commit. `task fmt` fixar formatering.
+- `task check` (lint + dubblettkoll + alla tester) före varje commit. `task fmt` fixar formatering.
 - Lint = `dotnet format` mot `.editorconfig` (tabbar, LF) + analyzers; 0 varningar är normalläget.
   `.gitattributes` håller `.cs` i LF trots `core.autocrlf=true`.
 - Snabbast: `task test:changed` kör bara testerna för ändrade .cs-filer sedan senaste commit
@@ -135,6 +135,9 @@ Kompakt fabrik, max 3 nivåer i produktionskedjan, matcher 15–25 min.
   ändras när beteendet medvetet ändrats (felet skriver ut det nya värdet). Ren refaktor = oförändrad.
 - `task coverage` = täckning Sim/UI + 10 sämsta filer (~100 s); `-File X.cs -Reuse` (ps1) visar otestade rader.
   `task test:timing` = 10 långsammaste testerna. Sim-hastighet: slow-testet `SimSpeed_*` (ms per sim-minut).
+- Dubblettkoll: `task dupes` (jscpd 5.4.0 via npx, `.jscpd.json`) underkänner varje block på 50+ tokens som
+  finns två gånger (spel- och testkod). Skriver `DUPE n lines A.cs:x-y ~ B.cs:x-y`. Åtgärd: bryt ut en
+  gemensam hjälpare/basklass (t.ex. `StoreBuilding`, `OneItemRouter`, `GridSearch.Flood`), höj inte gränsen.
 - Buggfix: skriv först ett test som fallerar, sedan fixen. Ny funktion: tester i samma ändring.
 - Ny logik hamnar i `Scripts/Sim` eller `Scripts/UI` (testbart), inte i View.
 - Balansändring: kör `task test:report` och uppdatera trösklarna medvetet om designen ändrats.

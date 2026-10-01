@@ -1,0 +1,10 @@
+{
+	"path": ["factory-td/Scripts", "tests/FactoryTD.Sim.Tests"],
+	"format": ["csharp"],
+	"minTokens": 50,
+	"ignore": ["**/obj/**", "**/bin/**", "**/_Test/**", "**/TestResults/**"],
+	"reporters": ["json"],
+	"output": "tests/FactoryTD.Sim.Tests/TestResults/dupes",
+	"silent": true,
+	"absolute": false
+}

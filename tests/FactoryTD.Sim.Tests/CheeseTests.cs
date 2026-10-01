@@ -43,13 +43,10 @@ public class CheeseKitchenTests
 	[Fact]
 	public void Kitchen_CooksFromMeltedCheeseAlone()
 	{
-		var s = Scenario.Match().NoWorkers().Instant();
-		var kitchen = s.Place<Kitchen>(BuildingType.Kitchen, 6, 32, Direction.North); // into the toybox
+		var (s, kitchen) = CraftingTests.KitchenIntoToybox();
 		Assert.True(kitchen.CanTake(ItemType.MeltedCheese));
 		Assert.Equal(5, s.Feed(kitchen, ItemType.MeltedCheese, 10));
-		int food = s.P0.GetCount(ItemType.Food);
-		s.World.Ticks(Kitchen.CookTicks * 5 + 5);
-		Assert.Equal(food + 5, s.P0.GetCount(ItemType.Food));
+		CraftingTests.CooksFive(s);
 	}
 
 	[Fact]
