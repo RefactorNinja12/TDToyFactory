@@ -13,9 +13,6 @@ public static class MatchSetup
 
 	public static ENetTransport Transport { get; set; }
 
-	/// <summary>The host's router port forwarding (UPnP), removed when the match ends.</summary>
-	public static PortOpener Port { get; set; }
-
 	/// <summary>Local play: how long the bot's armies wait (BotPlayer armyDelayTicks).</summary>
 	public static int BotArmyDelayTicks { get; set; }
 
@@ -32,9 +29,7 @@ public static class MatchSetup
 	{
 		Session?.Leave();
 		Transport?.Close();
-		Port?.Close();
 		Session = null;
 		Transport = null;
-		Port = null;
 	}
 }

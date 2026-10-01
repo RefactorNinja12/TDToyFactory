@@ -15,8 +15,9 @@ Spela tillsammans
 3. När kompisen är ansluten trycker värden "Starta matchen".
 
 Samma nätverk: använd adressen som börjar med 192.168... (eller 10...).
-Över internet: värdens spel försöker öppna porten i routern själv (UPnP) och visar då en publik
-adress. Går det inte: öppna UDP-porten i routern, eller installera Tailscale (gratis) på båda
-datorerna och anslut till värdens Tailscale-adress (100...).
+Olika nätverk (över internet): installera Tailscale (gratis, tailscale.com) på båda datorerna och
+logga in i samma Tailscale-nätverk (värden kan dela sin dator med kompisen). Kompisen ansluter sedan
+till värdens Tailscale-adress (börjar med 100..., menyn märker den "Tailscale"). Spelet öppnar aldrig
+några portar i routern.
 
 Båda måste köra exakt samma version av spelet (samma zip).

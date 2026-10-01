@@ -25,13 +25,6 @@ public sealed record MenuSettings(string Name = "Spelare", string Address = "", 
 	}
 }
 
-public enum PortState
-{
-	Pending,
-	Opened,
-	Failed,
-}
-
 /// <summary>The start menu's rules and texts (Swedish), kept out of the Godot view so they can be tested.</summary>
 public static class MenuModel
 {
@@ -78,8 +71,8 @@ public static class MenuModel
 		(password ?? "").Length < MinPasswordLength ? $"Lösenordet ska ha minst {MinPasswordLength} tecken." : null;
 
 	/// <summary>
-	/// The addresses a friend on the same network can use: IPv4, not loopback. Home networks (192.168.x) first,
-	/// then 10.x, then 172.16-31.x (often a virtual adapter: WSL, Docker), VirtualBox's 192.168.56.x, public last.
+	/// The addresses a friend can use: IPv4, not loopback. Home networks (192.168.x) first, then 10.x, Tailscale
+	/// (100.64-127.x), 172.16-31.x (often a virtual adapter: WSL, Docker), VirtualBox's 192.168.56.x, others last.
 	/// </summary>
 	public static List<string> LanAddresses(IEnumerable<string> all) =>
 		all.Where(a => a.Count(c => c == '.') == 3 && !a.StartsWith("127.", StringComparison.Ordinal)
@@ -91,10 +84,12 @@ public static class MenuModel
 	{
 		var parts = a.Split('.');
 		if (parts[0] == "192" && parts[1] == "168")
-			return parts[2] == "56" ? 3 : 0;
+			return parts[2] == "56" ? 4 : 0;
 		if (parts[0] == "10")
 			return 1;
-		return parts[0] == "172" && int.TryParse(parts[1], out int second) && second is >= 16 and <= 31 ? 2 : 4;
+		if (IsTailscale(a))
+			return 2;
+		return parts[0] == "172" && int.TryParse(parts[1], out int second) && second is >= 16 and <= 31 ? 3 : 5;
 	}
 
 	/// <summary>One line about where the connection is, for the host/join screens.</summary>
@@ -137,15 +132,22 @@ public static class MenuModel
 		_ => "",
 	};
 
-	/// <summary>How friends outside the home network get in (the router's port forwarding via UPnP).</summary>
-	public static string InternetStatus(PortState state, string publicAddress, int port) => state switch
+	/// <summary>
+	/// How friends outside the home network get in. The game never opens ports in the router (that felt
+	/// unsafe): a private virtual network (Tailscale) connects the two computers instead.
+	/// </summary>
+	public static string InternetHint(int port) =>
+		$"Olika nätverk? Installera Tailscale (gratis) på båda datorerna; kompisen ansluter till din Tailscale-adress (100…):{port}. Inga portar öppnas i routern.";
+
+	/// <summary>An address as shown to the host: "ip:port", marked when it is the Tailscale one.</summary>
+	public static string AddressLine(string address, int port) =>
+		IsTailscale(address) ? $"{address}:{port} (Tailscale)" : $"{address}:{port}";
+
+	private static bool IsTailscale(string a)
 	{
-		PortState.Pending => "Internet: frågar routern om porten…",
-		PortState.Opened when !string.IsNullOrEmpty(publicAddress) =>
-			$"Internet: porten är öppnad i routern. Kompisar utanför ditt nätverk ansluter till {publicAddress}:{port}",
-		PortState.Opened => $"Internet: UDP {port} är öppnad i routern (den publika adressen gick inte att ta reda på).",
-		_ => $"Internet: routern öppnade inte porten själv. Öppna UDP {port} i routern, eller använd Tailscale/ZeroTier och anslut som på samma nätverk.",
-	};
+		var parts = a.Split('.');
+		return parts.Length == 4 && parts[0] == "100" && int.TryParse(parts[1], out int second) && second is >= 64 and <= 127;
+	}
 
 	private static string Name(string name) => string.IsNullOrWhiteSpace(name) ? "Motståndaren" : name;
 }

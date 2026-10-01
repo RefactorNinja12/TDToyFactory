@@ -65,8 +65,8 @@ public class MenuModelTests
 	public void LanAddresses_HomeNetworkFirst_VirtualAdaptersLater()
 	{
 		var shown = MenuModel.LanAddresses(new[] { "127.0.0.1", "fe80::1", "85.10.2.3", "169.254.3.3", "172.28.224.1",
-			"192.168.56.1", "10.0.0.7", "192.168.0.27", "172.40.0.1" });
-		Assert.Equal(new[] { "192.168.0.27", "10.0.0.7", "172.28.224.1", "192.168.56.1", "85.10.2.3", "172.40.0.1" }, shown);
+			"192.168.56.1", "10.0.0.7", "100.101.2.3", "192.168.0.27", "172.40.0.1" });
+		Assert.Equal(new[] { "192.168.0.27", "10.0.0.7", "100.101.2.3", "172.28.224.1", "192.168.56.1", "85.10.2.3", "172.40.0.1" }, shown);
 	}
 
 	[Fact]
@@ -86,14 +86,14 @@ public class MenuModelTests
 	}
 
 	[Fact]
-	public void InternetStatus_SaysWhereFriendsConnect_OrWhatToDo()
+	public void Internet_GoesThroughTailscale_NeverTheRouter()
 	{
-		Assert.Contains("85.10.2.3:7790", MenuModel.InternetStatus(PortState.Opened, "85.10.2.3", 7790));
-		Assert.Contains("UDP 7790", MenuModel.InternetStatus(PortState.Opened, "", 7790));
-		var failed = MenuModel.InternetStatus(PortState.Failed, "", 7790);
-		Assert.Contains("UDP 7790", failed);
-		Assert.Contains("Tailscale", failed);
-		Assert.NotEqual(failed, MenuModel.InternetStatus(PortState.Pending, "", 7790));
+		var hint = MenuModel.InternetHint(7790);
+		Assert.Contains("Tailscale", hint);
+		Assert.Contains(":7790", hint);
+		Assert.Equal("100.101.2.3:7790 (Tailscale)", MenuModel.AddressLine("100.101.2.3", 7790));
+		Assert.Equal("192.168.0.27:7790", MenuModel.AddressLine("192.168.0.27", 7790));
+		Assert.Equal("100.20.2.3:7790", MenuModel.AddressLine("100.20.2.3", 7790)); // outside Tailscale's range
 	}
 
 	[Fact]

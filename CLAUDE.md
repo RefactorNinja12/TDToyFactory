@@ -88,8 +88,8 @@ Kompakt fabrik, max 3 nivåer i produktionskedjan, matcher 15–25 min.
   Kontrollsumma var 20:e steg, olika = matchen stoppas + `user://desync-TICK.txt`. Värden väljer port
   (standard 7777) och lösenord (minst 4 tecken); lösenordet går aldrig över nätet (HMAC-SHA256 på en ny
   utmaning varje gång), 3 fel på 60 s = IP:n spärras 30 s. Samma bygge krävs (`Protocol.BuildId` = assemblyns
-  MVID, lika på alla plattformar i exporten, annat i editorn). ENet (UDP) som rått paketrör; UPnP öppnar porten
-  i routern (2 h lease) och visar publik adress, annars port forwarding eller Tailscale. Startmeny (`Scenes/
+  MVID, lika på alla plattformar i exporten, annat i editorn). ENet (UDP) som rått paketrör. Spelet öppnar ALDRIG
+  portar i routern (ingen UPnP, användaren tyckte det kändes osäkert): olika nätverk = Tailscale (100.64–127.x). Startmeny (`Scenes/
   Menu.tscn`, huvudscen): spela lokalt (Lätt/Normal), hosta, anslut. Online går inte att pausa; 10 s tystnad =
   anslutningen bröts. Sim-koden får inte ha flyttal, klockor, slump, hashkoder eller trådar (`DeterminismGuardTests`).
 - Grafik: `tools/art/restyle.py` gör om alla sprites från `tools/art/source/` (palett + svarta konturer)
@@ -117,7 +117,7 @@ Kompakt fabrik, max 3 nivåer i produktionskedjan, matcher 15–25 min.
   (`DragPath`), matmätaren (`FoodMeter`), hoverpanelens rader (`InfoRows`). View ritar bara det.
 - `Scripts/Net/` ren C# (testas): `Protocol` (meddelanden, `PacketWriter/Reader` som aldrig kastar, lösenordsbevis),
   `MatchSession` (lockstep, ping, timeout, desync), `HostSession`, `ClientSession`, `ITransport`. Godot-sidan:
-  `View/Net/ENetTransport.cs`, `MatchSetup` (statisk: sessionen genom scenbytet), `PortOpener` (UPnP);
+  `View/Net/ENetTransport.cs`, `MatchSetup` (statisk: sessionen genom scenbytet);
   `View/MainMenu.cs` (logik/texter i `UI/MenuModel.cs`, även `LaunchArgs`), `View/MatchOverlay.cs` (vänta, slut, Esc).
 - `tests/FactoryTD.Sim.Tests/` xUnit, kompilerar `Scripts/Sim` + `Scripts/UI` direkt (internals syns).
   `Support/Scenario.cs` bygger scenarier (`Match().NoWorkers().Instant().Rich()`, `Place`, `Belt`,
@@ -129,7 +129,7 @@ Kompakt fabrik, max 3 nivåer i produktionskedjan, matcher 15–25 min.
   läs den först, fortsätt med första obockade steget, bocka av och logga i samma commit.
 - Klara: `docs/plans/power.md` (elnät), `docs/plans/fog.md` (dimma, ljus, spejare, minikarta),
   `docs/plans/obstacles.md` (stora leksaker som hinder), `docs/plans/mice.md` (möss, ost, ostjägare, musfälla), `docs/plans/ui.md` (UI-stil, kortkommandon).
-  `docs/plans/multiplayer.md` (online-lockstep, lösenord, startmeny, UPnP, export).
+  `docs/plans/multiplayer.md` (online-lockstep, lösenord, startmeny, export).
   `docs/plans/refactor.md` (GridSearch, smutsflaggor för fält, rumslig målsökning, test:changed).
 
 ## Arbetsflöde (tester är feedbackloopen)
