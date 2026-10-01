@@ -387,6 +387,38 @@ public sealed partial class World
 	/// <summary>Removes every unit (tests start from a clean slate with this).</summary>
 	internal void ClearUnits() => _units.Clear();
 
+	/// <summary>
+	/// A treadmill with cheese wants a builder: the nearest idle one of its owner walks over, or if all are
+	/// busy the nearest one that is building (never the last builder, so the player can always still build).
+	/// Nothing if one is already on the way.
+	/// </summary>
+	internal void CallBuilder(Treadmill mill)
+	{
+		int builders = 0;
+		Unit idle = null, busy = null;
+		long bestIdle = long.MaxValue, bestBusy = long.MaxValue;
+		foreach (var unit in _units)
+		{
+			if (unit.Owner != mill.Owner || unit.Type != UnitType.Builder || unit.Health <= 0)
+				continue;
+			builders++;
+			if (unit.Job == mill)
+				return;
+			if (unit.Job is Treadmill)
+				continue; // already going to another treadmill
+			long dx = unit.X - mill.CenterX, dy = unit.Y - mill.CenterY, d = dx * dx + dy * dy;
+			if (unit.Job == null && d < bestIdle)
+				(idle, bestIdle) = (unit, d);
+			else if (unit.Job != null && d < bestBusy)
+				(busy, bestBusy) = (unit, d);
+		}
+		var nearest = idle ?? busy;
+		if (builders <= 1 || nearest == null)
+			return;
+		nearest.Job = mill;
+		nearest.Path = null;
+	}
+
 	/// <summary>Test helper: removes the player's new soldiers (keeps factories busy without crowding).</summary>
 	internal void ClearSoldiers() => _units.RemoveAll(u => u.Type == UnitType.PlasticSoldier);
 
@@ -472,6 +504,23 @@ public sealed partial class World
 		builder.MoveX = builder.MoveY = 0;
 
 		var job = builder.Job;
+		// Called to a treadmill: walk in and become the trainee.
+		if (job is Treadmill mill)
+		{
+			if (GetBuilding(mill.X, mill.Y) == mill && !mill.HasTrainee)
+			{
+				switch (WalkTo(builder, mill))
+				{
+					case Walk.Arrived:
+						mill.Enter();
+						builder.Health = 0; // used up: gone at the end of the tick
+						return;
+					case Walk.Walking:
+						return;
+				}
+			}
+			builder.Job = job = null;
+		}
 		if (job != null && (job.IsBuilt || GetBuilding(job.X, job.Y) != job))
 			builder.Job = job = null;
 		if (job == null)
@@ -790,7 +839,8 @@ public sealed partial class World
 			{
 				var def = UnitStats.Def(unit.Type);
 				int damage = targetBuilding != null ? def.Damage * def.BuildingDamagePercent / 100 : def.Damage;
-				var kind = def.TargetsUnits ? DamageKind.Bullet : DamageKind.Punch;
+				// Short reach (golems, cheese hunters) is a punch; the rest shoot.
+				var kind = def.Range <= UnitStats.SubTile * 3 / 2 ? DamageKind.Punch : DamageKind.Bullet;
 				Fire(new Projectile(kind, unit.Owner, damage, 0, def.ShotTravelTicks, unit.X, unit.Y, targetUnit, targetBuilding));
 				unit.AttackCooldown = def.AttackTicks;
 			}

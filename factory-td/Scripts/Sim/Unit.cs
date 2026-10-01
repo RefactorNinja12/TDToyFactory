@@ -10,6 +10,7 @@ public enum UnitType : byte
 	Builder,
 	Farmer,
 	Scout,
+	CheeseHunter,
 }
 
 /// <summary>What a unit is made of; decides which tower hurts it most.</summary>
@@ -86,6 +87,14 @@ public static class UnitStats
 		TargetsUnits: false, BuildingDamagePercent: 0,
 		Recipe: new ItemStack[] { new(ItemType.Plastic, 3) }, BuildTicks: 160);
 
+	// Cheese hunter: a builder mouse trained on a treadmill. Cheap, low tier, weaker than a soldier;
+	// punches enemy units and buildings up close (it has to get right next to them).
+	private static readonly UnitDef CheeseHunter = new(
+		ArmorClass.Plastic, MaxHealth: 20, Speed: 28, Damage: 3, AttackTicks: 16,
+		Range: SubTile * 2 / 3, Sight: SubTile * 6, ShotTravelTicks: 2,
+		TargetsUnits: true, BuildingDamagePercent: 100,
+		Recipe: new ItemStack[] { new(ItemType.MeltedCheese, 2) }, BuildTicks: 140);
+
 	/// <summary>Most scouts a player can have, and how many each tent houses.</summary>
 	public const int MaxScouts = 6;
 	public const int ScoutsPerTent = 2;
@@ -135,6 +144,7 @@ public static class UnitStats
 		UnitType.Builder => Builder,
 		UnitType.Farmer => Farmer,
 		UnitType.Scout => Scout,
+		UnitType.CheeseHunter => CheeseHunter,
 		_ => PlasticSoldier,
 	};
 

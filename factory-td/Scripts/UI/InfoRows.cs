@@ -88,7 +88,9 @@ public sealed class InfoRows
 				Item(ItemType.Food, "Gör: 1 matlåda");
 				Text("Behöver per styck:", Tone.Dim);
 				Needs(Kitchen.Recipe, kitchen.Crafter);
-				Progress(kitchen.Crafter.Progress, Kitchen.CookTicks);
+				Text("eller", Tone.Dim);
+				Needs(Kitchen.CheeseRecipe, kitchen.CheeseCrafter);
+				Progress(System.Math.Max(kitchen.Crafter.Progress, kitchen.CheeseCrafter.Progress), Kitchen.CookTicks);
 				Text($"Klar mat som väntar på att komma ut: {kitchen.Finished}", kitchen.Finished >= 5 ? Tone.Missing : Tone.Dim);
 				Text("Bönder lämnar morötter här. Maten går ut åt pilens håll.", Tone.Dim);
 				break;
@@ -120,6 +122,24 @@ public sealed class InfoRows
 				Text($"Laddning: {PowerMeter.Bolts(charger.Energy)}/{PowerMeter.Bolts(PowerStats.ChargerCapacity)}⚡  (1 batteri = {PowerMeter.Bolts(PowerStats.EnergyPerBattery)}⚡)");
 				Progress(charger.Energy, PowerStats.ChargerCapacity);
 				Network(building);
+				break;
+
+			case Treadmill mill:
+				Text($"Tränar: {Texts.UnitName(UnitType.CheeseHunter)}");
+				Text("Behöver per ostjägare:", Tone.Dim);
+				Needs(Treadmill.Recipe, mill.Crafter);
+				if (mill.HasTrainee)
+				{
+					Text("En byggarmus springer efter osten.", Tone.Good);
+					Progress(mill.Crafter.Progress, UnitStats.BuildTicks(UnitType.CheeseHunter));
+				}
+				else if (_world.BuildersOn(mill) > 0)
+					Text("En byggarmus är på väg.", Tone.Good);
+				else if (mill.Crafter.CanWork(Treadmill.Recipe))
+					Text("Väntar på en ledig byggarmus (tar aldrig din sista).", Tone.Missing);
+				else
+					Text("Väntar på smält ost.", Tone.Dim);
+				Text("Drivs av musen: ingen ström.", Tone.Dim);
 				break;
 
 			case Pylon:

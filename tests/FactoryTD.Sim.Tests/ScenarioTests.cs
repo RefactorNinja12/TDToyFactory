@@ -34,6 +34,7 @@ public class ScenarioTests
 		int[] maxUnits = new int[2];
 		int[] maxCrops = new int[2];
 		int[] firstBatteryExtractor = { -1, -1 };
+		int[] maxHunters = new int[2];
 		// Army factories/assemblers/towers without power, in the first 8 minutes (later a losing side's grid
 		// gets shot to pieces, which is fair).
 		int[] factoryTicks = new int[2], unpoweredTicks = new int[2];
@@ -50,6 +51,7 @@ public class ScenarioTests
 					factoryTicks[p]++;
 					if (b.NoPower) unpoweredTicks[p]++;
 				}
+				maxHunters[p] = System.Math.Max(maxHunters[p], s.World.CountUnits(p, UnitType.CheeseHunter));
 				if (firstBatteryExtractor[p] < 0 && s.World.CountBuildings(p, BuildingType.BatteryExtractor) > 0)
 					firstBatteryExtractor[p] = (int)(s.World.TickCount / WorldRunner.TicksPerSecond);
 				maxCrops[p] = System.Math.Max(maxCrops[p], s.World.Players[p].GetCount(ItemType.Crop));
@@ -59,7 +61,7 @@ public class ScenarioTests
 		for (int p = 0; p < 2; p++)
 			_out.WriteLine($"player {p}: starving {starvingTicks[p] / WorldRunner.TicksPerSecond} s, max stored crops {maxCrops[p]}, " +
 				$"kitchens {s.World.CountBuildings(p, BuildingType.Kitchen)}, max army {maxUnits[p]}, " +
-				$"first battery extractor at {firstBatteryExtractor[p]} s, consumers without power {unpoweredTicks[p] * 100 / System.Math.Max(1, factoryTicks[p])}% (first 8 min), " +
+				$"first battery extractor at {firstBatteryExtractor[p]} s, max cheese hunters {maxHunters[p]}, consumers without power {unpoweredTicks[p] * 100 / System.Math.Max(1, factoryTicks[p])}% (first 8 min), " +
 				$"modules {string.Join(",", bots[p].ModulesBuilt)}");
 		_out.WriteLine($"winner {s.World.Winner} at {s.World.TickCount / WorldRunner.TicksPerSecond} s");
 		for (int p = 0; p < 2; p++)
@@ -68,6 +70,7 @@ public class ScenarioTests
 			Assert.True(maxUnits[p] >= 5, $"player {p} never had an army (max {maxUnits[p]})");
 			Assert.Contains("mat", bots[p].ModulesBuilt);
 			Assert.InRange(firstBatteryExtractor[p], 0, 5 * 60);
+			Assert.True(maxHunters[p] >= 1, $"player {p} never trained a cheese hunter");
 			Assert.True(unpoweredTicks[p] * 100 <= factoryTicks[p] * 10, $"player {p}: consumers without power {unpoweredTicks[p] * 100 / System.Math.Max(1, factoryTicks[p])}% of the time");
 			Assert.True(maxCrops[p] <= 300, $"player {p} piled up {maxCrops[p]} crops (cap {PlayerState.CoreCapacity}): too few kitchens");
 		}
@@ -192,5 +195,18 @@ public class ScenarioTests
 		Assert.True(one <= 180, $"1 scout took {one} s (wide before deep: the patch is in the far corner)");
 		Assert.True(two < one, $"2 scouts {two} s, 1 scout {one} s");
 		Assert.True(lit < one, $"with lamps {lit} s, without {one} s");
+	}
+
+	[Fact]
+	public void Balance_OneCheeseMelter_KeepsAKitchenCooking()
+	{
+		var s = Scenario.Match().NoWorkers().Instant().Rich();
+		s.Place(BuildingType.CheeseMelter, 6, 22);                  // on the cheese patch
+		s.Place(BuildingType.Kitchen, 6, 21, Direction.North);      // filled straight by the melter
+		s.Place(BuildingType.Warehouse, 6, 19);                     // the food goes into storage
+		s.World.Minutes(2);
+		int perMinute = s.P0.FoodProducedLastMinute;
+		_out.WriteLine($"one cheese melter + kitchen: {perMinute} food/min");
+		Assert.True(perMinute >= 15, $"only {perMinute} food/min");
 	}
 }

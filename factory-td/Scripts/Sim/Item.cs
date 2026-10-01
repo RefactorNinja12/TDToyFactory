@@ -18,6 +18,9 @@ public enum ItemType : byte
 	// Food chain: crops from fields, food cooked from crops (units eat food)
 	Crop,
 	Food,
+
+	// Cheese: melted from cheese deposits; kitchens cook it, treadmills train cheese hunters with it
+	MeltedCheese,
 }
 
 /// <summary>An amount of one item type, e.g. a building cost.</summary>
@@ -30,7 +33,7 @@ public static class Items
 	{
 		ItemType.Brick, ItemType.Plastic, ItemType.Battery,
 		ItemType.Gear, ItemType.Spring, ItemType.CircuitBoard,
-		ItemType.Crop, ItemType.Food,
+		ItemType.Crop, ItemType.Food, ItemType.MeltedCheese,
 	};
 
 	public static ItemType FromResource(ResourceType resource) => resource switch
@@ -38,6 +41,7 @@ public static class Items
 		ResourceType.Brick => ItemType.Brick,
 		ResourceType.Plastic => ItemType.Plastic,
 		ResourceType.Battery => ItemType.Battery,
+		ResourceType.Cheese => ItemType.MeltedCheese,
 		_ => ItemType.None,
 	};
 }

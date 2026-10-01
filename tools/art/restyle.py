@@ -58,21 +58,28 @@ PALETTE_LAB = [srgb_to_lab(c) for c in PALETTE]
 _cache = {}
 
 
-def muted(c):
-    """A little less saturated and a little darker: less cartoon, more night."""
+# Pictures that stay bright: cheese is the game's warm yellow accent.
+VIVID = {"cheese.png", "melted_cheese.png", "cheese_melter.png"}
+
+
+def muted(c, vivid=False):
+    """A little less saturated and a little darker: less cartoon, more night (vivid: barely)."""
     r, g, b = c
     grey = 0.299 * r + 0.587 * g + 0.114 * b
+    if vivid:
+        return tuple(max(0, min(255, int(grey + (v - grey) * 0.95))) for v in (r, g, b))
     k = 0.62  # keep 62% of the saturation
     r, g, b = (grey + (v - grey) * k for v in (r, g, b))
     return tuple(max(0, min(255, int(v * 0.86))) for v in (r, g, b))
 
 
-def nearest(c):
-    if c in _cache:
-        return _cache[c]
-    lab = srgb_to_lab(muted(c))
+def nearest(c, vivid=False):
+    key = (c, vivid)
+    if key in _cache:
+        return _cache[key]
+    lab = srgb_to_lab(muted(c, vivid))
     best = min(range(len(PALETTE)), key=lambda i: sum((a - b) ** 2 for a, b in zip(lab, PALETTE_LAB[i])))
-    _cache[c] = PALETTE[best]
+    _cache[key] = PALETTE[best]
     return PALETTE[best]
 
 
@@ -80,7 +87,7 @@ def luminance(c):
     return (0.299 * c[0] + 0.587 * c[1] + 0.114 * c[2]) / 255.0
 
 
-def restyle(path_in, path_out, outline=True):
+def restyle(path_in, path_out, outline=True, vivid=False):
     img = Image.open(path_in).convert("RGBA")
     w, h = img.size
     src = img.load()
@@ -97,14 +104,14 @@ def restyle(path_in, path_out, outline=True):
                 continue
             if a < 200:
                 # soft shadows / halos: keep the alpha, tint towards the night
-                dst[x, y] = (8, 8, 24, a) if luminance((r, g, b)) < 0.3 else (*nearest((r, g, b)), a)
+                dst[x, y] = (8, 8, 24, a) if luminance((r, g, b)) < 0.3 else (*nearest((r, g, b), vivid), a)
                 continue
             edge = outline and any(not solid(x + dx, y + dy) and 0 <= x + dx < w and 0 <= y + dy < h
                                    for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1)))
             if edge or luminance((r, g, b)) < 0.2:
                 dst[x, y] = (*OUTLINE, 255)  # clear black outlines (and the old dark ink lines)
             else:
-                dst[x, y] = (*nearest((r, g, b)), 255)
+                dst[x, y] = (*nearest((r, g, b), vivid), 255)
     out.save(path_out)
 
 
@@ -208,7 +215,7 @@ def main():
                 shutil.copyfile(src, dst)  # the wall keeps its original look
                 continue
             # Full-tile pictures (belts, walls, deposits on the floor) get no outline at their edges.
-            restyle(src, dst, outline=rel not in ("Tiles", "Conveyors"))
+            restyle(src, dst, outline=rel not in ("Tiles", "Conveyors"), vivid=name in VIVID)
     floor_tiles(os.path.join(SPRITES, "Tiles", "floor_wood.png"))
     print("restyled", sum(len(f) for _, _, f in os.walk(SOURCE)), "files")
 
