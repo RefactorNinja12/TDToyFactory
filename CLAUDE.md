@@ -99,6 +99,7 @@ Kompakt fabrik, max 3 nivåer i produktionskedjan, matcher 15–25 min.
   läs den först, fortsätt med första obockade steget, bocka av och logga i samma commit.
 - Klara: `docs/plans/power.md` (elnät), `docs/plans/fog.md` (dimma, ljus, spejare, minikarta),
   `docs/plans/obstacles.md` (stora leksaker som hinder).
+- Pågående: `docs/plans/mice.md` (möss, ost, ostjägare, musfälla; gren `mice`).
 
 ## Arbetsflöde (tester är feedbackloopen)
 - `Taskfile.yaml` (go-task) samlar kommandona; `task` listar dem.
