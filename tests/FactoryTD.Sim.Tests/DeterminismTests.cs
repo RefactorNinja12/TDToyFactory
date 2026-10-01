@@ -25,6 +25,24 @@ public class DeterminismTests
 		return sums;
 	}
 
+	/// <summary>
+	/// The recorded result of 2 minutes of bot vs bot (default map and seed): every second's checksum folded
+	/// into one number. A refactor must leave it unchanged. When a change is MEANT to change how the game
+	/// plays, update the value on purpose (the failure message prints the new one) and say so in the commit.
+	/// </summary>
+	private const ulong GoldenBotMatch = 0x299E99DC031BB7E0UL;
+
+	[Fact]
+	public void Golden_BotMatch_PlaysExactlyAsRecorded()
+	{
+		var hash = StateHash.Start();
+		foreach (ulong sum in BotMatchChecksums(WorldRunner.TicksPerMinute * 2, every: 20))
+			hash.Add((long)sum);
+		Assert.True(hash.Value == GoldenBotMatch,
+			$"Behaviour changed: golden bot match is now 0x{hash.Value:X}UL (was 0x{GoldenBotMatch:X}UL). " +
+			"Refactor: find what changed. Intended change: update GoldenBotMatch.");
+	}
+
 	[Fact]
 	public void SameScenario_SameChecksumsEveryTick()
 	{

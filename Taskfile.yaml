@@ -32,6 +32,16 @@ tasks:
     cmds:
       - "{{.PS}} tests/run.ps1 -Slow -Report {{.CLI_ARGS}}"
 
+  test:timing:
+    desc: Every test, plus the 10 slowest ones
+    cmds:
+      - "{{.PS}} tests/run.ps1 -All -Timing {{.CLI_ARGS}}"
+
+  coverage:
+    desc: Line coverage of Sim and UI (summary + least covered files; slow, ~100 s)
+    cmds:
+      - "{{.PS}} tests/coverage.ps1 {{.CLI_ARGS}}"
+
   test:all:
     desc: Every test
     cmds:

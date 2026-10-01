@@ -6,6 +6,7 @@
     tests/run.ps1 -Slow           only the slow scenario tests
     tests/run.ps1 -All            everything
     tests/run.ps1 -Slow -Report   also print what each passing test measured (balance numbers) and its time
+    tests/run.ps1 -All -Timing    also list the 10 slowest tests (one line each)
 
   Prints compile errors, or each failing test with its message and the line in the test file,
   then one summary line:  PASS 142/142 (fast) in 3.1s   /   FAIL 2/142 ...
@@ -14,7 +15,8 @@ param(
 	[string]$Name = "",
 	[switch]$Slow,
 	[switch]$All,
-	[switch]$Report
+	[switch]$Report,
+	[switch]$Timing
 )
 
 # Continue: dotnet writes test failures to stderr, which Windows PowerShell would otherwise treat as fatal.
@@ -94,6 +96,13 @@ if ($Report) {
 		$duration = [math]::Round(([TimeSpan]::Parse($r.duration)).TotalSeconds, 1)
 		Write-Output "  $(Short $r.testName) (${duration}s)"
 		($r.Output.StdOut.Trim() -split "`r?`n") | ForEach-Object { Write-Output "     $_" }
+	}
+}
+
+# -Timing: the slowest tests, to see where the feedback loop spends its time.
+if ($Timing) {
+	$runs | Sort-Object { [TimeSpan]::Parse($_.duration) } -Descending | Select-Object -First 10 | ForEach-Object {
+		Write-Output ("  {0,5:N1}s  {1}" -f ([TimeSpan]::Parse($_.duration)).TotalSeconds, (Short $_.testName))
 	}
 }
 

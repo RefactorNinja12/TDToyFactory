@@ -223,4 +223,17 @@ public class ScenarioTests
 		_out.WriteLine($"one cheese melter + kitchen: {perMinute} food/min");
 		Assert.True(perMinute >= 15, $"only {perMinute} food/min");
 	}
+
+	[Fact]
+	public void SimSpeed_BotVsBot_MillisecondsPerSimulatedMinute()
+	{
+		var s = Scenario.Match(obstacles: true).RealPower().RealFog();
+		var bots = new[] { new BotPlayer(0), new BotPlayer(1) };
+		s.World.Ticks(WorldRunner.TicksPerMinute * 4, bots); // into the mid game
+		var watch = System.Diagnostics.Stopwatch.StartNew();
+		s.World.Ticks(WorldRunner.TicksPerMinute * 2, bots);
+		long perMinute = watch.ElapsedMilliseconds / 2;
+		_out.WriteLine($"sim speed: {perMinute} ms per simulated minute ({s.World.Units.Count} units, {s.World.Buildings.Count} buildings)");
+		Assert.True(perMinute < 6000, $"{perMinute} ms per simulated minute: too slow to play in real time");
+	}
 }
