@@ -35,7 +35,7 @@ public class MapTests
 	[InlineData(41, 47)] // batteries, left room
 	[InlineData(67, 26)] // bricks, hall
 	[InlineData(78, 30)] // batteries, hall
-	[InlineData(51, 11)] // cheese, left room
+	[InlineData(7, 23)] // cheese, left room (a starting resource by the core)
 	[InlineData(72, 34)] // cheese, hall
 	public void Deposits_AreMirrored(int x, int y)
 	{

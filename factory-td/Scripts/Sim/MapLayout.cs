@@ -121,8 +121,8 @@ public sealed partial class MapLayout
 		AddMirroredDeposit(10, 22, 13, 25, ResourceType.Brick);
 		AddMirroredDeposit(10, 36, 13, 39, ResourceType.Plastic);
 		AddMirroredDeposit(40, 46, 42, 48, ResourceType.Battery);
-		// Cheese far up in the room's corner: someone has to go and find it.
-		AddMirroredDeposit(50, 10, 52, 12, ResourceType.Cheese);
+		// Cheese, a starting resource: just north of the core, in its light from the start.
+		AddMirroredDeposit(5, 22, 7, 23, ResourceType.Cheese);
 
 		// Hall (interior is x 62..97, y 25..36, doors at y 29..32).
 		// Side deposits stay clear of the door rows so the path through stays open.

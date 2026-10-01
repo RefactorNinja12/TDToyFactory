@@ -201,9 +201,9 @@ public class ScenarioTests
 	public void Balance_OneCheeseMelter_KeepsAKitchenCooking()
 	{
 		var s = Scenario.Match().NoWorkers().Instant().Rich();
-		s.Place(BuildingType.CheeseMelter, 50, 11);                 // on the cheese patch
-		s.Place(BuildingType.Kitchen, 49, 11, Direction.West);      // filled straight by the melter
-		s.Place(BuildingType.Warehouse, 47, 10);                    // the food goes into storage
+		s.Place(BuildingType.CheeseMelter, 6, 22);                  // on the cheese patch
+		s.Place(BuildingType.Kitchen, 6, 21, Direction.North);      // filled straight by the melter
+		s.Place(BuildingType.Warehouse, 6, 19);                     // the food goes into storage
 		s.World.Minutes(2);
 		int perMinute = s.P0.FoodProducedLastMinute;
 		_out.WriteLine($"one cheese melter + kitchen: {perMinute} food/min");

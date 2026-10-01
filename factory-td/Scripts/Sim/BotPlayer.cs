@@ -415,14 +415,13 @@ public sealed class BotPlayer
 			Place(BuildingType.PlasticExtractor, 13, 37, Direction.East);
 		}));
 
-		// Cheese hunters (cheap, early): two cheese melters on the room's cheese patch fill a treadmill right next to them;
-		// builders walk over to be trained by themselves. The builders that go to build it light the patch,
-		// so the melters can be placed.
+		// Cheese hunters (cheap, early): cheese melters on the cheese patch north of the core fill a treadmill
+		// right above them; builders walk over to be trained by themselves.
 		_pending.Add(new Module("ostjägare", w => Built("soldater") && !FoodCrisis(w) && w.TickCount >= _armyDelayTicks + 2 * Minute, _ =>
 		{
-			Place(BuildingType.Treadmill, 53, 10, Direction.East);
-			Place(BuildingType.CheeseMelter, 52, 10, Direction.East);
-			Place(BuildingType.CheeseMelter, 52, 11, Direction.East);
+			Place(BuildingType.Treadmill, 6, 20, Direction.East);
+			Place(BuildingType.CheeseMelter, 6, 22, Direction.East);
+			Place(BuildingType.CheeseMelter, 7, 22, Direction.East);
 		}));
 
 		// Batteries into the core: towers and car factories cost batteries to build.

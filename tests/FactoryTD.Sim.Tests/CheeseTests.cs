@@ -11,21 +11,20 @@ public class CheeseMelterTests
 	{
 		var s = Scenario.Match().NoWorkers().Instant().Rich();
 		Assert.Equal(PlaceError.WrongResource, s.World.CheckPlace(BuildingType.CheeseMelter, 11, 23, 0)); // bricks
-		Assert.Equal(PlaceError.WrongResource, s.World.CheckPlace(BuildingType.PlasticExtractor, 51, 11, 0)); // cheese
-		var melter = s.Place<Extractor>(BuildingType.CheeseMelter, 51, 11);
+		Assert.Equal(PlaceError.WrongResource, s.World.CheckPlace(BuildingType.PlasticExtractor, 7, 23, 0)); // cheese
+		var melter = s.Place<Extractor>(BuildingType.CheeseMelter, 7, 23);
 		Assert.Equal(ItemType.MeltedCheese, melter.Output);
 		s.World.Ticks(Extractor.ProductionTicks * 2);
 		Assert.Equal(2, melter.Stored);
 	}
 
 	[Fact]
-	public void CheeseIsFoundUnderTheFog_LikeTheOtherDeposits()
+	public void Cheese_IsAStartingResource_LitByTheToyboxFromTheStart()
 	{
 		var s = Scenario.Match().NoWorkers().Rich().RealFog();
-		Assert.Equal(PlaceError.Unexplored, s.World.CheckPlace(BuildingType.CheeseMelter, 51, 11, 0));
-		s.Spawn(UnitType.PlasticSoldier, 51, 13);
-		s.World.Ticks(VisionStats.VisionTicks);
-		Assert.Equal(PlaceError.None, s.World.CheckPlace(BuildingType.CheeseMelter, 51, 11, 0));
+		Assert.True(s.World.IsExplored(0, 5, 22) && s.World.IsExplored(0, 7, 23));
+		Assert.Equal(PlaceError.None, s.World.CheckPlace(BuildingType.CheeseMelter, 7, 23, 0));
+		Assert.Equal(ResourceType.Cheese, s.World.Map.GetResource(s.World.Map.Width - 1 - 7, 23)); // and the enemy's
 	}
 
 	[Fact]

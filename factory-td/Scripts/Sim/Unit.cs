@@ -88,10 +88,10 @@ public static class UnitStats
 		Recipe: new ItemStack[] { new(ItemType.Plastic, 3) }, BuildTicks: 160);
 
 	// Cheese hunter: a builder mouse trained on a treadmill. Cheap, low tier, weaker than a soldier;
-	// punches enemy units and buildings up close.
+	// punches enemy units and buildings up close (it has to get right next to them).
 	private static readonly UnitDef CheeseHunter = new(
 		ArmorClass.Plastic, MaxHealth: 20, Speed: 28, Damage: 3, AttackTicks: 16,
-		Range: SubTile, Sight: SubTile * 6, ShotTravelTicks: 2,
+		Range: SubTile * 2 / 3, Sight: SubTile * 6, ShotTravelTicks: 2,
 		TargetsUnits: true, BuildingDamagePercent: 100,
 		Recipe: new ItemStack[] { new(ItemType.MeltedCheese, 2) }, BuildTicks: 140);
 
