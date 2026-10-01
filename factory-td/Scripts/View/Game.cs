@@ -56,6 +56,9 @@ public partial class Game : Node2D
 		Info.Bind(World, Builder, LocalPlayer);
 
 		Buildings.LocalPlayer = Items.LocalPlayer = Units.LocalPlayer = Combat.LocalPlayer = LocalPlayer;
+		var treadmills = new TreadmillView { Name = "Treadmills" };
+		AddChild(treadmills);
+		treadmills.Bind(World, LocalPlayer);
 		var toys = new ObstacleView { Name = "Obstacles" };
 		AddChild(toys);
 		toys.Bind(World);
