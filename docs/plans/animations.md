@@ -44,10 +44,10 @@ and they move while they work (and stand still when they don't: starving, no pow
 - `task build` for the view; `task check` before each commit.
 
 ## Steps
-- [ ] 0. Branch `sprites` (from `multiplayer`). Baseline contact sheet of the current 11 sprites.
-- [ ] 1. Activity (pure): `Activity.Track(world)` per tick, `IsWorking(building)`; tests: fed assembler works,
+- [x] 0. Branch `sprites` (from `multiplayer`). Baseline contact sheet of the current 11 sprites.
+- [x] 1. Activity (pure): `Activity.Track(world)` per tick, `IsWorking(building)`; tests: fed assembler works,
       unfed/unpowered/starving one doesn't, extractor works until full, kitchen/treadmill/unit factory.
-- [ ] 2. Parts and motion (pure): `BuildingParts` table + `Pose(part, t)` (spin, bob, slide path loop,
+- [x] 2. Parts and motion (pure): `BuildingParts` table + `Pose(part, t)` (spin, bob, slide path loop,
       blink, puff rising and fading); tests: periodic, within the footprint, every animated type has parts
       whose sprites exist in `BuildingVisuals`.
 - [ ] 3. Art kit + sheet tool: `tools/art/kit.py` (shaded plastic shapes, outlines left to restyle, mouse
@@ -61,3 +61,6 @@ and they move while they work (and stand still when they don't: starving, no pow
 - [ ] 9. Polish pass in game (speeds, sizes, readability at normal zoom), CLAUDE.md, `task check`, push.
 
 ## Log
+- Step 0: baseline sheet: the 11 are flat coloured squares with one round detail each (extractors 64 px, factories 128 px).
+- Step 1: UI/Activity.cs: working = extractor/crafter progress moved within 0.5 s (kitchen: both crafters); first sight = not working; forgets removed buildings. ActivityTests 5 (fed/unfed assembler, extractor until full, no power, kitchen, site).
+- Step 2: UI/BuildingParts.cs: Part record (anchor, Motion Spin/Swing/Bob/Slide/Orbit/Blink/Puff, speed, travel, phase), PoseAt, table per type (filled in steps 5-8); AnimationClocks (runs while working, eases in/out over 0.3 s, per-building start offset). Tests: loops seamless, motions as named, every part stays on its building and has Parts/<sprite>.png (Support/ArtFiles).
