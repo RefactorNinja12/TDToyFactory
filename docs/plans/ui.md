@@ -38,7 +38,7 @@ tick + log + commit + push per step.
 - [x] 1. Hotkeys: letters Z X C F G T, no camera blocking (BuildHotkeys + tests, CameraController back to plain, menu labels/hint).
 - [x] 2. UI models (pure, tested): `ResourceBarModel` (entries: item, count, cap, full; food/power gauges; core health), `BuildCardModel` (name, cost stacks with affordable flag per item, hotkey letter, selected), `Toasts` (message queue with timeouts).
 - [x] 3. Theme: `View/UiTheme.cs` (Godot Theme: panel/button/tab/progress styleboxes with frame, inner highlight and shadow, default font + outline, sizes) applied to every CanvasLayer root. Screenshot (crop).
-- [ ] 4. Resource bar redesign on ResourceBarModel. Screenshot (crop top-left).
+- [x] 4. Resource bar redesign on ResourceBarModel. Screenshot (crop top-left).
 - [ ] 5. Build menu redesign on BuildCardModel (tabs, cards, badges, cost icons). Screenshot (crop bottom).
 - [ ] 6. Info panel, minimap frame, toasts. Screenshot (crop).
 - [ ] 7. CLAUDE.md (UI section), `task check`, commit, push, PR link.
@@ -47,3 +47,4 @@ tick + log + commit + push per step.
 - Step 1: BuildHotkeys letters ZXCFGT, Release/BlocksCamera removed (nothing clashes), CameraController plain again, menu labels/hint/status updated. 239/239.
 - Step 2: Scripts/UI/Hud.cs: ResourceBarModel (StockEntry raw+food always, others when >0; Food/Power Gauge short+mood+tooltip; core Bars; WorkerCount builders/farmers/scouts), BuildCardModel (CostEntry affordable per item, hotkey letter, tooltip), Toasts (3 s, fade 0.6 s). 243/243.
 - Step 3: View/UiTheme.cs (navy semi-transparent framed panels, rounded, shadow; buttons with yellow hover/pressed; outlined labels/tooltips; progress bars). Window theme does not reach controls under CanvasLayers: UiTheme.ApplyTo sets it on every Control root (Game._Ready end) + window for tooltips. Screenshot ok.
+- Step 4: ResourceBar rewritten on ResourceBarModel: row 1 item chips (22 px icon, count, 3 px fill bar red when full) + food/power gauges (mood colour, long text as tooltip); row 2 core health bars + builder/farmer/scout counts. Refresh 4 Hz. Screenshot ok (about half the old size).
