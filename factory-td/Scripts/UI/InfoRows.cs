@@ -88,7 +88,9 @@ public sealed class InfoRows
 				Item(ItemType.Food, "Gör: 1 matlåda");
 				Text("Behöver per styck:", Tone.Dim);
 				Needs(Kitchen.Recipe, kitchen.Crafter);
-				Progress(kitchen.Crafter.Progress, Kitchen.CookTicks);
+				Text("eller", Tone.Dim);
+				Needs(Kitchen.CheeseRecipe, kitchen.CheeseCrafter);
+				Progress(System.Math.Max(kitchen.Crafter.Progress, kitchen.CheeseCrafter.Progress), Kitchen.CookTicks);
 				Text($"Klar mat som väntar på att komma ut: {kitchen.Finished}", kitchen.Finished >= 5 ? Tone.Missing : Tone.Dim);
 				Text("Bönder lämnar morötter här. Maten går ut åt pilens håll.", Tone.Dim);
 				break;

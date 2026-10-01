@@ -48,37 +48,54 @@ public sealed class Kitchen : Building
 {
 	// ---- Balance: cooking ----
 	public static readonly ItemStack[] Recipe = { new(ItemType.Crop, 2) };
+	/// <summary>The other way to a food box: melted cheese.</summary>
+	public static readonly ItemStack[] CheeseRecipe = { new(ItemType.MeltedCheese, 1) };
 	public const int CookTicks = World.TicksPerSecond * 3;
 	private const int MaxOutput = 5;
 
 	// Room for 5 meals' worth of crops, so a farmer's whole armful (3) usually fits.
 	private readonly Crafter _crafter = new(bufferCrafts: 5);
+	private readonly Crafter _cheese = new(bufferCrafts: 5);
 	private int _output;
 
 	public Kitchen(int x, int y, Direction facing, int owner)
 		: base(BuildingType.Kitchen, x, y, facing, owner) { }
 
+	/// <summary>Cooking from crops.</summary>
 	public Crafter Crafter => _crafter;
+
+	/// <summary>Cooking from melted cheese.</summary>
+	public Crafter CheeseCrafter => _cheese;
 
 	/// <summary>Cooked food waiting to go out of the front.</summary>
 	public int Finished => _output;
 
 	public override bool OutputsToward(Direction direction) => direction == Facing;
 
-	public override bool TryAccept(ItemType item, Direction moving) => _crafter.TryAccept(Recipe, item);
+	public override bool TryAccept(ItemType item, Direction moving) =>
+		item == ItemType.MeltedCheese ? _cheese.TryAccept(CheeseRecipe, item) : _crafter.TryAccept(Recipe, item);
 
-	public override bool CanTake(ItemType item) => IsBuilt && _crafter.HasRoom(Recipe, item);
+	public override bool CanTake(ItemType item) =>
+		IsBuilt && (item == ItemType.MeltedCheese ? _cheese.HasRoom(CheeseRecipe, item) : _crafter.HasRoom(Recipe, item));
 
 	protected override void HashState(ref StateHash hash)
 	{
 		hash.Add(_output);
 		_crafter.HashInto(ref hash);
+		_cheese.HashInto(ref hash);
 	}
 
 	public override void Tick(World world)
 	{
-		if (_output < MaxOutput && _crafter.Tick(Recipe, CookTicks))
-			_output++;
+		// One pot: finish what is cooking, otherwise crops first, then cheese.
+		if (_output < MaxOutput)
+		{
+			bool cookCrops = _crafter.Progress > 0 || (_cheese.Progress == 0 && _crafter.CanWork(Recipe));
+			bool done = cookCrops ? _crafter.Tick(Recipe, CookTicks)
+				: _cheese.CanWork(CheeseRecipe) && _cheese.Tick(CheeseRecipe, CookTicks);
+			if (done)
+				_output++;
+		}
 		if (_output > 0 && TryPush(world, ItemType.Food, Facing))
 			_output--;
 	}

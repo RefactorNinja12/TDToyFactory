@@ -38,3 +38,42 @@ public class CheeseMelterTests
 					Assert.NotEqual(ResourceType.Cheese, map.GetResource(x, y));
 	}
 }
+
+public class CheeseKitchenTests
+{
+	[Fact]
+	public void Kitchen_CooksFromMeltedCheeseAlone()
+	{
+		var s = Scenario.Match().NoWorkers().Instant();
+		var kitchen = s.Place<Kitchen>(BuildingType.Kitchen, 6, 32, Direction.North); // into the toybox
+		Assert.True(kitchen.CanTake(ItemType.MeltedCheese));
+		Assert.Equal(5, s.Feed(kitchen, ItemType.MeltedCheese, 10));
+		int food = s.P0.GetCount(ItemType.Food);
+		s.World.Ticks(Kitchen.CookTicks * 5 + 5);
+		Assert.Equal(food + 5, s.P0.GetCount(ItemType.Food));
+	}
+
+	[Fact]
+	public void Kitchen_CropsFirst_ThenCheese()
+	{
+		var s = Scenario.Match().NoWorkers().Instant();
+		var kitchen = s.Place<Kitchen>(BuildingType.Kitchen, 6, 32, Direction.North);
+		s.Feed(kitchen, ItemType.MeltedCheese, 1);
+		s.Feed(kitchen, ItemType.Crop, 2);
+		s.World.Ticks(2);
+		Assert.True(kitchen.Crafter.Progress > 0);
+		Assert.Equal(0, kitchen.CheeseCrafter.Progress);
+		s.World.Ticks(Kitchen.CookTicks * 2 + 4);
+		Assert.Equal(0, kitchen.CheeseCrafter.Stock(ItemType.MeltedCheese)); // the cheese got cooked after
+	}
+
+	[Fact]
+	public void InfoRows_ShowBothWaysToCook()
+	{
+		var s = Scenario.Match().NoWorkers().Instant();
+		var kitchen = s.Place<Kitchen>(BuildingType.Kitchen, 20, 20);
+		var rows = FactoryTD.UI.InfoRows.For(s.World, kitchen, 0);
+		Assert.Contains(rows, r => r.Item == ItemType.Crop);
+		Assert.Contains(rows, r => r.Item == ItemType.MeltedCheese);
+	}
+}
