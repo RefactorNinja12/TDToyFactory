@@ -77,6 +77,11 @@ public partial class Game : Node2D
 		Menu.SelectionChanged += Builder.Select;
 		Builder.SelectionCleared += Menu.ClearSelection;
 		Builder.StatusChanged += Menu.ShowStatus;
+
+		// One look for every UI layer (and the window's tooltips).
+		var theme = UiTheme.Create();
+		GetWindow().Theme = theme;
+		UiTheme.ApplyTo(this, theme);
 	}
 
 	public override void _Process(double delta)
