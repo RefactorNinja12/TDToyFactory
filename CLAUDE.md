@@ -77,6 +77,10 @@ Kompakt fabrik, max 3 nivåer i produktionskedjan, matcher 15–25 min.
 - Kortkommandon för bygge: siffra 1–7 väljer kategori (flik), sedan Z X C F G T byggnaden på den
   platsen. Bokstäverna krockar inte med kameran (WASD/QE), R (rotera) eller V (elnät).
   Logik i `Scripts/UI/BuildHotkeys.cs`, BuildMenu läser den i `_Input`.
+- UI-stil: `View/UiTheme.cs` (halvgenomskinliga marinblå ramade paneler, rundade hörn, skugga, gul accent,
+  textkontur; standardtypsnitt) sätts på varje UI-rot via `UiTheme.ApplyTo` (fönstrets tema når inte
+  kontroller under CanvasLayers). Lite text: siffror vid små ikoner, förklaringar i verktygstips.
+  Modeller i `Scripts/UI/Hud.cs` (ResourceBarModel, BuildCardModel, Toasts); vyerna ritar bara dem.
 - Grafik: `tools/art/restyle.py` gör om alla sprites från `tools/art/source/` (palett + svarta konturer)
   och genererar golvet (stora brädor, 16x8 rutor). Nya sprites läggs i source och skriptet körs.
 
@@ -109,8 +113,7 @@ Kompakt fabrik, max 3 nivåer i produktionskedjan, matcher 15–25 min.
 - Stora ändringar får en plan i `docs/plans/<namn>.md` med checklista + logg (överlever kontextslut):
   läs den först, fortsätt med första obockade steget, bocka av och logga i samma commit.
 - Klara: `docs/plans/power.md` (elnät), `docs/plans/fog.md` (dimma, ljus, spejare, minikarta),
-  `docs/plans/obstacles.md` (stora leksaker som hinder), `docs/plans/mice.md` (möss, ost, ostjägare, musfälla).
-- Pågående: `docs/plans/ui.md` (snyggare UI, kortkommandon; gren `ui`).
+  `docs/plans/obstacles.md` (stora leksaker som hinder), `docs/plans/mice.md` (möss, ost, ostjägare, musfälla), `docs/plans/ui.md` (UI-stil, kortkommandon).
 
 ## Arbetsflöde (tester är feedbackloopen)
 - `Taskfile.yaml` (go-task) samlar kommandona; `task` listar dem.

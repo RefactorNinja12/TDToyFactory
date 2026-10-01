@@ -41,7 +41,7 @@ tick + log + commit + push per step.
 - [x] 4. Resource bar redesign on ResourceBarModel. Screenshot (crop top-left).
 - [x] 5. Build menu redesign on BuildCardModel (tabs, cards, badges, cost icons). Screenshot (crop bottom).
 - [x] 6. Info panel, minimap frame, toasts. Screenshot (crop).
-- [ ] 7. CLAUDE.md (UI section), `task check`, commit, push, PR link.
+- [x] 7. CLAUDE.md (UI section), `task check`, commit, push, PR link.
 
 ## Log
 - Step 1: BuildHotkeys letters ZXCFGT, Release/BlocksCamera removed (nothing clashes), CameraController plain again, menu labels/hint/status updated. 239/239.
@@ -50,3 +50,4 @@ tick + log + commit + push per step.
 - Step 4: ResourceBar rewritten on ResourceBarModel: row 1 item chips (22 px icon, count, 3 px fill bar red when full) + food/power gauges (mood colour, long text as tooltip); row 2 core health bars + builder/farmer/scout counts. Refresh 4 Hz. Screenshot ok (about half the old size).
 - Step 5: BuildMenu rewritten on BuildCardModel: number tabs (text, 12 pt), 92x92 cards (40 px icon, 11 pt name, cost = 14 px item icons + amounts red when short, hotkey badge), short hint, status as a fading toast above the bar (UI.Toasts). Tab icons dropped (squashed to nothing). Screenshot ok.
 - Step 6: InfoPanel: theme colours, 18 px item icons, title row = building icon + accent name + separator. Minimap frame comes from the theme (step 3), toasts from step 5. VisualProbe warps the mouse to the screen centre to show the info panel. Screenshot ok.
+- Step 7: CLAUDE.md UI section, plan list. PLAN DONE.
