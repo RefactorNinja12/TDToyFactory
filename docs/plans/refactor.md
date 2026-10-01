@@ -43,7 +43,7 @@ step, tick + log + commit + push per step.
       e) per-tick unit/building count cache (perf; compare sim ms/min before/after).
 - [x] 3. View/UI dedup: `UiTheme.Icon`, `UiTheme.Badge`, texture loading through BuildingVisuals only;
       remove leftover unused code (grep for unreferenced private members / old constants). `task build`.
-- [ ] 4. Coverage: tests for the least covered Sim/UI code from `task coverage` (expected: bot routing
+- [x] 4. Coverage: tests for the least covered Sim/UI code from `task coverage` (expected: bot routing
       edge cases, splitter/sorter/junction corners, projectiles/area damage, power grid edges, texts,
       info rows for every building type). Target: Sim + UI line coverage ≥ 85 % (log before/after).
 - [ ] 5. Cheaper feedback:
@@ -68,3 +68,4 @@ step, tick + log + commit + push per step.
 - Step 2e (perf, measured): World.Tick profile 1 min mid-game: flow fields 584 ms, units 391 (army 292), vision 122, buildings 54, separation 34; bots only 15. Split dirty flags: power grid on place/remove/finish, a player's flow field only when an ENEMY building is placed/removed (finishing changes no field). Golden unchanged; sim 1266 -> 789 ms per simulated minute.
 - Step 2e (2): SelectTarget scans only the tiles in reach (GetBuilding + ScanMark), ties by Building.Serial = placement order = old list order. Golden unchanged; sim 789 -> 697 ms per simulated minute (baseline 1266, -45%).
 - Step 3: UiTheme.Icon replaces 4 TextureRect blocks + ResourceBar.IconRect; unit pictures in one table (BuildingVisuals.GetUnitTexture) used by UnitView, ResourceBar, TreadmillView (UnitView keeps only sizes). Build 0 warnings (no unused members). Screenshot unchanged.
+- Step 4: coverage.ps1 -File X.cs -Reuse prints the lines no test runs as ranges (one line, reads the last report). CoverageTests.cs (table-driven over every buildable type: hover rows site/finished/enemy, checksum sees each building, all texts, outputs, sorter cycle; 55 tests, 2.6 s). Coverage Sim 97.0 -> 97.7%, UI 86.3 -> 97.9%. 300/300.

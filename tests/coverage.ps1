@@ -3,26 +3,28 @@
 
     tests/coverage.ps1            fast tests
     tests/coverage.ps1 -All       all tests (slow scenario tests too)
+    tests/coverage.ps1 -Reuse -File Logistics.cs   the lines of one file no test runs, as ranges
+                                  (-Reuse reads the last report instead of running the tests again)
 
   Prints one line for Sim and one for UI, then the 10 least covered files:
     Sim 84.2% (3120/3705)   UI 91.0% (610/670)
       Sim/BotPlayer.cs        61.3%  (231 lines not run)
 #>
-param([switch]$All, [int]$Top = 10)
+param([switch]$All, [int]$Top = 10, [string]$File = "", [switch]$Reuse)
 
 $ErrorActionPreference = "Continue"
 [Console]::OutputEncoding = [Text.Encoding]::UTF8
 $root = Split-Path $PSScriptRoot
 $project = Join-Path $PSScriptRoot "FactoryTD.Sim.Tests"
-$results = Join-Path $project "TestResults/coverage"
-if (Test-Path $results) { Remove-Item $results -Recurse -Force }
+$results = Join-Path $project "TestResults/coverage-run"
+if (-not $Reuse -and (Test-Path $results)) { Remove-Item $results -Recurse -Force }
 
 $arguments = @("test", $project, "--nologo", "-v", "q", "--collect", "XPlat Code Coverage", "--results-directory", $results)
 if (-not $All) { $arguments += @("--filter", "Speed!=Slow") }
 # The game code is compiled into the test assembly (linked files), which coverlet skips unless told.
 $arguments += @("--", "DataCollectionRunSettings.DataCollectors.DataCollector.Configuration.IncludeTestAssembly=true")
 $watch = [Diagnostics.Stopwatch]::StartNew()
-$output = & dotnet @arguments 2>&1 | Out-String
+$output = if ($Reuse) { "" } else { & dotnet @arguments 2>&1 | Out-String }
 $seconds = [math]::Round($watch.Elapsed.TotalSeconds, 1)
 
 $report = Get-ChildItem $results -Recurse -Filter coverage.cobertura.xml | Select-Object -First 1
@@ -54,6 +56,21 @@ function Sum($prefix) {
 	}
 	$pct = if ($total) { [math]::Round(100 * $covered / $total, 1) } else { 0 }
 	return "$($prefix.TrimEnd('/')) $pct% ($covered/$total)"
+}
+
+if ($File) {
+	$key = $files.Keys | Where-Object { $_.EndsWith($File) } | Select-Object -First 1
+	if (-not $key) { Write-Output "No coverage for $File"; exit 1 }
+	$missed = @($files[$key].Keys | Where-Object { -not $files[$key][$_] } | Sort-Object)
+	$ranges = @(); $start = $null; $prev = $null
+	foreach ($n in $missed) {
+		if ($null -ne $prev -and $n -eq $prev + 1) { $prev = $n; continue }
+		if ($null -ne $start) { $ranges += $(if ($start -eq $prev) { "$start" } else { "$start-$prev" }) }
+		$start = $n; $prev = $n
+	}
+	if ($null -ne $start) { $ranges += $(if ($start -eq $prev) { "$start" } else { "$start-$prev" }) }
+	Write-Output "${key}: $($missed.Count) lines not run: $($ranges -join ', ')"
+	exit 0
 }
 
 Write-Output "$(Sum 'Sim/')   $(Sum 'UI/')   in ${seconds}s"
