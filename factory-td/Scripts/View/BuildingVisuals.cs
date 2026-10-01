@@ -37,7 +37,7 @@ public static class BuildingVisuals
 		[BuildingType.Lamp] = "res://Assets/Sprites/Fog/lamp.png",
 		[BuildingType.Tent] = "res://Assets/Sprites/Fog/tent.png",
 		[BuildingType.CheeseMelter] = "res://Assets/Sprites/Buildings/cheese_melter.png",
-		[BuildingType.Treadmill] = "res://Assets/Sprites/Buildings/boxing_ring.png",
+		[BuildingType.Treadmill] = "res://Assets/Sprites/Buildings/treadmill.png",
 	};
 
 	/// <summary>Build menu tabs, in order.</summary>

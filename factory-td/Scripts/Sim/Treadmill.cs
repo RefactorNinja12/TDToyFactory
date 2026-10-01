@@ -1,8 +1,7 @@
 namespace FactoryTD.Sim;
 
 /// <summary>
-/// Treadmill (drawn and named as a boxing ring, "Boxningsring"): a builder mouse trains in it for a piece of
-/// cheese and comes out as a cheese hunter.
+/// Treadmill: a builder mouse runs on it chasing a piece of cheese and comes out as a cheese hunter.
 /// Fed melted cheese by belt; with enough cheese it calls a builder (never the last one), who walks in and
 /// is used up, then trains. Runs on the mouse, so it needs no power; like every army factory it stops
 /// while its player is starving.
