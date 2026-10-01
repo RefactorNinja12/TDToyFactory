@@ -213,6 +213,23 @@ public sealed partial class World
 		return PlaceError.None;
 	}
 
+	/// <summary>
+	/// Carries out a player's command (the only way players and bots change the world, so it can run in
+	/// lockstep). Commands from unknown players or for tiles outside the map are ignored.
+	/// </summary>
+	public bool Apply(PlayerCommand command)
+	{
+		if (command.Player < 0 || command.Player >= _players.Length || !Map.InBounds(command.X, command.Y))
+			return false;
+		return command.Kind switch
+		{
+			CommandKind.Place => TryPlace(command.Type, command.X, command.Y, command.Facing, command.Player),
+			CommandKind.Remove => TryRemove(command.X, command.Y, command.Player),
+			CommandKind.Configure => TryConfigure(command.X, command.Y, command.Player),
+			_ => false,
+		};
+	}
+
 	public bool TryPlace(BuildingType type, int x, int y, Direction facing, int owner)
 	{
 		if (!CanPlace(type, x, y, owner))

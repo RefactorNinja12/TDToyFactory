@@ -48,9 +48,9 @@ there is no separate server program. "Spela lokalt" keeps today's game against t
   prints one line: `MP OK 1200 ticks, checksums equal` or `MP FAIL desync at tick N`.
 
 ## Steps
-- [ ] 0. Branch `multiplayer` (from `refactor`, which is not merged to main yet). Baseline: `task check`,
+- [x] 0. Branch `multiplayer` (from `refactor`, which is not merged to main yet). Baseline: `task check`,
       golden value, fast-suite time in the log.
-- [ ] 1. Commands as data (Sim):
+- [x] 1. Commands as data (Sim):
       a) `Sim/Commands.cs`: `PlayerCommand` (Kind Place/Remove/Configure, Player, Type, X, Y, Facing),
          `World.Apply(command)` = today's TryPlace/TryRemove/TryConfigure. Commands queued for tick T run at
          the start of tick T in a fixed order (player, then arrival order).
@@ -130,3 +130,5 @@ there is no separate server program. "Spela lokalt" keeps today's game against t
   clear message.
 
 ## Log
+- Step 0: baseline `task check` green, 300 tests, golden 0x299E99DC031BB7E0, all tests 17.9 s.
+- Step 1: Sim/Commands.cs (PlayerCommand 8 bytes LE, Read rejects unknown kind/type/facing; ICommandSink, DirectCommands); World.Apply (ignores unknown player / off-map). BotPlayer.Tick(world, sink): with a delay it waits until its last order landed (no double configure). BuildController sends commands (drag judges with CanPlace). Pending ghosts moved to step 5 (needs the online loop to see). Golden unchanged. CommandTests 7.

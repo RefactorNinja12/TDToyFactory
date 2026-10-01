@@ -48,12 +48,15 @@ public partial class BuildController : Node2D
 	/// <summary>Why the hovered tile can't be built on, or "" when it can (or nothing is selected).</summary>
 	public event Action<string> StatusChanged;
 
-	// TODO: owner should come from the local player once there is networking.
 	public int LocalPlayer { get; set; }
+
+	/// <summary>Where placing/removing/configuring goes (straight into the world, or into the online match).</summary>
+	public ICommandSink Commands { get; set; }
 
 	public void Init(World world)
 	{
 		_world = world;
+		Commands ??= new DirectCommands(world);
 		_world.BuildingPlaced += _ => RefreshHighlights();
 		_world.BuildingRemoved += _ => RefreshHighlights();
 	}
@@ -121,8 +124,9 @@ public partial class BuildController : Node2D
 				break;
 			case InputEventMouseButton { Pressed: true, ButtonIndex: MouseButton.Left }:
 				var clicked = MouseCell();
-				if (!_world.TryConfigure(clicked.X, clicked.Y, LocalPlayer))
+				if (_world.GetBuilding(clicked.X, clicked.Y)?.Owner != LocalPlayer)
 					return;
+				Commands.Send(PlayerCommand.Configure(LocalPlayer, clicked.X, clicked.Y));
 				break;
 			case InputEventMouseButton { Pressed: false, ButtonIndex: MouseButton.Left }:
 				_dragging = false;
@@ -152,7 +156,16 @@ public partial class BuildController : Node2D
 	{
 		_dragging = true;
 		_dragCell = MouseCell();
-		_dragPlacedLast = _world.TryPlace(_selected.Value, _dragCell.X, _dragCell.Y, _facing, LocalPlayer);
+		_dragPlacedLast = Place(_selected.Value, _dragCell, _facing);
+	}
+
+	/// <summary>Sends a placement; whether it will work is judged now (it may land a few ticks later online).</summary>
+	private bool Place(BuildingType type, Vector2I cell, Direction facing)
+	{
+		bool ok = _world.CanPlace(type, cell.X, cell.Y, LocalPlayer);
+		if (ok)
+			Commands.Send(PlayerCommand.Place(LocalPlayer, type, cell.X, cell.Y, facing));
+		return ok;
 	}
 
 	/// <summary>
@@ -173,18 +186,18 @@ public partial class BuildController : Node2D
 				if (_dragPlacedLast)
 				{
 					// Re-place the conveyor we just built so it points at the new one.
-					_world.TryRemove(previous.X, previous.Y, LocalPlayer);
-					_world.TryPlace(BuildingType.Conveyor, previous.X, previous.Y, _facing, LocalPlayer);
+					Commands.Send(PlayerCommand.Remove(LocalPlayer, previous.X, previous.Y));
+					Commands.Send(PlayerCommand.Place(LocalPlayer, BuildingType.Conveyor, previous.X, previous.Y, _facing));
 				}
 			}
-			_dragPlacedLast = _world.TryPlace(_selected.Value, _dragCell.X, _dragCell.Y, _facing, LocalPlayer);
+			_dragPlacedLast = Place(_selected.Value, _dragCell, _facing);
 		}
 	}
 
 	private void RemoveAtMouse()
 	{
 		var cell = MouseCell();
-		_world.TryRemove(cell.X, cell.Y, LocalPlayer);
+		Commands.Send(PlayerCommand.Remove(LocalPlayer, cell.X, cell.Y));
 	}
 
 	private void Cancel()
