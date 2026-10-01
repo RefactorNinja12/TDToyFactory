@@ -807,36 +807,10 @@ public sealed partial class World
 	/// Breadth-first path over floor (buildings don't block builders) to any tile around the building.
 	/// The start tile is not included. Null if unreachable.
 	/// </summary>
-	private List<(int X, int Y)> FindPathTo(int fromX, int fromY, Building target)
-	{
-		if (IsAround(target, fromX, fromY))
-			return new List<(int X, int Y)>();
+	private List<(int X, int Y)> FindPathTo(int fromX, int fromY, Building target) =>
+		GridSearch.PathTo(Map.Width, Map.Height, fromX, fromY, IsFloor, (x, y) => IsAround(target, x, y));
 
-		var previous = new Dictionary<(int, int), (int, int)> { [(fromX, fromY)] = (fromX, fromY) };
-		var queue = new Queue<(int X, int Y)>();
-		queue.Enqueue((fromX, fromY));
-		while (queue.Count > 0)
-		{
-			var tile = queue.Dequeue();
-			foreach (var (dx, dy) in Steps)
-			{
-				var next = (X: tile.X + dx, Y: tile.Y + dy);
-				if (previous.ContainsKey(next) || !Map.InBounds(next.X, next.Y) || Map[next.X, next.Y] != TileType.Floor)
-					continue;
-				previous[next] = tile;
-				if (IsAround(target, next.X, next.Y))
-				{
-					var path = new List<(int X, int Y)>();
-					for (var at = next; at != (fromX, fromY); at = previous[at])
-						path.Add(at);
-					path.Reverse();
-					return path;
-				}
-				queue.Enqueue(next);
-			}
-		}
-		return null;
-	}
+	private bool IsFloor(int x, int y) => Map[x, y] == TileType.Floor;
 
 	private void TickUnit(Unit unit)
 	{

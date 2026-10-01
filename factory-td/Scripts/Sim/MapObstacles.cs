@@ -122,29 +122,7 @@ public sealed partial class MapLayout
 			}
 		if (start < 0)
 			return true;
-		var seen = new bool[_tiles.Length];
-		var queue = new Queue<int>();
-		seen[start] = true;
-		queue.Enqueue(start);
-		int reached = 0;
-		while (queue.Count > 0)
-		{
-			int i = queue.Dequeue();
-			reached++;
-			int x = i % Width, y = i / Width;
-			foreach (var (dx, dy) in new[] { (1, 0), (-1, 0), (0, 1), (0, -1) })
-			{
-				int nx = x + dx, ny = y + dy;
-				if (!InBounds(nx, ny))
-					continue;
-				int n = ny * Width + nx;
-				if (!seen[n] && _tiles[n] == TileType.Floor)
-				{
-					seen[n] = true;
-					queue.Enqueue(n);
-				}
-			}
-		}
-		return reached == total;
+		var distance = new int[_tiles.Length];
+		return GridSearch.Distances(Width, Height, distance, new[] { start }, (x, y) => this[x, y] == TileType.Floor) == total;
 	}
 }
