@@ -68,7 +68,8 @@ Kompakt fabrik, max 3 nivåer i produktionskedjan, matcher 15–25 min.
   snett uppifrån (en ruta överhäng) av `View/ObstacleView.cs`.
 - Möss och ost: arbetarna är möss med hattar (byggarmus, bondmus, spejarmus). Ost (`ResourceType.Cheese`,
   ett fält per rum uppe i hörnet + ett i hallen, speglat) smälts av ostsmältaren (utvinnare) till smält ost.
-  Köket gör matlådor av 2 morötter eller 1 smält ost (morötter först). Löpbandet (2x2, ingen ström,
+  Köket gör matlådor av 2 morötter eller 1 smält ost (morötter först). Boxningsringen (`Treadmill` i
+  koden, ritad som boxningsring; 2x2, ingen ström,
   pausar vid svält) tar 2 smält ost + en byggarmus (kallas dit, aldrig den sista; ledig först, annars
   närmaste som bygger) och tränar en ostjägare: billig närkämpe (lågnivå, svagare än soldat) som slår
   på enheter och byggnader. Byggare på väg till ett löpband räknas inte; en kallad byggare som skulle

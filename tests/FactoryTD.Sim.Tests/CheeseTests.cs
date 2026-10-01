@@ -185,7 +185,7 @@ public class TreadmillInfoTests
 		s.World.Ticks(2);
 		Assert.Contains("En byggarmus är på väg.", All(s, mill));
 		s.World.Until(() => mill.HasTrainee, 20, "trainee");
-		Assert.Contains("En byggarmus springer efter osten.", All(s, mill));
+		Assert.Contains("En byggarmus tränar i ringen.", All(s, mill));
 	}
 }
 

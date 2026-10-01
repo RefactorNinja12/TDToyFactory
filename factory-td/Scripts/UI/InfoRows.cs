@@ -130,7 +130,7 @@ public sealed class InfoRows
 				Needs(Treadmill.Recipe, mill.Crafter);
 				if (mill.HasTrainee)
 				{
-					Text("En byggarmus springer efter osten.", Tone.Good);
+					Text("En byggarmus tränar i ringen.", Tone.Good);
 					Progress(mill.Crafter.Progress, UnitStats.BuildTicks(UnitType.CheeseHunter));
 				}
 				else if (_world.BuildersOn(mill) > 0)
@@ -139,7 +139,7 @@ public sealed class InfoRows
 					Text("Väntar på en ledig byggarmus (tar aldrig din sista).", Tone.Missing);
 				else
 					Text("Väntar på smält ost.", Tone.Dim);
-				Text("Drivs av musen: ingen ström.", Tone.Dim);
+				Text("Ingen ström behövs.", Tone.Dim);
 				break;
 
 			case Pylon:
