@@ -238,10 +238,16 @@ public partial class BuildController : Node2D
 	/// <summary>Sends a placement; whether it will work is judged now (it may land a few ticks later online).</summary>
 	private bool Place(BuildingType type, Vector2I cell, Direction facing)
 	{
-		bool ok = _world.CanPlace(type, cell.X, cell.Y, LocalPlayer);
-		if (!ok)
+		if (BeltReplace.CanReplace(_world, type, cell.X, cell.Y, LocalPlayer))
+		{
+			// A splitter, sorter or junction straight onto one of our belts: the belt makes way.
+			foreach (var command in BeltReplace.Commands(type, cell.X, cell.Y, facing, LocalPlayer))
+				Commands.Send(command);
+		}
+		else if (_world.CanPlace(type, cell.X, cell.Y, LocalPlayer))
+			Commands.Send(PlayerCommand.Place(LocalPlayer, type, cell.X, cell.Y, facing));
+		else
 			return false;
-		Commands.Send(PlayerCommand.Place(LocalPlayer, type, cell.X, cell.Y, facing));
 		if (Commands.DelayTicks > 0)
 			_sent.Add((type, cell, facing, _world.TickCount + Commands.DelayTicks + World.TicksPerSecond));
 		return true;
@@ -292,13 +298,16 @@ public partial class BuildController : Node2D
 			return;
 		}
 		var error = _world.CheckPlace(type, cell.X, cell.Y, LocalPlayer);
+		bool replacing = BeltReplace.CanReplace(_world, type, cell.X, cell.Y, LocalPlayer);
+		if (replacing)
+			error = PlaceError.None; // goes in place of our belt
 		_ghost.Visible = true;
 		var (w, h) = BuildingRules.Size(type);
 		_ghost.Position = new Vector2((cell.X + w / 2f) * BuildingVisuals.TileSize, (cell.Y + h / 2f) * BuildingVisuals.TileSize);
 		_ghost.Rotation = BuildingVisuals.Rotation(_facing);
 		_ghost.Modulate = error == PlaceError.None ? ValidColor : InvalidColor;
-		SetStatus(type == BuildingType.Conveyor && error == PlaceError.None
-			? Texts.BeltPlanText(false, 0, 0, false)
+		SetStatus(replacing ? Texts.ReplacesBelt(type)
+			: type == BuildingType.Conveyor && error == PlaceError.None ? Texts.BeltPlanText(false, 0, 0, false)
 			: Texts.ErrorText(type, error));
 	}
 

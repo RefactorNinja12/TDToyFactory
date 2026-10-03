@@ -92,6 +92,9 @@ public static class Texts
 		_ => "",
 	};
 
+	/// <summary>The status line when a splitter/sorter/junction would go in place of one of our belts.</summary>
+	public static string ReplacesBelt(BuildingType type) => $"{DisplayName(type)} ersätter bandet här (bandets kostnad kommer tillbaka).";
+
 	/// <summary>The status line while drawing a belt (click, then click again).</summary>
 	public static string BeltPlanText(bool started, int belts, int junctions, bool found)
 	{

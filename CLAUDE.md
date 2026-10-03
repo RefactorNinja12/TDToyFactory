@@ -31,6 +31,8 @@ Kompakt fabrik, max 3 nivåer i produktionskedjan, matcher 15–25 min.
   korsar egna raka band med automatiska korsningar), andra klicket bygger den. Högerklick/mellanslag avbryter.
   Band ritas som leksaksband (gula skenor, gummiband) som skarvas ihop med delare/sorterare/korsning; räfflorna
   rör sig i föremålens fart via en shader (`UI/BeltLook.cs`, `View/BeltMaterials.cs`).
+  Delare/sorterare/korsning kan byggas direkt på ett eget band (`UI/BeltReplace.cs`: bandet rivs med återbetalning,
+  den nya biten placeras; två vanliga kommandon). Spöket blir grönt över egna band.
 - Klokran (`Sim/Crane.cs`, Logistik, G): bas på styltor vid ett resursfälts kant, vänd in mot fältet; rälsen
   når `CraneStats.Reach` = 5 rutor (tar inga rutor). Klon hämtar en sak i taget från närmaste egna utvinnare
   under rälsen med något i lager och släpper den bakåt på ett band (väntar om det är fullt). Ingen ström.
