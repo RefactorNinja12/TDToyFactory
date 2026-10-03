@@ -11,8 +11,8 @@ namespace FactoryTD.View;
 /// Placing and removing buildings with the mouse.
 /// Left click / drag: place the selected building. Belts: click the start, then click the end: the planned way
 /// (round buildings, crossing our own belts with junctions) follows the mouse until the second click. R: rotate.
-/// Right click: cancel the selection, or remove a building if nothing is selected. Space: step back (a belt's
-/// start, then the building; Esc is the pause menu's).
+/// Right click: cancel the selection, or remove a building if nothing is selected. Space (handled by the build menu's
+/// hotkeys) drops the building and closes the category; Esc is the pause menu's.
 /// Left click with nothing selected: cycle the setting of a sorter / assembler.
 /// </summary>
 public partial class BuildController : Node2D
@@ -56,7 +56,7 @@ public partial class BuildController : Node2D
 	// Tiles where the selected building can go, outlined while it needs a specific deposit.
 	private readonly List<Vector2I> _highlights = new();
 
-	/// <summary>Raised when the selection is cancelled from here (right click / space), so the menu can update.</summary>
+	/// <summary>Raised when the selection is cancelled from here (right click), so the menu can update.</summary>
 	public event Action SelectionCleared;
 
 	/// <summary>Why the hovered tile can't be built on, or "" when it can (or nothing is selected).</summary>
@@ -212,9 +212,6 @@ public partial class BuildController : Node2D
 			case InputEventMouseButton { Pressed: true, ButtonIndex: MouseButton.Right } when _beltStart != null:
 				ClearBelt();
 				break;
-			case InputEventKey { Pressed: true, Echo: false, Keycode: Key.Space } when _beltStart != null:
-				ClearBelt();
-				break;
 			case InputEventMouseButton { Pressed: true, ButtonIndex: MouseButton.Right }:
 				if (_selected != null)
 					Cancel();
@@ -224,9 +221,6 @@ public partial class BuildController : Node2D
 			case InputEventKey { Pressed: true, Echo: false, Keycode: Key.R }:
 				_facing = _facing.RotatedClockwise();
 				RefreshBelt(force: true);
-				break;
-			case InputEventKey { Pressed: true, Echo: false, Keycode: Key.Space } when _selected != null:
-				Cancel();
 				break;
 			default:
 				return;
