@@ -194,7 +194,7 @@ TAIL = (200, 100, 125)     # darker pink than the ears, so it reads against the 
 
 # walk steps: (left foot ahead, right foot ahead, arm swing, tail wiggle) in pixels along the nose
 STRIDE = [(6, -12, -3, 2), (-4, -4, 0, 0), (-12, 6, 3, -2), (-4, -4, 0, 0)]
-IDLE_FEET = (-10, -10)   # both heels show behind the body
+IDLE_FEET = (2, 2)       # standing: both feet under the body, toes just peeking out at the sides
 
 
 def topdown_mouse(pose="idle", step=0, hat=None, shirt=None, held=None, act=None, extra=None, stripes=None):
@@ -223,7 +223,8 @@ def topdown_mouse(pose="idle", step=0, hat=None, shirt=None, held=None, act=None
     d.line([(bx - 7, cy), (bx - 12, cy + 2 + wiggle), (bx - 16, cy - 1 - wiggle), (bx - 20, cy + 2 + wiggle),
             (bx - 22, cy - 1)], fill=TAIL, width=3, joint="curve")
     # feet: the one behind steps out from under the body (left and right take turns), toes forward
-    for ahead, y in ((left, cy - 4), (right, cy + 4)):
+    spread = 7 if pose != "walk" else 4
+    for ahead, y in ((left, cy - spread), (right, cy + spread)):
         fx = bx + ahead
         d.line((bx - 2, y, fx + 1, y), fill=tint(FUR, -0.15), width=4)     # the leg
         d.ellipse((fx - 3, y - 3, fx + 5, y + 3), fill=PINK)
