@@ -16,7 +16,7 @@ public partial class TreadmillView : Node2D
 	private const float BeltTop = 41 - 64, BeltBottom = 91 - 64;
 	private const float SlatSpacing = 10f;
 	private const float RunSpeed = 70f;                             // belt pixels per second while a mouse runs
-	private const float MouseSize = 40f;
+	private const float StepsPerSecond = 10f;                       // running steps on the belt
 
 	private static readonly Color Slat = new(0.29f, 0.29f, 0.35f);
 	private static readonly Color SlatEdge = new(0.43f, 0.43f, 0.5f);
@@ -30,7 +30,7 @@ public partial class TreadmillView : Node2D
 	{
 		_world = world;
 		_localPlayer = localPlayer;
-		_mouse = BuildingVisuals.GetUnitTexture(UnitType.Builder);
+		_mouse = BuildingVisuals.GetUnitSheet(UnitType.Builder);
 		TextureFilter = TextureFilterEnum.Nearest;
 	}
 
@@ -61,14 +61,18 @@ public partial class TreadmillView : Node2D
 
 			if (mill.HasTrainee && _mouse != null)
 			{
-				// Running towards the cheese: a quick hop each stride and a little sway.
-				float stride = time * 16f + mill.X;
-				float hop = -Mathf.Abs(Mathf.Sin(stride)) * 3f;
-				float sway = Mathf.Sin(stride * 0.5f) * 0.08f;
-				var at = new Vector2(-14f, 2f + hop);
-				DrawSetTransformMatrix(GetTransformFor(mill) * new Transform2D(sway, at));
-				DrawTextureRect(_mouse, new Rect2(-MouseSize / 2, -MouseSize / 2, MouseSize, MouseSize), false,
-					UnitView.PlayerTints[mill.Owner % UnitView.PlayerTints.Length]);
+				// Running towards the cheese with its side walk frames, upright (not turned with the building):
+				// the belt spot follows the building's turn, the mouse only looks left or right.
+				int step = (int)(time * StepsPerSecond + mill.X) % 4;
+				var frame = new UnitFrame(mill.Facing == Direction.West ? Facing.Left : Facing.Right, PoseKind.Walk, step);
+				var (column, row, mirror) = UnitSheets.Cell(frame);
+				float cell = UnitSheets.CellSize(UnitType.Builder);
+				var spot = GetTransformFor(mill) * new Vector2(-14f, 14f); // the feet on the belt
+				DrawSetTransform(spot, 0);
+				var source = new Rect2(column * cell, row * cell, cell, cell);
+				float feet = UnitSheets.FeetY(UnitType.Builder);
+				var target = mirror ? new Rect2(cell / 2, -feet, -cell, cell) : new Rect2(-cell / 2, -feet, cell, cell);
+				DrawTextureRectRegion(_mouse, target, source, UnitView.PlayerTints[mill.Owner % UnitView.PlayerTints.Length]);
 			}
 		}
 		DrawSetTransform(Vector2.Zero, 0);

@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using FactoryTD.Sim;
+using FactoryTD.UI;
 using Godot;
 
 namespace FactoryTD.View;
@@ -56,18 +57,11 @@ public static class BuildingVisuals
 		("Försvar", new[] { BuildingType.FoamTower, BuildingType.Catapult, BuildingType.WaterTower, BuildingType.LaserTower }),
 	};
 
-	private static readonly Dictionary<UnitType, string> UnitTexturePaths = new()
-	{
-		[UnitType.PlasticSoldier] = "res://Assets/Sprites/Units/soldier.png",
-		[UnitType.BrickGolem] = "res://Assets/Sprites/Units/golem.png",
-		[UnitType.RcCar] = "res://Assets/Sprites/Units/rc_car.png",
-		[UnitType.Builder] = "res://Assets/Sprites/Units/builder.png",
-		[UnitType.Farmer] = "res://Assets/Sprites/Units/farmer.png",
-		[UnitType.Scout] = "res://Assets/Sprites/Units/scout.png",
-		[UnitType.CheeseHunter] = "res://Assets/Sprites/Units/cheese_hunter.png",
-	};
+	/// <summary>A unit's picture for the UI (the idle front view): Units/&lt;UnitSheets.FileName&gt;.png.</summary>
+	public static Texture2D GetUnitTexture(UnitType type) => Load($"res://Assets/Sprites/Units/{UnitSheets.FileName(type)}.png");
 
-	public static Texture2D GetUnitTexture(UnitType type) => Load(UnitTexturePaths[type]);
+	/// <summary>A unit's animation sheet (layout: UI/UnitSheets).</summary>
+	public static Texture2D GetUnitSheet(UnitType type) => Load($"res://Assets/Sprites/Units/{UnitSheets.FileName(type)}_sheet.png");
 
 	private static readonly Dictionary<ItemType, string> ItemTexturePaths = new()
 	{

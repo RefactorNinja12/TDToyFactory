@@ -109,16 +109,21 @@ public partial class CombatView : Node2D
 		if (unit.CarryAmount > 0)
 		{
 			var at = Interpolate(unit.PrevX, unit.PrevY, unit.X, unit.Y);
-			DrawTextureRect(BuildingVisuals.GetItemTexture(unit.Carrying), new Rect2(at + new Vector2(-2, -30), new Vector2(22, 22)), tile: false);
+			// In the arms of the upright mouse, at the side.
+			DrawTextureRect(BuildingVisuals.GetItemTexture(unit.Carrying), new Rect2(at + new Vector2(4, -26), new Vector2(18, 18)), tile: false);
 		}
 		int max = UnitStats.MaxHealth(unit.Type);
 		if (unit.Health >= max)
 			return;
 		var p = Interpolate(unit.PrevX, unit.PrevY, unit.X, unit.Y);
-		var bar = new Rect2(p.X - 16, p.Y - 28, 32, 4);
+		// Above the head: upright units stand on their position, vehicles are centred on it.
+		float top = UnitSheets.IsUpright(unit.Type) ? UnitSheets.FeetY(unit.Type) + 2 : 28;
+		var bar = new Rect2(p.X - 16, p.Y - top, 32, 4);
 		DrawRect(bar, BarBack);
 		DrawRect(new Rect2(bar.Position, new Vector2(bar.Size.X * Mathf.Max(0, unit.Health) / max, bar.Size.Y)), HealthColor);
 	}
+
+	private const float BulletHeight = 16f;
 
 	private void DrawProjectile(Projectile shot)
 	{
@@ -126,6 +131,12 @@ public partial class CombatView : Node2D
 		float t = Mathf.Clamp((shot.TotalTicks - shot.TicksLeft + Alpha) / shot.TotalTicks, 0f, 1f);
 		var from = new Vector2(shot.FromX, shot.FromY) * SubTileToPixels;
 		var to = new Vector2(shot.ToX, shot.ToY) * SubTileToPixels;
+		if (shot.Kind == DamageKind.Bullet)
+		{
+			// Units stand on their position: bullets fly at hand height, not along the floor.
+			from.Y -= BulletHeight;
+			to.Y -= BulletHeight;
+		}
 		var p = from.Lerp(to, t);
 
 		switch (shot.Kind)
