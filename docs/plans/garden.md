@@ -38,7 +38,7 @@ online; the client gets the host's choice).
 - `task check` and `task mp:smoke` (protocol change) before committing.
 
 ## Steps
-- [ ] 1. Sim: MapTheme, garden obstacle kinds and sizes, CreateDefault/CreateMatch take the theme; tests
+- [x] 1. Sim: MapTheme, garden obstacle kinds and sizes, CreateDefault/CreateMatch take the theme; tests
       (same shape as the room, garden obstacles only, reachable, mirrored, a bot builds on it).
 - [ ] 2. Net + settings: MatchSettings(Seed, Theme) for world creation, Start carries the theme (protocol 2),
       MenuModel map list, MenuSettings.Map, LaunchArgs --map; tests.
@@ -50,3 +50,4 @@ online; the client gets the host's choice).
 - [ ] 6. CLAUDE.md, `task check`, push, PR link.
 
 ## Log
+- Step 1: MapTheme (Nursery, Garden) in MapLayout.cs, MapLayout.Theme, CreateDefault/CreateMatch take it (default Nursery: golden unchanged). ObstacleKind + Pumpkin 4x4, Sunflower 3x4, Cabbage 3x3, Carrot 5x3, Tulips 3x2 (GardenPlants), placed by the same seeded rules. GardenTests: same walls/deposits/zones as the room, only plants, mirrored, all floor reachable, a bot builds at least 80% as much in 90 s.

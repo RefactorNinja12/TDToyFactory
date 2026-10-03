@@ -10,6 +10,12 @@ public enum ObstacleKind : byte
 	RagDoll,
 	Lollipop,
 	MouseTrap,
+	// The garden (MapTheme.Garden): giant flowers and vegetables.
+	Pumpkin,
+	Sunflower,
+	Cabbage,
+	Carrot,
+	Tulips,
 }
 
 /// <summary>A big toy on the map: its footprint in tiles (TileType.Obstacle).</summary>
@@ -48,6 +54,16 @@ public sealed partial class MapLayout
 		(20, 26, 60, 35),  // the lane to the door
 	};
 
+	/// <summary>The garden's obstacles: giant vegetables and flowers, placed by the same rules as the toys.</summary>
+	private static readonly (ObstacleKind Kind, int Width, int Height)[] GardenPlants =
+	{
+		(ObstacleKind.Pumpkin, 4, 4),
+		(ObstacleKind.Sunflower, 3, 4),
+		(ObstacleKind.Cabbage, 3, 3),
+		(ObstacleKind.Carrot, 5, 3),
+		(ObstacleKind.Tulips, 3, 2),
+	};
+
 	private void AddObstacles(int seed)
 	{
 		uint state = (uint)seed * 2654435761u + 1;
@@ -60,7 +76,7 @@ public sealed partial class MapLayout
 			return (int)(state % (uint)maxExclusive);
 		}
 
-		foreach (var (kind, w, h) in RoomToys)
+		foreach (var (kind, w, h) in Theme == MapTheme.Garden ? GardenPlants : RoomToys)
 		{
 			for (int attempt = 0; attempt < 400; attempt++)
 			{
