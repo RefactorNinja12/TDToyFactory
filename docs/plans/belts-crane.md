@@ -61,9 +61,9 @@ Goal:
       claw state machine, checksum, BuildingRules (cost, size 1x1, build time, menu). Tests: carries from
       extractors 1..5 tiles in to a belt behind; nearest stocked first; waits when the output is blocked; ignores
       extractors beside the rail and beyond the reach; deterministic.
-- [ ] 5. Crane UI: Texts, InfoRows, BuildMenu entry (Logistik, G), placement preview of the reach and served
+- [x] 5. Crane UI: Texts, InfoRows, BuildMenu entry (Logistik, G), placement preview of the reach and served
       extractors (pure helper `Crane.Served(world, x, y, facing)` used by the preview, tested).
-- [ ] 6. Crane art + CraneView: base on stilts, rail and stilts over the field, claw with open/closed and the
+- [x] 6. Crane art + CraneView: base on stilts, rail and stilts over the field, claw with open/closed and the
       carried item, interpolated; screenshot.
 - [ ] 7. CLAUDE.md (belts, crane), `task check`, push, PR link.
 
@@ -73,3 +73,5 @@ Goal:
 - Step 2: UI/BeltLook.cs (80 px/s = item speed, ridges every 12 px, rubber 18-46) + tests (treads as fast as an item really moves); View/BeltMaterials.cs: one shader per straight/curve, ridges moving along x or round the corner's arc, in sprite pixels (turning/mirroring carry over); set on every conveyor sprite with its look. Junctions stay still (two directions at once). Frames 1/20 s apart show the ridges moving with the items.
 - Step 3: OneItemRouter.Held (read-only); Activity signature for splitter/sorter = the held item (changes as items pass, still when jammed); parts: splitter paddle wheel spins, sorter flap swings (corner, clear of the filter icon). BuildingVisuals.TurnsWithFacing: splitters, sorters, junctions never turn - used by BuildingView and now also BuildingAnimator (their parts were turning with the facing).
 - Step 4: Sim/Crane.cs: CraneStats (Reach 5, 1/8 tile per tick, grab 6 / drop 4 ticks), ClawCrane (Home -> Out -> Grab -> Back -> Drop; nearest own built extractor under the rail with something stored; drops out of the back, waits while blocked; OutputsToward = back only; RailTile, static Served for previews; all state hashed). Extractor.TryTakeOne. BuildingRules: enum (last), Buildable after Junction, cost 8 bricks + 6 plastic, 50 health, 60 build time, Create before the extractor default. Texts name/description came forward from step 5 (the every-type tests ask for them). CraneTests 5. Golden unchanged (the bot doesn't build cranes).
+- Step 5: InfoRows (carrying / waiting for room behind, reach and how many extractors it serves); menu Logistik (5th card, hotkey G); BuildController preview while placing: the rail along the turned facing (R) and the served extractors outlined (ClawCrane.Served, tested in step 4).
+- Step 6: tools/art/logistics/crane.py: yellow studded cab with a red winch on four stilts, output hatch at the back; rail piece per tile (two steel beams, ties, stilt feet beside); claw on a trolley, open/closed. View/CraneView (z 1, over buildings and units, under the fog): rail out to the reach, claw interpolated along it, closed and the item hanging while carrying. VisualProbe PROBE_SCENE=crane: the claw runs out over four extractors and drops bricks onto a belt that turns south through a splitter to the toybox.

@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using FactoryTD.Sim;
 
 namespace FactoryTD.UI;
@@ -77,6 +78,15 @@ public sealed class InfoRows
 				Item(extractor.Output, $"Gör: {Texts.ItemCount(extractor.Output, 1)} var {Extractor.ProductionTicks / World.TicksPerSecond}:a sekund");
 				Text($"I lager: {extractor.Stored}/{Extractor.MaxStored}", extractor.Stored >= Extractor.MaxStored ? Tone.Missing : Tone.Dim);
 				Text("Lämnar till band på alla sidor (utom band som pekar in i den).", Tone.Dim);
+				break;
+
+			case ClawCrane crane:
+				int served = ClawCrane.Served(_world, crane.X, crane.Y, crane.Facing, crane.Owner).Count();
+				if (crane.Carrying != ItemType.None)
+					Item(crane.Carrying, crane.State == ClawState.Drop ? "Bär en, väntar på plats bakom kranen" : "Bär hem en",
+						crane.State == ClawState.Drop ? Tone.Missing : Tone.Normal);
+				Text($"Når {CraneStats.Reach} rutor in, plockar från {served} utvinnare under rälsen.", served == 0 ? Tone.Missing : Tone.Dim);
+				Text("Släpper bakom sig: ställ ett band där.", Tone.Dim);
 				break;
 
 			case Sorter sorter:
