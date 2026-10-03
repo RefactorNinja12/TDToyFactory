@@ -117,6 +117,7 @@ public partial class BuildingView : Node2D
 
 		var look = ConveyorLook.For(_world, conveyor);
 		sprite.Texture = look.Curve ? BuildingVisuals.ConveyorCurveTexture : BuildingVisuals.GetTexture(BuildingType.Conveyor);
+		sprite.Material = look.Curve ? BeltMaterials.Curve : BeltMaterials.Straight; // the moving treads
 		sprite.FlipV = look.FlipV;
 		sprite.Rotation = look.QuarterTurns * Mathf.Pi / 2f;
 	}
