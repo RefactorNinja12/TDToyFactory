@@ -79,4 +79,18 @@ public class ActivityTests
 		Assert.Null(Activity.Signature(s.World.GetCore(0)));
 		Assert.NotNull(Activity.Signature(s.Place(BuildingType.Toolbox, 24, 20)));
 	}
+
+	[Fact]
+	public void Splitter_WorksWhileItemsPass_AndStopsWhenJammed()
+	{
+		var s = Scenario.Match().NoWorkers().Instant();
+		var splitter = s.Place<Splitter>(BuildingType.Splitter, 21, 40);
+		s.Conveyor(20, 40, Direction.East);
+		var activity = Watch(s, 2);                       // seen empty first
+		Assert.Equal(1, s.Feed(splitter, ItemType.Brick));
+		Watch(s, 2, activity);
+		Assert.True(activity.IsWorking(splitter), "an item came in");
+		Watch(s, 40, activity);
+		Assert.False(activity.IsWorking(splitter), "nowhere to go: it holds the item and stands still");
+	}
 }

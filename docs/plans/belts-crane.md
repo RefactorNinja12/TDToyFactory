@@ -55,7 +55,7 @@ Goal:
 - [x] 2. `UI/BeltLook.cs` (tread speed in px/s from Conveyor.Speed/Length, tread spacing) + tests; the belt
       shader (straight: scroll along x in sprite space; curve: angle round the corner pivot), a ShaderMaterial on
       every conveyor/junction sprite in BuildingView; curves keep their FlipV/rotation. Screenshot frames.
-- [ ] 3. Splitter paddle wheel, sorter arm (parts); Activity: splitter/sorter work while their held item
+- [x] 3. Splitter paddle wheel, sorter arm (parts); Activity: splitter/sorter work while their held item
       changes. Tests.
 - [ ] 4. Crane sim: ClawCrane building + CraneStats (Reach 5, speed, grab/drop ticks), Extractor.TryTakeOne,
       claw state machine, checksum, BuildingRules (cost, size 1x1, build time, menu). Tests: carries from
@@ -71,3 +71,4 @@ Goal:
 - Step 0: baseline: a plain brown strip with arrows, a brown quarter ring, and green boxes with brown stubs that don't match the belt.
 - Step 1: tools/art/logistics/belts.py: yellow toy rails with bolts and dark rubber, straight (rails y 14-17/46-49) and curve (the same radii round the corner (0, 64)); splitter (red box, paddle wheel part), sorter (blue box with a window for the filter icon, flap part), junction (north-south belt bridging east-west). restyle: belts now get outlines too (restyle never outlines along a picture's own border, so tiles still join without a seam).
 - Step 2: UI/BeltLook.cs (80 px/s = item speed, ridges every 12 px, rubber 18-46) + tests (treads as fast as an item really moves); View/BeltMaterials.cs: one shader per straight/curve, ridges moving along x or round the corner's arc, in sprite pixels (turning/mirroring carry over); set on every conveyor sprite with its look. Junctions stay still (two directions at once). Frames 1/20 s apart show the ridges moving with the items.
+- Step 3: OneItemRouter.Held (read-only); Activity signature for splitter/sorter = the held item (changes as items pass, still when jammed); parts: splitter paddle wheel spins, sorter flap swings (corner, clear of the filter icon). BuildingVisuals.TurnsWithFacing: splitters, sorters, junctions never turn - used by BuildingView and now also BuildingAnimator (their parts were turning with the facing).

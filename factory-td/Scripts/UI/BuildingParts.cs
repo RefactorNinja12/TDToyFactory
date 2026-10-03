@@ -88,6 +88,14 @@ public static class BuildingParts
 			new Part("race_car_yellow", 0, 0, Motion.Orbit, Speed: 0.35f, DX: 44, DY: 36, Phase: 0.5f),
 			new Part("race_flag", 42, 34, Motion.Swing, Speed: 1.2f, Amount: 0.5f),
 		},
+		[BuildingType.Splitter] = new[]
+		{
+			new Part("splitter_wheel", 0, 0, Motion.Spin, Speed: 1.2f),
+		},
+		[BuildingType.Sorter] = new[]
+		{
+			new Part("sorter_arm", 13, 13, Motion.Swing, Speed: 1.5f, Amount: 0.6f),
+		},
 		[BuildingType.Toolbox] = new[]
 		{
 			new Part("saw", -18, 37, Motion.Bob, Speed: 2f, DX: 6),

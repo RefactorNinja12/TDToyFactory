@@ -43,8 +43,7 @@ public partial class BuildingView : Node2D
 		{
 			Texture = BuildingVisuals.GetTexture(building.Type),
 			Position = BuildingVisuals.FootprintCenter(building),
-			// Splitters and sorters work the same from every side, so they are never rotated.
-			Rotation = building is Splitter or Sorter or Junction ? 0 : BuildingVisuals.Rotation(building.Facing),
+			Rotation = BuildingVisuals.TurnsWithFacing(building.Type) ? BuildingVisuals.Rotation(building.Facing) : 0,
 		};
 		AddChild(sprite);
 		_sprites[building] = sprite;
