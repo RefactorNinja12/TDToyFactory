@@ -89,7 +89,7 @@ public partial class BuildMenu : CanvasLayer
 
 		var hint = new Label
 		{
-			Text = "flik 1–7, sedan kort 1–6  •  R rotera  •  band: klicka start, klicka mål  •  mellanslag backar  •högerklick: avbryt / riv",
+			Text = "flik 1–7, sedan kort 1–6  •  R rotera  •  band: klicka start, klicka mål  •  mellanslag / samma siffra igen: avsluta  •  högerklick: avbryt / riv",
 			HorizontalAlignment = HorizontalAlignment.Center,
 			Modulate = UiTheme.TextDim,
 		};
@@ -167,22 +167,25 @@ public partial class BuildMenu : CanvasLayer
 		char c = (long)key.Keycode is >= 32 and < 127 ? (char)(long)key.Keycode : '\0'; // space = BuildHotkeys.Back
 		if (c == '\0')
 			return;
-		bool placing = _buttons.Values.Any(b => b.ButtonPressed);
-		var result = _hotkeys.Press(c, placing);
+		BuildingType? selected = _buttons.FirstOrDefault(b => b.Value.ButtonPressed) is { Value: not null } pressed ? pressed.Key : null;
+		var result = _hotkeys.Press(c, selected);
 		switch (result.Outcome)
 		{
 			case HotkeyOutcome.None:
 				return;
 			case HotkeyOutcome.CategoryOpened:
 				ShowCategory(result.Category);
-				ShowStatus($"{BuildingVisuals.MenuCategories[result.Category].Name}: välj med 1–{BuildingVisuals.MenuCategories[result.Category].Types.Length} (mellanslag tillbaka)");
+				ShowStatus($"{BuildingVisuals.MenuCategories[result.Category].Name}: välj med 1–{BuildingVisuals.MenuCategories[result.Category].Types.Length} (mellanslag avslutar)");
 				break;
 			case HotkeyOutcome.Selected:
 				ShowCategory(result.Category);
 				ShowStatus("");
 				_buttons[result.Type].ButtonPressed = true; // same as clicking it
 				break;
-			case HotkeyOutcome.Cancelled:
+			case HotkeyOutcome.Exited:
+				// Drop the building (and a belt's start) and close the category: the next number opens one.
+				ClearSelection();
+				SelectionChanged?.Invoke(null);
 				ShowStatus("");
 				break;
 		}

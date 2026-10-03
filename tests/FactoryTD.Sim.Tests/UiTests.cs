@@ -357,23 +357,37 @@ public class BuildHotkeyTests
 		Assert.True(keys.Armed);
 		Assert.Equal(new HotkeyResult(HotkeyOutcome.Selected, 0, BuildingType.Sorter), keys.Press('3'));
 		Assert.True(keys.Armed, "another number picks another building in the same category");
-		Assert.Equal(BuildingType.Conveyor, keys.Press('1', hasSelection: true).Type);
+		Assert.Equal(BuildingType.Conveyor, keys.Press('1', BuildingType.Sorter).Type);
 	}
 
 	[Fact]
-	public void Space_StepsBack_FirstTheBuildingThenTheCategory_EscIsLeftAlone()
+	public void Space_ExitsAtOnce_SoTheNextNumberPicksACategory()
 	{
 		var keys = Keys();
 		keys.Press('1');
 		keys.Press('2');
-		Assert.False(keys.Press(BuildHotkeys.Back, hasSelection: true).Consumed); // the build controller drops the building
-		Assert.True(keys.Armed);
-		Assert.Equal(HotkeyOutcome.Cancelled, keys.Press(BuildHotkeys.Back).Outcome);
+		Assert.Equal(HotkeyOutcome.Exited, keys.Press(BuildHotkeys.Back, BuildingType.Splitter).Outcome);
 		Assert.False(keys.Armed);
-		Assert.Equal(new HotkeyResult(HotkeyOutcome.CategoryOpened, 1), keys.Press('2')); // numbers pick categories again
+		Assert.Equal(new HotkeyResult(HotkeyOutcome.CategoryOpened, 1), keys.Press('2'));
 		Assert.Equal(BuildingType.Pylon, keys.Press('2').Type);
-		Assert.False(keys.Press('').Consumed); // Esc belongs to the pause menu
-		Assert.True(keys.Armed);
+		Assert.Equal(HotkeyOutcome.Exited, keys.Press(BuildHotkeys.Back).Outcome); // an open tab alone exits too
+		Assert.False(keys.Press(BuildHotkeys.Back).Consumed);                      // nothing open: space is free
+		Assert.Equal(HotkeyOutcome.Exited, keys.Press(BuildHotkeys.Back, BuildingType.Lamp).Outcome); // picked with the mouse
+		Assert.False(keys.Press('').Consumed);                              // Esc belongs to the pause menu
+	}
+
+	[Fact]
+	public void TheSameNumberAgain_ExitsLikeSpace()
+	{
+		var keys = Keys();
+		keys.Press('1');
+		Assert.Equal(BuildingType.Conveyor, keys.Press('1').Type);                 // 1 1: the belt
+		Assert.Equal(HotkeyOutcome.Exited, keys.Press('1', BuildingType.Conveyor).Outcome); // 1 again: done
+		Assert.False(keys.Armed);
+		Assert.Equal(HotkeyOutcome.CategoryOpened, keys.Press('2').Outcome);
+		Assert.Equal(BuildingType.BatteryCharger, keys.Press('1').Type);
+		Assert.Equal(BuildingType.Pylon, keys.Press('2', BuildingType.BatteryCharger).Type); // a different number: switches
+		Assert.Equal(HotkeyOutcome.Exited, keys.Press('2', BuildingType.Pylon).Outcome);
 	}
 
 	[Fact]
@@ -398,7 +412,6 @@ public class BuildHotkeyTests
 		keys.Press('2');
 		Assert.Equal(HotkeyOutcome.Swallowed, keys.Press('5').Outcome); // only two buildings in this category
 		Assert.True(keys.Armed);
-		Assert.True(keys.Press(BuildHotkeys.Back).Consumed); // closes the category
 	}
 
 	[Fact]
