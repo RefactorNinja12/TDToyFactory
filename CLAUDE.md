@@ -83,8 +83,8 @@ Kompakt fabrik, max 3 nivåer i produktionskedjan, matcher 15–25 min.
   på enheter och byggnader. Byggare på väg till ett löpband räknas inte; en kallad byggare som skulle
   bli den sista kliver inte in. Dör sista byggaren kommer en ny ur leksakslådan (`ReplaceLostBuilders`,
   av i `Scenario.NoWorkers()`). Musfälla = hinder. Närstrid (räckvidd ≤ 1,5 ruta) = `DamageKind.Punch`.
-- Kortkommandon för bygge: siffra 1–7 väljer kategori (flik), sedan Z X C F G T byggnaden på den
-  platsen. Bokstäverna krockar inte med kameran (WASD/QE), R (rotera) eller V (elnät).
+- Kortkommandon för bygge, bara siffror: siffra 1–7 öppnar en kategori (flik), sedan väljer en siffra kortet på
+  den platsen (1 = första). Kategorin står kvar öppen; Esc backar (först bygget, sedan kategorin). Bokstäver tas aldrig.
   Logik i `Scripts/UI/BuildHotkeys.cs`, BuildMenu läser den i `_Input`.
 - UI-stil: `View/UiTheme.cs` (halvgenomskinliga marinblå ramade paneler, rundade hörn, skugga, gul accent,
   textkontur; standardtypsnitt) sätts på varje UI-rot via `UiTheme.ApplyTo` (fönstrets tema når inte

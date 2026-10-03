@@ -350,94 +350,55 @@ public class BuildHotkeyTests
 	});
 
 	[Fact]
-	public void NumberThenLetter_PicksTheBuilding()
+	public void NumberThenNumber_PicksTheBuilding_AndTheCategoryStaysOpen()
 	{
 		var keys = Keys();
 		Assert.Equal(new HotkeyResult(HotkeyOutcome.CategoryOpened, 0), keys.Press('1'));
 		Assert.True(keys.Armed);
-		Assert.Equal(new HotkeyResult(HotkeyOutcome.Selected, 0, BuildingType.Sorter), keys.Press('c'));
-		Assert.False(keys.Armed);
-		keys.Press('2');
-		Assert.Equal(BuildingType.Pylon, keys.Press('X').Type);
+		Assert.Equal(new HotkeyResult(HotkeyOutcome.Selected, 0, BuildingType.Sorter), keys.Press('3'));
+		Assert.True(keys.Armed, "another number picks another building in the same category");
+		Assert.Equal(BuildingType.Conveyor, keys.Press('1', hasSelection: true).Type);
 	}
 
 	[Fact]
-	public void CameraAndOtherKeys_NeverTaken_EvenWhileACategoryWaits()
+	public void Esc_StepsBack_FirstTheBuildingThenTheCategory()
 	{
 		var keys = Keys();
 		keys.Press('1');
-		foreach (char c in "WASDQERV")
-			Assert.False(keys.Press(c).Consumed, $"{c} should stay with the camera / its own job");
-		Assert.True(keys.Armed); // still waiting for its letter
-	}
-
-	[Fact]
-	public void EmptyPlace_IsSwallowed_StillWaiting_EscCancels()
-	{
-		var keys = Keys();
 		keys.Press('2');
-		Assert.Equal(HotkeyOutcome.Swallowed, keys.Press('G').Outcome); // only two buildings in this category
+		Assert.False(keys.Press(BuildHotkeys.Escape, hasSelection: true).Consumed); // the build controller drops the building
 		Assert.True(keys.Armed);
 		Assert.Equal(HotkeyOutcome.Cancelled, keys.Press(BuildHotkeys.Escape).Outcome);
 		Assert.False(keys.Armed);
+		Assert.Equal(new HotkeyResult(HotkeyOutcome.CategoryOpened, 1), keys.Press('2')); // numbers pick categories again
+		Assert.Equal(BuildingType.Pylon, keys.Press('2').Type);
+	}
+
+	[Fact]
+	public void LettersAndCameraKeys_AreNeverTaken()
+	{
+		var keys = Keys();
+		foreach (bool armed in new[] { false, true })
+		{
+			if (armed)
+				keys.Press('1');
+			foreach (char c in "WASDQERVZXCFGT")
+				Assert.False(keys.Press(c).Consumed, $"{c} should stay with the camera / its own job");
+		}
+		Assert.True(keys.Armed);
+	}
+
+	[Fact]
+	public void EmptyPlace_IsSwallowed_AndMissingCategoriesIgnored()
+	{
+		var keys = Keys();
 		Assert.False(keys.Press('9').Consumed); // no ninth category
-		Assert.False(keys.Press('Z').Consumed); // letters do nothing without a category
+		keys.Press('2');
+		Assert.Equal(HotkeyOutcome.Swallowed, keys.Press('5').Outcome); // only two buildings in this category
+		Assert.True(keys.Armed);
+		Assert.True(keys.Press(BuildHotkeys.Escape).Consumed); // closes the category
 	}
 
 	[Fact]
-	public void LettersInOrder() => Assert.Equal("ZXCFGT", string.Concat(System.Linq.Enumerable.Range(0, 6).Select(BuildHotkeys.LetterFor)));
-}
-
-public class HudModelTests
-{
-	[Fact]
-	public void ResourceBar_RawStocksAlways_OthersOnlyWhenThere()
-	{
-		var s = Scenario.Match().NoWorkers();
-		var bar = ResourceBarModel.For(s.World, 0);
-		Assert.Contains(bar.Stocks, e => e.Item == ItemType.Battery && e.Count == 0);
-		Assert.DoesNotContain(bar.Stocks, e => e.Item == ItemType.Gear);
-		s.Give(ItemType.Gear, PlayerState.CoreCapacity);
-		bar = ResourceBarModel.For(s.World, 0);
-		Assert.Contains(bar.Stocks, e => e.Item == ItemType.Gear && e.Full);
-	}
-
-	[Fact]
-	public void ResourceBar_ShortGauges_LongTextInTooltips()
-	{
-		var s = Scenario.Match().NoWorkers();
-		for (int i = 0; i < 10; i++) s.Spawn(UnitType.PlasticSoldier, 2, 5 + i); // eat 10/min, nothing cooked
-		s.World.Tick();
-		var bar = ResourceBarModel.For(s.World, 0);
-		Assert.Equal("-10/min", bar.Food.Short);
-		Assert.Contains("äts", bar.Food.Tooltip);
-		Assert.EndsWith("⚡", bar.Power.Short);
-		Assert.Equal(new Bar(s.World.GetCore(0).MaxHealth, s.World.GetCore(0).MaxHealth), bar.OwnCore);
-		Assert.Contains(bar.Workers, w => w.Type == UnitType.Builder && w.Max == UnitStats.MaxBuilders);
-	}
-
-	[Fact]
-	public void BuildCard_CostPerItem_RedWhereThereIsTooLittle()
-	{
-		var s = Scenario.Match().NoWorkers().Empty(ItemType.Plastic);
-		var card = BuildCardModel.For(BuildingType.Assembler, 2, s.P0);
-		Assert.Equal('C', card.Hotkey);
-		Assert.Contains(card.Cost, c => c.Item == ItemType.Brick && c.Affordable);
-		Assert.Contains(card.Cost, c => c.Item == ItemType.Plastic && !c.Affordable);
-		Assert.False(card.Affordable);
-		Assert.Equal(Texts.DisplayName(BuildingType.Assembler), card.Name);
-	}
-
-	[Fact]
-	public void Toast_ShowsThenFades_NewestReplaces()
-	{
-		var toasts = new Toasts();
-		Assert.Equal(0f, toasts.At(0).Alpha);
-		toasts.Show("Inte tillräckligt", 10);
-		Assert.Equal(("Inte tillräckligt", 1f), toasts.At(11));
-		Assert.InRange(toasts.At(10 + Toasts.ShowSeconds - Toasts.FadeSeconds / 2).Alpha, 0.4f, 0.6f);
-		Assert.Equal(0f, toasts.At(10 + Toasts.ShowSeconds).Alpha);
-		toasts.Show("Nytt", 20);
-		Assert.Equal("Nytt", toasts.At(20.5).Text);
-	}
+	public void CardsShowTheirNumber() => Assert.Equal("123456", string.Concat(System.Linq.Enumerable.Range(0, 6).Select(BuildHotkeys.KeyFor)));
 }

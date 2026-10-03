@@ -73,7 +73,7 @@ public sealed record BuildCardModel(BuildingType Type, string Name, char Hotkey,
 		var cost = new List<CostEntry>();
 		foreach (var stack in BuildingRules.Cost(type))
 			cost.Add(new CostEntry(stack.Type, stack.Amount, player.GetCount(stack.Type) >= stack.Amount));
-		return new BuildCardModel(type, Texts.DisplayName(type), BuildHotkeys.LetterFor(place), cost, Texts.Description(type));
+		return new BuildCardModel(type, Texts.DisplayName(type), BuildHotkeys.KeyFor(place), cost, Texts.Description(type));
 	}
 }
 
