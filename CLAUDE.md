@@ -6,7 +6,7 @@ leksakslåda (kärna) och producerar trupper som automatiskt anfaller motstånda
 
 ## Tema
 Leksaksvärld: två barnrum i krig. Resurser: klossar, plast, batterier.
-Torn: skumpilar, vattenpistol, katapult. Trupper: plastsoldater,
+Torn: skumpilar, vattenpistol, katapult. Trupper: piratmöss av plast,
 klossgolems, radiostyrda bilar. Kontringar: plast svag mot område,
 elektronik svag mot vatten, klossar svaga mot laser.
 
@@ -92,8 +92,23 @@ Kompakt fabrik, max 3 nivåer i produktionskedjan, matcher 15–25 min.
   portar i routern (ingen UPnP, användaren tyckte det kändes osäkert): olika nätverk = Tailscale (100.64–127.x). Startmeny (`Scenes/
   Menu.tscn`, huvudscen): spela lokalt (Lätt/Normal), hosta, anslut. Online går inte att pausa; 10 s tystnad =
   anslutningen bröts. Sim-koden får inte ha flyttal, klockor, slump, hashkoder eller trådar (`DeterminismGuardTests`).
+- Enheter står upprätt (snett framifrån, vrids aldrig): mössen går på två ben, piratmusen (`PlasticSoldier`,
+  "Piratmus", tricorn/ögonlapp/flintlås) och klossgolemen också; RC-bilen ritas ovanifrån och vrids. Spritark
+  7x3 (stå, gå x4, handla x2 × mot/bort/sida; vänster = speglad sida), `UI/UnitSheets.cs`; rutan väljs av
+  `UI/UnitAnimation.cs` (riktning med hysteres, gångsteg efter sträcka, anfall/arbete) och ritas av UnitView
+  (MultiMesh + shader, fötterna på positionen, y-sorterat).
+- Byggnader rör sig när de arbetar (framsteg ändras senaste 0,5 s, `UI/Activity.cs`): rörliga delar ovanpå
+  stillbilden (`UI/BuildingParts.cs`: snurra, gunga, gå fram och tillbaka, glida, runda, blinka, puffa;
+  `View/BuildingAnimator.cs`).
+- Skuggor räknas ut, målas aldrig i sprites: ingen skugga utan ljus. Ljuskällorna = samma som dimmans
+  (`UI/LightSources`); ljus inom radien och utan vägg emellan (`Vision.LightReaches`) skjuter en mjuk rund
+  skugga bort från sig, längre och svagare på avstånd; band/korsningar ligger platt (ingen skugga).
+  `UI/Shadows.cs` (Cast, ShadowCaster), `View/ShadowView.cs`.
 - Grafik: `tools/art/restyle.py` gör om alla sprites från `tools/art/source/` (palett + svarta konturer)
-  och genererar golvet (stora brädor, 16x8 rutor). Nya sprites läggs i source och skriptet körs.
+  och genererar golvet (stora brädor, 16x8 rutor). Nya sprites läggs i source och skriptet körs
+  (`restyle.py <filer>` = bara de). Byggnader och enheter ritas av kod: `tools/art/kit.py` (plastformer, mus på
+  två ben, ark), `tools/art/buildings/*.py`, `tools/art/units/*.py`; granska med `tools/art/sheet.py`. Under
+  luminans 0,2 blir kontursvart, 2 px-linjer blir helt kontur, ljusa pasteller blir grå (välj mättat).
 
 ## Kodstruktur
 - `Scripts/Sim/` ren C#, deterministisk: `World` (tick 20/s, byggare/bönder/strid/underhåll), byggnader,
@@ -131,6 +146,8 @@ Kompakt fabrik, max 3 nivåer i produktionskedjan, matcher 15–25 min.
   `docs/plans/obstacles.md` (stora leksaker som hinder), `docs/plans/mice.md` (möss, ost, ostjägare, musfälla), `docs/plans/ui.md` (UI-stil, kortkommandon).
   `docs/plans/multiplayer.md` (online-lockstep, lösenord, startmeny, export).
   `docs/plans/refactor.md` (GridSearch, smutsflaggor för fält, rumslig målsökning, test:changed).
+  `docs/plans/animations.md` (fabriker ritade av kod, rörliga delar), `docs/plans/units.md` (upprätta enheter,
+  piratmus, uträknade skuggor).
 
 ## Arbetsflöde (tester är feedbackloopen)
 - `Taskfile.yaml` (go-task) samlar kommandona; `task` listar dem.
@@ -165,7 +182,8 @@ Kompakt fabrik, max 3 nivåer i produktionskedjan, matcher 15–25 min.
   --bot --steps N --out FIL` / `-- --join ip:port ...`.
 - `task export` = zip per plattform i `builds/` (Godot .NET export templates krävs, `tools/build/zip_build.py`
   behåller körrättigheter, `docs/LAS-MIG.txt` följer med). Båda spelarna måste köra samma zip.
-- Godot bara för det visuella: `Scripts/_Test/VisualProbe.cs` + skärmdump (headless `--write-movie`).
+- Godot bara för det visuella: `Scripts/_Test/VisualProbe.cs` + skärmdump (headless `--write-movie`);
+  `PROBE_CAM="x,y,zoom"` tittar var som helst, `PROBE_SCENE=shadows` = lampa med byggnader och möss.
   `Scenes/_Probe*.tscn` är gitignorerade.
 
 ## Assets

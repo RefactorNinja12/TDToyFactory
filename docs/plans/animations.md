@@ -58,7 +58,7 @@ and they move while they work (and stand still when they don't: starving, no pow
 - [x] 6. Assembler + kitchen.
 - [x] 7. The three army factories (2x2).
 - [x] 8. Toolbox + farmhouse.
-- [ ] 9. Polish pass in game (speeds, sizes, readability at normal zoom), CLAUDE.md, `task check`, push.
+- [x] 9. Polish pass in game (speeds, sizes, readability at normal zoom), CLAUDE.md, `task check`, push.
 
 ## Log
 - Step 0: baseline sheet: the 11 are flat coloured squares with one round detail each (extractors 64 px, factories 128 px).
@@ -70,3 +70,4 @@ and they move while they work (and stand still when they don't: starving, no pow
 - Step 6: tools/art/buildings/crafting.py: wind-up workbench (key turns, two gears mesh, tray in the middle for the product icon), play kitchen (pot lid rattles, steam puffs, frying egg, glowing oven). Pastel pink mutes to grey: pick saturated colours.
 - Step 7: tools/art/buildings/army.py: kit press (head stamps, sprue of green soldiers rides out, panel lights blink), block crane (hook lowers the C block onto A/B, mouse swings a mallet), slot-car oval (two cars lap it facing the way they drive, mouse waves a chequered flag).
 - Step 8: tools/art/buildings/workers.py: open toolbox (tools in the tray; a mouse saws a plank, one swings a mallet), dollhouse barn (plank roof, hay loft, carrot patch, pinwheel spins). Left for step 9: one in-game look at all of them working.
+- Step 9: seen in game together with the units work (lamp scene and bot match): diggers, gears, crane and pinwheel move while the buildings work, stand still otherwise; documented in CLAUDE.md on the units branch. Done.

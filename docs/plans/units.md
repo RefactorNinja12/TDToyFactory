@@ -90,9 +90,9 @@ what they are doing (hammering, harvesting) and fighters show their attacks. Uni
       a lamp, none where it's dark.
 - [x] 9. View: UnitView with sheets (custom data + shader, y-sort, feet anchor, shadow), RC car rotated as before;
       TreadmillView with the side walk frames; UI icons from `Units/<name>.png`. `task build` + screenshots.
-- [ ] 10. In-game pass: speeds (feet don't slide), readability at normal zoom, fog/minimap unaffected,
+- [x] 10. In-game pass: speeds (feet don't slide), readability at normal zoom, fog/minimap unaffected,
       performance with a full army (still one draw call per type).
-- [ ] 11. CLAUDE.md (theme: pirate mice; upright units; computed shadows; the art scripts), `task check`, push.
+- [x] 11. CLAUDE.md (theme: pirate mice; upright units; computed shadows; the art scripts), `task check`, push.
 
 ## Log
 - Step 0: baseline: all 7 are top-down and turned; the mice crawl on four legs with a painted oval shadow under them (it turns with them).
@@ -105,3 +105,5 @@ what they are doing (hammering, harvesting) and fighters show their attacks. Uni
 - Step 7: UI/Shadows.cs: Shadows.Cast (lights within radius, not closer than 0.4 tiles = the thing's own torch/glow, ray not through walls via the new Vision.LightReaches; weight = strength x nearness, stretch grows with distance; summed, so opposite lights give a short round shadow; null when the summed light < 0.03 = no light, no shadow), ShadowCaster (every visible unit and shown building, belts/junctions are flat and get none, eased over 0.25 s, fades out when the light goes). The light-grid idea was not needed: a bounding-box filter over the light list is enough. ShadowsTests 7.
 - Step 8: View/ShadowView.cs: generated radial soft disc, two MultiMeshes (buildings, units), inserted before the Buildings node (over the floor, under everything standing). VisualProbe PROBE_SCENE=shadows: a lamp on open floor with assemblers and builder mice round it. Seen: shadows lean away from the lamp on every side. The mice still cover most of theirs because their old sprites are centred on the position: fixed by the feet anchor in step 9. Painted shadows go with the old unit sprites in step 9 (obstacles keep theirs: they don't turn).
 - Step 9: UnitView: one MultiMesh per type with custom data (column, row, mirror) and a canvas shader picking the cell (gotcha: in Godot 4 the fragment COLOR already holds the texture sampled at UV, so the instance colour goes through a varying); upright units lifted so the feet line (FeetY) sits on the position, sorted by y within their type; the RC car turned as before with its wheel frame. BuildingVisuals.GetUnitTexture/GetUnitSheet from UnitSheets.FileName (old soldier.png removed). Treadmill: the builder runs upright with its side walk frames (mirrored when the treadmill faces west). CombatView: health bars above the head, carried carrots at the side, bullets at hand height (16 px). Screens: the lamp scene shows mice standing on their feet with shadows leaning away from the lamp; a bot match shows pirates and an upright golem walking.
+- Step 10: in game: the treadmill mouse runs upright towards the cheese with changing legs; builders stand upright at the toolbox; pirates and the golem walk mid-map; enemy units keep the red tint; shadows lean away from lamps and vanish in the dark. Sim untouched (golden unchanged, all tests green).
+- Step 11: CLAUDE.md: theme (piratmöss), upright units, moving building parts, computed shadows, the art scripts and their pitfalls, probe env vars, both plans listed. Done.
