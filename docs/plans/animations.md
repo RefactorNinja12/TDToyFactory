@@ -55,9 +55,9 @@ and they move while they work (and stand still when they don't: starving, no pow
 - [x] 4. View: `BuildingAnimator` draws the parts for working, visible buildings (rotation with the
       building, team tint where the base has it); TreadmillView keeps its own special drawing.
 - [x] 5. Extractors + cheese melter (4 sprites + parts), sheet + screenshot.
-- [ ] 6. Assembler + kitchen.
-- [ ] 7. The three army factories (2x2).
-- [ ] 8. Toolbox + farmhouse.
+- [x] 6. Assembler + kitchen.
+- [x] 7. The three army factories (2x2).
+- [x] 8. Toolbox + farmhouse.
 - [ ] 9. Polish pass in game (speeds, sizes, readability at normal zoom), CLAUDE.md, `task check`, push.
 
 ## Log
@@ -67,3 +67,6 @@ and they move while they work (and stand still when they don't: starving, no pow
 - Step 3: tools/art/kit.py (box/disc/stud/gear/wood/chute/mouse with hats, baseplate with corner studs: a full stud ring was too busy), tools/art/sheet.py (review sheet, 1x + 2x), restyle.py takes a file list and creates folders. Lessons: colours under luminance 0.2 become outline black (battery cells), light blues mute to grey (glass needs a strong blue), separate small blobs in a part all get outlines (draw them on one filled shape).
 - Step 4: View/BuildingAnimator (activity + clocks, rotates with the building, culls off-screen and unseen), BuildingVisuals.GetPartTexture. VisualProbe: PROBE_CAM="x,y,zoom" env var to look anywhere.
 - Step 5: tools/art/buildings/extractors.py: digger (arm swings, brick rides to the chute), gumball machine (beads spin, crank), magnet crane (magnet bobs, three charge lights blink), fondue pot (spoon stirs, bubbles). In game: the bot's brick diggers dig in step.
+- Step 6: tools/art/buildings/crafting.py: wind-up workbench (key turns, two gears mesh, tray in the middle for the product icon), play kitchen (pot lid rattles, steam puffs, frying egg, glowing oven). Pastel pink mutes to grey: pick saturated colours.
+- Step 7: tools/art/buildings/army.py: kit press (head stamps, sprue of green soldiers rides out, panel lights blink), block crane (hook lowers the C block onto A/B, mouse swings a mallet), slot-car oval (two cars lap it facing the way they drive, mouse waves a chequered flag).
+- Step 8: tools/art/buildings/workers.py: open toolbox (tools in the tray; a mouse saws a plank, one swings a mallet), dollhouse barn (plank roof, hay loft, carrot patch, pinwheel spins). Left for step 9: one in-game look at all of them working.

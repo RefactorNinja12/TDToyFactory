@@ -56,6 +56,46 @@ public static class BuildingParts
 			new Part("fondue_bubble", 4, 4, Motion.Puff, Speed: 1.1f, DY: -4, Phase: 0.7f),
 			new Part("fondue_spoon", -1, -2, Motion.Spin, Speed: 0.4f),
 		},
+		[BuildingType.Assembler] = new[]
+		{
+			new Part("windup_key", -23, 0, Motion.Spin, Speed: 0.35f),
+			new Part("gear_big", 16, -18, Motion.Spin, Speed: -0.4f),
+			new Part("gear_small", 17, 16, Motion.Spin, Speed: 0.57f),
+		},
+		[BuildingType.Kitchen] = new[]
+		{
+			new Part("pot_lid", -12, -10, Motion.Swing, Speed: 2.5f, Amount: 0.2f),
+			new Part("steam", -12, -16, Motion.Puff, Speed: 0.7f, DY: -12),
+			new Part("steam", -10, -16, Motion.Puff, Speed: 0.7f, DY: -12, Phase: 0.5f),
+		},
+		[BuildingType.SoldierFactory] = new[]
+		{
+			new Part("sprue", -20, 24, Motion.Slide, Speed: 0.35f, DX: 60),
+			new Part("press_head", -6, -20, Motion.Bob, Speed: 0.7f, DY: 12),
+			new Part("panel_light", 41, -37, Motion.Blink, Speed: 1.4f),
+			new Part("panel_light", 49, -37, Motion.Blink, Speed: 1.4f, Phase: 0.5f),
+			new Part("panel_light", 41, -29, Motion.Blink, Speed: 0.7f, Phase: 0.25f),
+		},
+		[BuildingType.GolemWorkshop] = new[]
+		{
+			new Part("crane_hook", 9, -22, Motion.Bob, Speed: 0.5f, DY: 10),
+			new Part("mallet", -20, 30, Motion.Swing, Speed: 1.6f, Amount: 0.7f),
+		},
+		[BuildingType.CarFactory] = new[]
+		{
+			new Part("race_car_red", 0, 0, Motion.Orbit, Speed: 0.35f, DX: 44, DY: 36),
+			new Part("race_car_yellow", 0, 0, Motion.Orbit, Speed: 0.35f, DX: 44, DY: 36, Phase: 0.5f),
+			new Part("race_flag", 42, 34, Motion.Swing, Speed: 1.2f, Amount: 0.5f),
+		},
+		[BuildingType.Toolbox] = new[]
+		{
+			new Part("saw", -18, 37, Motion.Bob, Speed: 2f, DX: 6),
+			new Part("mallet", 26, 36, Motion.Swing, Speed: 1.6f, Amount: 0.7f, Phase: 0.3f),
+		},
+		[BuildingType.Farmhouse] = new[]
+		{
+			new Part("pinwheel", 40, -48, Motion.Spin, Speed: 0.8f),
+		},
 	};
 
 	private static readonly Part[] None = Array.Empty<Part>();
