@@ -24,8 +24,12 @@ public partial class CameraController : Camera2D
 		_startZoom = Zoom;
 	}
 
-	/// <summary>Looks at <paramref name="position"/>, also after Home (the own room when playing the right side).</summary>
-	public void StartAt(Vector2 position) => Position = _startPosition = position;
+	/// <summary>Looks at <paramref name="position"/> at <paramref name="zoom"/>; Home comes back to this view.</summary>
+	public void StartAt(Vector2 position, float zoom)
+	{
+		Position = _startPosition = position;
+		Zoom = _startZoom = new Vector2(zoom, zoom);
+	}
 
 	public override void _Process(double delta)
 	{

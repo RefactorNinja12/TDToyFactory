@@ -92,6 +92,8 @@ Kompakt fabrik, max 3 nivåer i produktionskedjan, matcher 15–25 min.
   textkontur; standardtypsnitt) sätts på varje UI-rot via `UiTheme.ApplyTo` (fönstrets tema når inte
   kontroller under CanvasLayers). Lite text: siffror vid små ikoner, förklaringar i verktygstips.
   Modeller i `Scripts/UI/Hud.cs` (ResourceBarModel, BuildCardModel, Toasts); vyerna ritar bara dem.
+- Matchstart: nedräkning 3, 2, 1, "Kör!" (`UI/Countdown.cs`); simuleringen står still under tiden (man kan titta
+  och placera), kameran flyger in från rummet till den egna leksakslådan. Röktest/VisualProbe hoppar över den.
 - Multiplayer (online, 2 spelare): deterministisk lockstep där värden är servern. Bara kommandon går över
   nätet (`PlayerCommand`: bygg/riv/ställ in; allt spelare och bot gör går via `ICommandSink` → `World.Apply`).
   Kommando skickat vid steg s körs vid s + InputDelay (3–12 steg efter ping) på båda maskinerna; värden
