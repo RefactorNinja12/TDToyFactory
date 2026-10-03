@@ -33,7 +33,9 @@ public partial class MainMenu : Control
 		GetWindow().Theme = theme;
 		Theme = theme;
 		SetAnchorsAndOffsetsPreset(LayoutPreset.FullRect);
-		AddChild(new ColorRect { Color = new Color(0.04f, 0.05f, 0.1f), AnchorRight = 1, AnchorBottom = 1 });
+		AddPreview();
+		// A dark veil over the living match behind, so the menu stays easy to read.
+		AddChild(new ColorRect { Color = new Color(0.04f, 0.05f, 0.1f, 0.55f), AnchorRight = 1, AnchorBottom = 1, MouseFilter = MouseFilterEnum.Ignore });
 
 		var center = new CenterContainer();
 		center.SetAnchorsAndOffsetsPreset(LayoutPreset.FullRect);
@@ -93,6 +95,25 @@ public partial class MainMenu : Control
 	{
 		if (what == NotificationWMCloseRequest)
 			MatchSetup.EndOnline();
+	}
+
+	/// <summary>
+	/// The background: a bot-against-bot match in its own little viewport (its camera doesn't move the menu),
+	/// rendered at half resolution and scaled up, taking no input. Not when running headless (smoke tests).
+	/// </summary>
+	private void AddPreview()
+	{
+		if (DisplayServer.GetName() == "headless" || LaunchArgs.Parse(OS.GetCmdlineUserArgs()).Online)
+			return;
+		var container = new SubViewportContainer { Stretch = true, StretchShrink = 2, MouseFilter = MouseFilterEnum.Ignore };
+		container.SetAnchorsAndOffsetsPreset(LayoutPreset.FullRect);
+		container.SetProcessInput(false);
+		var viewport = new SubViewport { GuiDisableInput = true, HandleInputLocally = true };
+		container.AddChild(viewport);
+		var game = GD.Load<PackedScene>(MatchScene).Instantiate<Game>();
+		game.Preview = true;
+		viewport.AddChild(game);
+		AddChild(container);
 	}
 
 	// ---- pages ----
