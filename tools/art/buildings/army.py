@@ -1,6 +1,6 @@
 """
 Army factories (2x2 = 128 px, output east):
-  soldier - a plastic-kit press: the press head stamps, a green sprue of soldiers rides out to the chute
+  soldier - a plastic-kit press: the press head stamps, a sprue of plastic pirate mice rides out to the chute
   golem   - a toy crane stacking ABC blocks: the hook lowers a block, a mouse swings a mallet
   car     - a slot-car track round a paint booth: two cars lap it, a mouse waves the chequered flag
 
@@ -24,10 +24,12 @@ def out(img, rel):
 
 
 def soldier_figure(d, x, y, color=SOLDIER):
-    """A little green army man from above: helmet, shoulders, rifle."""
+    """A little plastic pirate mouse on the sprue, from above: round ears, a tricorn, shoulders."""
+    for ex in (x - 3, x + 3):
+        d.ellipse((ex - 2, y - 4, ex + 2, y), fill=tint(color, -0.1))
     d.ellipse((x - 3, y - 3, x + 3, y + 3), fill=tint(color, -0.15))
-    d.rectangle((x - 4, y + 2, x + 4, y + 6), fill=color)
-    d.line((x + 4, y - 4, x + 4, y + 6), fill=tint(color, -0.35), width=1)
+    d.polygon([(x - 4, y - 2), (x, y - 5), (x + 4, y - 2), (x, y)], fill=tint(color, -0.4))
+    d.rectangle((x - 3, y + 2, x + 3, y + 6), fill=color)
 
 
 def soldier_factory():

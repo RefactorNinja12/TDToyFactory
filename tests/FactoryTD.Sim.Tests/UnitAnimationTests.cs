@@ -109,4 +109,15 @@ public class UnitAnimationTests
 	[InlineData(Facing.Left, PoseKind.Act, 1, 6, 2, true)]
 	public void Sheet_CellForEveryFrame(Facing facing, PoseKind kind, int step, int column, int row, bool mirror) =>
 		Assert.Equal((column, row, mirror), UnitSheets.Cell(new UnitFrame(facing, kind, step)));
+
+	[Fact]
+	public void EveryUnit_HasItsSheetAtTheRightSize_AndAnIcon()
+	{
+		foreach (var type in System.Enum.GetValues<UnitType>())
+		{
+			string name = UnitSheets.FileName(type);
+			Assert.Equal(UnitSheets.SheetSize(type), ArtFiles.PngSize($"Units/{name}_sheet.png"));
+			Assert.True(ArtFiles.Exists($"Units/{name}.png"), $"{type}: no icon Units/{name}.png");
+		}
+	}
 }

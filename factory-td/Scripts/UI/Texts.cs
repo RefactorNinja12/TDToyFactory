@@ -16,7 +16,7 @@ public static class Texts
 		BuildingType.Splitter => "Delare",
 		BuildingType.Sorter => "Sorterare",
 		BuildingType.Assembler => "Monteringsmaskin",
-		BuildingType.SoldierFactory => "Soldatfabrik",
+		BuildingType.SoldierFactory => "Piratfabrik",
 		BuildingType.FoamTower => "Skumpiltorn",
 		BuildingType.Catapult => "Katapult",
 		BuildingType.WaterTower => "Vattenpistol",
@@ -48,9 +48,9 @@ public static class Texts
 		BuildingType.Splitter => "Tar emot från alla håll och delar ut i tur och ordning rakt fram, höger och vänster.",
 		BuildingType.Sorter => "Tar emot från alla håll. Vald sort fortsätter rakt fram, allt annat svänger av åt sidorna. Klicka på den för att byta sort.",
 		BuildingType.Assembler => "Gör kugghjul (2 klossar + 1 plast), fjädrar (2 plast) eller kretskort (1 batteri + 1 plast). Tar emot från alla håll, lämnar ut åt pilens håll (R roterar). Klicka på den för att byta.",
-		BuildingType.SoldierFactory => "2x2. Gör en plastsoldat av 3 plast + 1 fjäder. Soldaterna går själva mot fiendens låda.",
+		BuildingType.SoldierFactory => "2x2. Pressar en piratmus av plast av 3 plast + 1 fjäder. Piraterna går själva mot fiendens låda.",
 		BuildingType.FoamTower => "Ammo: plast (1 plast = 4 pilar). Snabb, ett mål i taget, räckvidd 6. Halv skada mot golems.",
-		BuildingType.Catapult => "Ammo: klossar (kastar dem). Långsam, skadar ett område, räckvidd 8. Dubbel skada mot plastsoldater.",
+		BuildingType.Catapult => "Ammo: klossar (kastar dem). Långsam, skadar ett område, räckvidd 8. Dubbel skada mot piratmöss (plast).",
 		BuildingType.WaterTower => "Ammo: batterier (1 batteri = 10 skott). Mycket snabb, räckvidd 4. Trippel skada mot elektronik (radiobilar). Halv skada mot golems.",
 		BuildingType.Junction => "Låter två band korsa varandra. Allt åker rakt igenom, banden blandas aldrig.",
 		BuildingType.Pylon => $"Leder ström till allt inom {PowerStats.PylonRadius} rutor och kopplas med sladd till master, laddare och leksakslådan inom {PowerStats.LinkRange} rutor.",
@@ -117,7 +117,7 @@ public static class Texts
 
 	public static string UnitName(UnitType type) => type switch
 	{
-		UnitType.PlasticSoldier => "Plastsoldat",
+		UnitType.PlasticSoldier => "Piratmus",
 		UnitType.BrickGolem => "Klossgolem",
 		UnitType.RcCar => "Radiobil",
 		UnitType.Builder => "Byggarmus",

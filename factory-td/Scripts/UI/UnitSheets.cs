@@ -15,6 +15,24 @@ public static class UnitSheets
 
 	public const int VehicleFrames = 2;
 
+	/// <summary>File name in Assets/Sprites/Units: &lt;name&gt;_sheet.png (animation) and &lt;name&gt;.png (UI icon).</summary>
+	public static string FileName(UnitType type) => type switch
+	{
+		UnitType.PlasticSoldier => "pirate",
+		UnitType.BrickGolem => "golem",
+		UnitType.RcCar => "rc_car",
+		UnitType.Builder => "builder",
+		UnitType.Farmer => "farmer",
+		UnitType.Scout => "scout",
+		UnitType.CheeseHunter => "cheese_hunter",
+		_ => type.ToString().ToLowerInvariant(),
+	};
+
+	/// <summary>Sheet size in pixels: 7x3 cells for upright units, a row of wheel frames for vehicles.</summary>
+	public static (int Width, int Height) SheetSize(UnitType type) => IsUpright(type)
+		? (Columns * CellSize(type), Rows * CellSize(type))
+		: (VehicleFrames * CellSize(type), CellSize(type));
+
 	/// <summary>Drawn upright from the front (not turned); everything else is a vehicle.</summary>
 	public static bool IsUpright(UnitType type) => type != UnitType.RcCar;
 

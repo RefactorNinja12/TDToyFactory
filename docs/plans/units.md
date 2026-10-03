@@ -75,13 +75,13 @@ what they are doing (hammering, harvesting) and fighters show their attacks. Uni
       sim only where needed). Tests for each.
 - [x] 2. Sheet layout (pure): `UnitSheets` (cell size, rows, columns per type, which types are upright);
       a test that every sheet and icon file exists at the right size (Support/ArtFiles).
-- [ ] 3. Art kit: `upright_mouse(pose, facing, hat, outfit, held)` with a walk cycle (contact, passing ×2),
+- [x] 3. Art kit: `upright_mouse(pose, facing, hat, outfit, held)` with a walk cycle (contact, passing ×2),
       arm swing, a 1 px bob, the tail swinging the other way; `tools/art/units/sheet_strip.py` for review.
-- [ ] 4. The four worker mice: builder (hard hat, hammer; action = hammering), farmer (straw hat, basket;
+- [x] 4. The four worker mice: builder (hard hat, hammer; action = hammering), farmer (straw hat, basket;
       action = picking), scout (cap, binoculars), cheese hunter (headband, boxing gloves; action = punches).
-- [ ] 5. Pirate mouse (bandana/tricorn, eye patch, striped shirt, flintlock; action = aim + puff); `Texts`
+- [x] 5. Pirate mouse (bandana/tricorn, eye patch, striped shirt, flintlock; action = aim + puff); `Texts`
       name "Piratmus"; soldier factory sprue redrawn with pirate figures.
-- [ ] 6. Brick golem upright (stomping walk, swinging fist), RC car (wheel frames, antenna wobble, still rotated).
+- [x] 6. Brick golem upright (stomping walk, swinging fist), RC car (wheel frames, antenna wobble, still rotated).
 - [ ] 7. Shadows (pure): `Shadows.For(world, player, lights)` per unit and building (offset, angle, stretch,
       opacity; no reaching light = no shadow; lights within their radius and with a clear ray; summed by strength;
       eased over time); lights in a tile grid so it stays cheap with hundreds of things. Tests as above.
@@ -98,3 +98,7 @@ what they are doing (hammering, harvesting) and fighters show their attacks. Uni
 - Step 0: baseline: all 7 are top-down and turned; the mice crawl on four legs with a painted oval shadow under them (it turns with them).
 - Step 1: UI/UnitAnimation.cs: facing from MoveX/MoveY (walk or aim direction), hysteresis 1.25 near diagonals; walk steps from the distance walked (4 steps per tile); idle after 4 still ticks; act for 6 ticks after a shot/punch (AttackCooldown, internal = visible to UI) or while working (builder facing its unfinished site, farmer WorkTimer > 0), hammering in 5-tick beats; units seen for the first time count as moving. Tests with real scenarios (walking soldiers both ways, a shooting soldier, a builder walking -> hammering -> idle at a warehouse).
 - Step 2: UI/UnitSheets.cs: 7 columns (idle, walk x4, act x2) x 3 rows (towards, away, side; left = mirrored), 48 px cells (golem 64), feet 6 px above the cell bottom; RC car = vehicle (turned, 2 wheel frames). The sheets-exist test comes with the art (step 6).
+- Step 3: kit.upright_mouse(facing, pose, step, hat, shirt, held, act, extra, stripes) + unit_sheet(cell_fn, columns, cell): chibi mouse (big head, round ears, belly, snout and whiskers from the front, profile from the side, ears and back from behind), walk cycle (foot lifts, 1 px bob, arm swing, side stride 4 px), tail behind or in front. No painted shadow. Lessons: 2 px lines become all outline (tails/feet need 3 px); back-view ears need a darker fur or they melt into the head. The review is tools/art/sheet.py plus a 2x composite (a separate strip tool was not needed).
+- Step 4: tools/art/units/mice.py: builder (hard hat, orange vest, hammer: up/down), farmer (straw hat, blue overalls, carrot: down/up), scout (green cap, binoculars to the eyes), cheese hunter (headband, two boxing gloves: wind up/hit).
+- Step 5: tools/art/units/pirate.py: tricorn with a skull badge, eye patch, red/white striped shirt, belt with a gold buckle, flintlock (hangs down; aim; puff). Texts: Piratmus, Piratfabrik (descriptions and the catapult hint updated). Soldier factory sprue: little plastic pirate mice with tricorns.
+- Step 6: tools/art/units/golem_car.py: brick golem 64 px (stud bricks, yellow eyes, stomping 4 px lifts, fist raised/slammed); RC car 48 px from above, 2 frames (treads move, antenna tip wobbles). UnitSheets.FileName/SheetSize + test: every unit has its sheet at the right size and an icon (PNG header via Support/ArtFiles). Old Units/soldier.png goes in step 9 with the view switch.
