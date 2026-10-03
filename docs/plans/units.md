@@ -69,11 +69,11 @@ what they are doing (hammering, harvesting) and fighters show their attacks. Uni
 - `task check` before every commit; the golden checksum must not change (nothing in the simulation changes).
 
 ## Steps
-- [ ] 0. Branch `units` (from `sprites`). Baseline sheet of the 7 current unit sprites.
-- [ ] 1. `UnitAnimation` (pure): facing with hysteresis, walk frames from distance, idle after 0.3 s, action
+- [x] 0. Branch `units` (from `sprites`). Baseline sheet of the 7 current unit sprites.
+- [x] 1. `UnitAnimation` (pure): facing with hysteresis, walk frames from distance, idle after 0.3 s, action
       frames from the attack timer / work state (read what Unit exposes; add read-only properties to the
       sim only where needed). Tests for each.
-- [ ] 2. Sheet layout (pure): `UnitSheets` (cell size, rows, columns per type, which types are upright);
+- [x] 2. Sheet layout (pure): `UnitSheets` (cell size, rows, columns per type, which types are upright);
       a test that every sheet and icon file exists at the right size (Support/ArtFiles).
 - [ ] 3. Art kit: `upright_mouse(pose, facing, hat, outfit, held)` with a walk cycle (contact, passing ×2),
       arm swing, a 1 px bob, the tail swinging the other way; `tools/art/units/sheet_strip.py` for review.
@@ -95,3 +95,6 @@ what they are doing (hammering, harvesting) and fighters show their attacks. Uni
 - [ ] 11. CLAUDE.md (theme: pirate mice; upright units; computed shadows; the art scripts), `task check`, push.
 
 ## Log
+- Step 0: baseline: all 7 are top-down and turned; the mice crawl on four legs with a painted oval shadow under them (it turns with them).
+- Step 1: UI/UnitAnimation.cs: facing from MoveX/MoveY (walk or aim direction), hysteresis 1.25 near diagonals; walk steps from the distance walked (4 steps per tile); idle after 4 still ticks; act for 6 ticks after a shot/punch (AttackCooldown, internal = visible to UI) or while working (builder facing its unfinished site, farmer WorkTimer > 0), hammering in 5-tick beats; units seen for the first time count as moving. Tests with real scenarios (walking soldiers both ways, a shooting soldier, a builder walking -> hammering -> idle at a warehouse).
+- Step 2: UI/UnitSheets.cs: 7 columns (idle, walk x4, act x2) x 3 rows (towards, away, side; left = mirrored), 48 px cells (golem 64), feet 6 px above the cell bottom; RC car = vehicle (turned, 2 wheel frames). The sheets-exist test comes with the art (step 6).
