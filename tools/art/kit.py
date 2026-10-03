@@ -190,6 +190,7 @@ CELL = 48          # unit sheet cell (UI/UnitSheets.CellSize)
 FEET = CELL - 6    # where the feet touch the ground (UnitSheets.FeetY)
 FUR = MOUSE
 BELLY = (214, 212, 222)
+TAIL = (200, 100, 125)     # darker pink than the ears, so it reads against the floor
 
 # walk steps: (left foot lift, right foot lift, body bob, arm swing, side stride)
 WALK = [(2, 0, 0, 1, 4), (0, 0, -1, 0, 0), (0, 2, 0, -1, -4), (0, 0, -1, 0, 0)]
@@ -197,6 +198,19 @@ WALK = [(2, 0, 0, 1, 4), (0, 0, -1, 0, 0), (0, 2, 0, -1, -4), (0, 0, -1, 0, 0)]
 
 def _limb(d, x0, y0, x1, y1, color, w=3):
     d.line((x0, y0, x1, y1), fill=color, width=w)
+
+
+def _leg(d, x0, y0, x1, y1, color):
+    """A short chubby leg: thick, with rounded ends (not a matchstick)."""
+    d.line((x0, y0, x1, y1), fill=color, width=6)
+    for x, y in ((x0, y0), (x1, y1)):
+        d.ellipse((x - 3, y - 3, x + 3, y + 3), fill=color)
+
+
+def _paw(d, x, y, toe_right=True):
+    """A pink foot, a little wider than the leg, with a hint of toes."""
+    d.ellipse((x - 4, y - 3, x + 4, y + 2), fill=PINK)
+    d.point((x + (2 if toe_right else -2), y - 1), fill=tint(PINK, -0.3))
 
 
 def upright_mouse(facing, pose="idle", step=0, hat=None, shirt=None, held=None, act=None, extra=None, stripes=None):
@@ -233,25 +247,27 @@ def upright_mouse(facing, pose="idle", step=0, hat=None, shirt=None, held=None, 
     # tail: behind (towards / side), in front (away)
     def tail():
         if facing == "side":
-            pts = [(cx - 6, hip - 2), (cx - 12, hip - 4), (cx - 16, hip - 9 + bob), (cx - 15, hip - 14)]
+            pts = [(cx - 6, hip - 2), (cx - 11, hip - 2), (cx - 15, hip - 5 + bob), (cx - 17, hip - 10 + bob),
+                   (cx - 15, hip - 15), (cx - 12, hip - 16)]
         else:
             s = 1 if facing == "toward" else -1
-            pts = [(cx + 3 * s, hip - 1), (cx + 10 * s, hip + 1), (cx + 15 * s, hip - 4), (cx + 14 * s, hip - 10)]
-        d.line(pts, fill=PINK, width=3)
+            pts = [(cx + 3 * s, hip - 1), (cx + 9 * s, hip + 2), (cx + 14 * s, hip - 1), (cx + 16 * s, hip - 6),
+                   (cx + 14 * s, hip - 11), (cx + 11 * s, hip - 12)]
+        d.line(pts, fill=TAIL, width=3, joint="curve")
 
     if facing != "away":
         tail()
 
     # legs and feet
     if facing == "side":
-        for dx, lift, shade in ((stride, lift_l, -0.2), (-stride, lift_r, 0)):
+        for dx, lift, shade in ((stride, lift_l, -0.25), (-stride, lift_r, -0.05)):
             fx = cx + dx
-            _limb(d, cx, hip, fx, FEET - 1 - lift, tint(FUR, shade))
-            d.ellipse((fx - 3, FEET - 3 - lift, fx + 4, FEET + 1 - lift), fill=PINK)
+            _leg(d, cx + dx // 3, hip - 1, fx, FEET - 3 - lift, tint(FUR, shade))
+            _paw(d, fx + 1, FEET - 1 - lift)
     else:
         for dx, lift in ((-4, lift_l), (4, lift_r)):
-            _limb(d, cx + dx, hip, cx + dx, FEET - 1 - lift, tint(FUR, -0.1))
-            d.ellipse((cx + dx - 3, FEET - 3 - lift, cx + dx + 3, FEET + 1 - lift), fill=PINK)
+            _leg(d, cx + dx, hip - 1, cx + dx, FEET - 3 - lift, tint(FUR, -0.1))
+            _paw(d, cx + dx, FEET - 1 - lift, toe_right=dx > 0)
 
     # back arm (behind the body)
     if facing == "side":
@@ -284,14 +300,14 @@ def upright_mouse(facing, pose="idle", step=0, hat=None, shirt=None, held=None, 
     # head with ears
     hx, hy = cx + (2 if facing == "side" else 0), head_y
     if facing == "side":
-        d.ellipse((hx - 9, hy - 14, hx + 1, hy - 4), fill=FUR)
-        d.ellipse((hx - 7, hy - 12, hx - 1, hy - 6), fill=PINK)
+        d.ellipse((hx - 10, hy - 15, hx + 2, hy - 3), fill=FUR)
+        d.ellipse((hx - 8, hy - 13, hx, hy - 5), fill=PINK)
     else:
         for s in (-1, 1):
             ex = hx + 8 * s
-            d.ellipse((ex - 5, hy - 13, ex + 5, hy - 3), fill=FUR if facing == "toward" else tint(FUR, -0.35))
+            d.ellipse((ex - 6, hy - 14, ex + 6, hy - 2), fill=FUR if facing == "toward" else tint(FUR, -0.25))
             if facing == "toward":
-                d.ellipse((ex - 3, hy - 11, ex + 3, hy - 5), fill=PINK)
+                d.ellipse((ex - 4, hy - 12, ex + 4, hy - 4), fill=PINK)
     d.ellipse((hx - 9, hy - 9, hx + 9, hy + 8), fill=tint(FUR, -0.2))
     d.ellipse((hx - 9, hy - 9, hx + 8, hy + 7), fill=FUR)
     if facing == "toward":

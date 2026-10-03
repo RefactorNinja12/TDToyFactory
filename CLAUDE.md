@@ -93,7 +93,7 @@ Kompakt fabrik, max 3 nivåer i produktionskedjan, matcher 15–25 min.
   Menu.tscn`, huvudscen): spela lokalt (Lätt/Normal), hosta, anslut. Online går inte att pausa; 10 s tystnad =
   anslutningen bröts. Sim-koden får inte ha flyttal, klockor, slump, hashkoder eller trådar (`DeterminismGuardTests`).
 - Enheter står upprätt (snett framifrån, vrids aldrig): mössen går på två ben, piratmusen (`PlasticSoldier`,
-  "Piratmus", tricorn/ögonlapp/flintlås) och klossgolemen också; RC-bilen ritas ovanifrån och vrids. Spritark
+  "Piratmus", tricorn/ögonlapp/flintlås, byggs i Piratskeppet) och klossgolemen också; RC-bilen ritas ovanifrån och vrids. Spritark
   7x3 (stå, gå x4, handla x2 × mot/bort/sida; vänster = speglad sida), `UI/UnitSheets.cs`; rutan väljs av
   `UI/UnitAnimation.cs` (riktning med hysteres, gångsteg efter sträcka, anfall/arbete) och ritas av UnitView
   (MultiMesh + shader, fötterna på positionen, y-sorterat).
@@ -108,7 +108,7 @@ Kompakt fabrik, max 3 nivåer i produktionskedjan, matcher 15–25 min.
   och genererar golvet (stora brädor, 16x8 rutor). Nya sprites läggs i source och skriptet körs
   (`restyle.py <filer>` = bara de). Byggnader och enheter ritas av kod: `tools/art/kit.py` (plastformer, mus på
   två ben, ark), `tools/art/buildings/*.py`, `tools/art/units/*.py`; granska med `tools/art/sheet.py`. Under
-  luminans 0,2 blir kontursvart, 2 px-linjer blir helt kontur, ljusa pasteller blir grå (välj mättat).
+  luminans 0,2 blir kontursvart, 2 px-linjer blir helt kontur, ljusa pasteller blir grå (välj mättat); paletten har två rosa för mössens öron, tassar och svansar.
 
 ## Kodstruktur
 - `Scripts/Sim/` ren C#, deterministisk: `World` (tick 20/s, byggare/bönder/strid/underhåll), byggnader,

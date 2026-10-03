@@ -31,8 +31,8 @@ PALETTE_HEX = [
     "2b1d1c", "3e2a24", "57392c", "7a5236", "a5733f", "c99a5c",
     # warm lamp light
     "8a3b1f", "c4602a", "e38b35", "f2b64a", "f7dd7a", "fff3c4",
-    # reds / pinks
-    "4a1a2a", "7e2536", "b8384a", "e0646a",
+    # reds / pinks (the last two: mouse ears, paws and tails)
+    "4a1a2a", "7e2536", "b8384a", "e0646a", "c98c96", "9a5c6c",
     # purples
     "3a2350", "5e3a7a", "8a5ea8",
     # greys

@@ -1,6 +1,6 @@
 """
 Army factories (2x2 = 128 px, output east):
-  soldier - a plastic-kit press: the press head stamps, a sprue of plastic pirate mice rides out to the chute
+  soldier - a toy pirate ship on blue water: the sail billows, the flag flaps, cannons puff, waves roll by
   golem   - a toy crane stacking ABC blocks: the hook lowers a block, a mouse swings a mallet
   car     - a slot-car track round a paint booth: two cars lap it, a mouse waves the chequered flag
 
@@ -15,7 +15,6 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from kit import *  # noqa: E402,F403
 
 WRITTEN = []
-SOLDIER = (90, 168, 80)
 
 
 def out(img, rel):
@@ -23,52 +22,52 @@ def out(img, rel):
     WRITTEN.append(rel)
 
 
-def soldier_figure(d, x, y, color=SOLDIER):
-    """A little plastic pirate mouse on the sprue, from above: round ears, a tricorn, shoulders."""
-    for ex in (x - 3, x + 3):
-        d.ellipse((ex - 2, y - 4, ex + 2, y), fill=tint(color, -0.1))
-    d.ellipse((x - 3, y - 3, x + 3, y + 3), fill=tint(color, -0.15))
-    d.polygon([(x - 4, y - 2), (x, y - 5), (x + 4, y - 2), (x, y)], fill=tint(color, -0.4))
-    d.rectangle((x - 3, y + 2, x + 3, y + 6), fill=color)
-
-
 def soldier_factory():
+    """The pirate ship the plastic pirate mice are built in (bow east = the output side)."""
     img, d = canvas(128, 128)
-    baseplate(img, d)
+    water = (70, 130, 200)
+    baseplate(img, d, color=water)
     chute(d, 128, 128)
-    # the belt the sprues ride out on
-    d.rectangle((24, 80, 121, 96), fill=DARK)
-    for x in range(26, 121, 6):
-        d.line((x, 81, x, 95), fill=tint(DARK, 0.25))
-    # the press: two red pillars, a cross beam, the mould bed under the head
-    box(d, (20, 14, 32, 76), RED, radius=2)
-    box(d, (84, 14, 96, 76), RED, radius=2)
-    box(d, (20, 10, 96, 22), tint(RED, -0.1), radius=3)
-    box(d, (36, 50, 80, 76), tint(GREY, 0.2), radius=2)
-    for x in (44, 58, 72):
-        soldier_figure(d, x, 61, tint(GREY, -0.15))   # empty soldier-shaped hollows in the mould
-    # control panel and the operator mouse
-    box(d, (100, 20, 120, 44), tint(GREY, -0.1), radius=2)
-    mouse(img, 110, 58, 1.4, hat="hard", facing=180)
+    # ripples on the water round the ship
+    for x, y in ((14, 14), (40, 10), (90, 16), (20, 112), (70, 116), (104, 108)):
+        d.arc((x, y, x + 12, y + 6), 200, 340, fill=tint(water, 0.35), width=1)
+    # hull: a wooden toy boat seen from above, pointed bow to the east, a red stripe round the rail
+    hull = [(14, 44), (86, 34), (114, 64), (86, 94), (14, 84)]
+    d.polygon(hull, fill=tint(WOOD, -0.3))
+    inner = [(20, 50), (84, 41), (104, 64), (84, 87), (20, 78)]
+    d.polygon(inner, fill=WOOD)
+    for y in range(46, 84, 6):
+        d.line((20, y, 98 - abs(y - 64) // 2, y), fill=tint(WOOD, -0.18))
+    d.line(hull + [hull[0]], fill=RED, width=2)
+    # cannons poking out of both sides
+    for x in (34, 54, 74):
+        d.rectangle((x, 36 + (x - 34) // 8 - 6, x + 6, 40 + (x - 34) // 8), fill=DARK)
+        d.rectangle((x, 88 - (x - 34) // 8, x + 6, 94 - (x - 34) // 8 + 4), fill=DARK)
+    # the gangplank down to the output, a hatch, the mast foot and the crow's nest
+    box(d, (104, 60, 124, 68), tint(WOOD, 0.15), radius=1, bevel=1)
+    box(d, (26, 56, 40, 72), tint(WOOD, -0.25), radius=1, bevel=1)
+    disc(d, 62, 64, 4, tint(WOOD, -0.4), shine=False)
     out(img, "Buildings/factory_soldier.png")
 
-    head, h = part(48, 22)
-    box(h, (0, 0, 47, 21), tint(GREY, -0.15), radius=3)
-    for x in (6, 41):
-        disc(h, x, 11, 2, tint(GREY, 0.3), shine=False)
-    h.rectangle((14, 8, 33, 13), fill=tint(GREY, -0.4))
-    out(head, "Parts/press_head.png")
+    sail, s_ = part(46, 36)             # the main sail, centred on the mast
+    box(s_, (2, 2, 43, 33), WHITE, radius=2, bevel=1)
+    s_.line((2, 18, 43, 18), fill=tint(WHITE, -0.2))
+    disc(s_, 23, 15, 6, INK, shine=False)                    # the skull
+    for ex in (21, 25):
+        s_.point((ex, 14), fill=WHITE)
+    s_.line((17, 24, 29, 28), fill=INK, width=2)             # crossed bones
+    s_.line((17, 28, 29, 24), fill=INK, width=2)
+    out(sail, "Parts/ship_sail.png")
 
-    sprue, s = part(34, 16)
-    s.rectangle((0, 0, 33, 15), outline=SOLDIER, width=2)
-    s.line((0, 8, 33, 8), fill=SOLDIER)
-    for x in (7, 17, 27):
-        soldier_figure(s, x, 6)
-    out(sprue, "Parts/sprue.png")
+    flag, f = part(22, 22)              # centre = the top of the mast
+    f.line((11, 11, 11, 2), fill=GREY)
+    f.rectangle((11, 2, 21, 9), fill=(60, 50, 60))
+    f.point((16, 5), fill=WHITE)
+    out(flag, "Parts/jolly_roger.png")
 
-    light, l = part(8, 8)
-    disc(l, 4, 4, 3, (250, 90, 80), shine=False)
-    out(light, "Parts/panel_light.png")
+    wave, w = part(14, 6)
+    w.arc((0, 0, 13, 6), 200, 340, fill=WHITE, width=2)
+    out(wave, "Parts/wave.png")
 
 
 def abc_block(d, x, y, size, color, letter):

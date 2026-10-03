@@ -70,11 +70,12 @@ public static class BuildingParts
 		},
 		[BuildingType.SoldierFactory] = new[]
 		{
-			new Part("sprue", -20, 24, Motion.Slide, Speed: 0.35f, DX: 60),
-			new Part("press_head", -6, -20, Motion.Bob, Speed: 0.7f, DY: 12),
-			new Part("panel_light", 41, -37, Motion.Blink, Speed: 1.4f),
-			new Part("panel_light", 49, -37, Motion.Blink, Speed: 1.4f, Phase: 0.5f),
-			new Part("panel_light", 41, -29, Motion.Blink, Speed: 0.7f, Phase: 0.25f),
+			new Part("wave", -50, -46, Motion.Puff, Speed: 0.3f, DX: 20),
+			new Part("wave", 10, 50, Motion.Puff, Speed: 0.3f, DX: 20, Phase: 0.5f),
+			new Part("steam", -27, -32, Motion.Puff, Speed: 0.4f, DY: -10),
+			new Part("steam", -7, 34, Motion.Puff, Speed: 0.4f, DY: 10, Phase: 0.5f),
+			new Part("ship_sail", -2, 0, Motion.Swing, Speed: 0.5f, Amount: 0.06f),
+			new Part("jolly_roger", -2, -18, Motion.Swing, Speed: 1.6f, Amount: 0.35f),
 		},
 		[BuildingType.GolemWorkshop] = new[]
 		{
