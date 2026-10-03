@@ -36,6 +36,15 @@ public sealed class Extractor : Building
 
 	public override bool OutputsToward(Direction direction) => true;
 
+	/// <summary>Hands one stored item to a claw crane; false when it has nothing stored.</summary>
+	public bool TryTakeOne()
+	{
+		if (Stored == 0)
+			return false;
+		Stored--;
+		return true;
+	}
+
 	protected override void HashState(ref StateHash hash)
 	{
 		hash.Add(Stored); hash.Add(Progress);

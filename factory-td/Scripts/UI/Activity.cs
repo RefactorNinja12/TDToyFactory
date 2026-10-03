@@ -48,6 +48,7 @@ public sealed class Activity
 		UnitFactory f => f.Crafter.Progress,
 		Kitchen k => k.Crafter.Progress * 7919 + k.CheeseCrafter.Progress,
 		Treadmill t => t.Crafter.Progress,
+		OneItemRouter r => (int)r.Held, // splitter, sorter: changes as items pass, stays when jammed
 		_ => null,
 	};
 }

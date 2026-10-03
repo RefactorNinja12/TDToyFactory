@@ -26,6 +26,7 @@ public static class BuildingVisuals
 		[BuildingType.WaterTower] = "res://Assets/Sprites/Towers/tower_water.png",
 		[BuildingType.LaserTower] = "res://Assets/Sprites/Towers/tower_laser.png",
 		[BuildingType.Junction] = "res://Assets/Sprites/Buildings/junction.png",
+		[BuildingType.ClawCrane] = "res://Assets/Sprites/Buildings/claw_crane.png",
 		[BuildingType.Toolbox] = "res://Assets/Sprites/Buildings/toolbox.png",
 		[BuildingType.Warehouse] = "res://Assets/Sprites/Buildings/warehouse.png",
 		[BuildingType.CropField] = "res://Assets/Sprites/Farming/field_3_ripe.png",
@@ -44,7 +45,7 @@ public static class BuildingVisuals
 	/// <summary>Build menu tabs, in order.</summary>
 	public static readonly (string Name, BuildingType[] Types)[] MenuCategories =
 	{
-		("Logistik", new[] { BuildingType.Conveyor, BuildingType.Splitter, BuildingType.Sorter, BuildingType.Junction }),
+		("Logistik", new[] { BuildingType.Conveyor, BuildingType.Splitter, BuildingType.Sorter, BuildingType.Junction, BuildingType.ClawCrane }),
 		("Produktion", new[]
 		{
 			BuildingType.BrickExtractor, BuildingType.PlasticExtractor, BuildingType.BatteryExtractor, BuildingType.CheeseMelter,
@@ -130,6 +131,10 @@ public static class BuildingVisuals
 
 	/// <summary>All sprites are drawn facing east (rotation 0).</summary>
 	public static float Rotation(Direction facing) => (int)facing * Mathf.Pi / 2f;
+
+	/// <summary>Splitters, sorters and junctions work the same from every side, so they are never turned.</summary>
+	public static bool TurnsWithFacing(BuildingType type) =>
+		type is not (BuildingType.Splitter or BuildingType.Sorter or BuildingType.Junction);
 
 	public static Vector2 CellCenter(int x, int y) =>
 		new((x + 0.5f) * TileSize, (y + 0.5f) * TileSize);

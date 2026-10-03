@@ -31,6 +31,7 @@ public partial class Game : Node2D
 	[Export] public bool EnableBot = true;
 
 	private BotPlayer _bot, _localBot;
+	private CraneView _cranes;
 	private MatchSession _session;
 	private ICommandSink _commands;
 	private MatchOverlay _overlay;
@@ -88,6 +89,9 @@ public partial class Game : Node2D
 		AddChild(shadows);
 		MoveChild(shadows, Buildings.GetIndex());
 		shadows.Bind(World, LocalPlayer);
+		_cranes = new CraneView { Name = "Cranes" };
+		AddChild(_cranes);
+		_cranes.Bind(World, LocalPlayer);
 		var animator = new BuildingAnimator { Name = "BuildingParts" };
 		AddChild(animator);
 		animator.Bind(World, LocalPlayer);
@@ -155,6 +159,7 @@ public partial class Game : Node2D
 		Units.Alpha = alpha;
 		Combat.Alpha = alpha;
 		_power.Alpha = alpha;
+		_cranes.Alpha = alpha;
 		_fog.Alpha = alpha;
 	}
 

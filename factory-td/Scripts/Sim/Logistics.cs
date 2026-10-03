@@ -8,6 +8,9 @@ public abstract class OneItemRouter : Building
 	protected ItemType _held;
 	protected Direction _heldMoving; // the way the held item was travelling when it came in
 
+	/// <summary>The item waiting to go out (None when empty).</summary>
+	public ItemType Held => _held;
+
 	protected OneItemRouter(BuildingType type, int x, int y, Direction facing, int owner)
 		: base(type, x, y, facing, owner) { }
 

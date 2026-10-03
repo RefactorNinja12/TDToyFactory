@@ -109,6 +109,22 @@ public partial class BuildController : Node2D
 		foreach (var cell in _highlights)
 			DrawRect(new Rect2(cell.X * ts + 3, cell.Y * ts + 3, ts - 6, ts - 6), HighlightColor, filled: false, width: 4);
 
+		if (_selected == BuildingType.ClawCrane)
+		{
+			// The rail it would run out over the field, and the extractors it would serve.
+			var cell = MouseCell();
+			var rail = BuildingVisuals.GetPartTexture("crane_rail");
+			for (int d = 1; d <= CraneStats.Reach; d++)
+			{
+				var tile = new Vector2((cell.X + _facing.DX() * d + 0.5f) * ts, (cell.Y + _facing.DY() * d + 0.5f) * ts);
+				DrawSetTransform(tile, BuildingVisuals.Rotation(_facing));
+				DrawTexture(rail, -rail.GetSize() / 2, PlanColor);
+			}
+			DrawSetTransform(Vector2.Zero, 0);
+			foreach (var extractor in ClawCrane.Served(_world, cell.X, cell.Y, _facing, LocalPlayer))
+				DrawRect(new Rect2(extractor.X * ts + 3, extractor.Y * ts + 3, ts - 6, ts - 6), HighlightColor, filled: false, width: 4);
+		}
+
 		if (_beltPlan != null)
 		{
 			// Drawn like built belts: curves where it turns (UI/ConveyorLook), junctions where it crosses.
@@ -153,6 +169,8 @@ public partial class BuildController : Node2D
 	{
 		UpdateGhost();
 		RefreshBelt();
+		if (_selected == BuildingType.ClawCrane)
+			QueueRedraw(); // the rail preview follows the mouse
 		if (_sent.Count == 0)
 			return;
 		_sent.RemoveAll(s => _world.TickCount > s.Until || _world.GetBuilding(s.Cell.X, s.Cell.Y) != null);

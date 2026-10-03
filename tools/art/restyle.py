@@ -220,8 +220,9 @@ def main(only=None):
             if rel == "Tiles" and name == "wall.png":
                 shutil.copyfile(src, dst)  # the wall keeps its original look
                 continue
-            # Full-tile pictures (belts, walls, deposits on the floor) get no outline at their edges.
-            restyle(src, dst, outline=rel not in ("Tiles", "Conveyors"), vivid=name in VIVID)
+            # Floor tiles get no outline. Everything else does, but never along the picture's own border
+            # (see `restyle`), so belts still join their neighbours without a seam.
+            restyle(src, dst, outline=rel != "Tiles", vivid=name in VIVID)
     if wanted is not None:
         print("restyled", len(wanted), "files")
         return

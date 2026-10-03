@@ -54,7 +54,7 @@ public partial class BuildingAnimator : Node2D
 			// Side-view buildings (the ship) stay upright and only mirror when facing west.
 			var place = BuildingParts.KeepsUpright(building.Type)
 				? new Transform2D(0, new Vector2(building.Facing == Direction.West ? -1 : 1, 1), 0, center)
-				: new Transform2D(BuildingVisuals.Rotation(building.Facing), center);
+				: new Transform2D(BuildingVisuals.TurnsWithFacing(building.Type) ? BuildingVisuals.Rotation(building.Facing) : 0, center);
 			foreach (var part in parts)
 			{
 				var pose = BuildingParts.PoseAt(part, BuildingParts.TimeFor(part, time, wall));
