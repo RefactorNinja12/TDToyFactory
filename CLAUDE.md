@@ -29,6 +29,12 @@ Kompakt fabrik, max 3 nivåer i produktionskedjan, matcher 15–25 min.
   Band byggs klick–klick: första klicket = start (på en byggnad: bredvid den), vägen följer musen
   (`UI/BeltPlanner.cs`: billigaste vägen över ledigt golv, svängar kostar lite extra, aldrig över byggnader,
   korsar egna raka band med automatiska korsningar), andra klicket bygger den. Högerklick/Esc avbryter.
+  Band ritas som leksaksband (gula skenor, gummiband) som skarvas ihop med delare/sorterare/korsning; räfflorna
+  rör sig i föremålens fart via en shader (`UI/BeltLook.cs`, `View/BeltMaterials.cs`).
+- Klokran (`Sim/Crane.cs`, Logistik, G): bas på styltor vid ett resursfälts kant, vänd in mot fältet; rälsen
+  når `CraneStats.Reach` = 5 rutor (tar inga rutor). Klon hämtar en sak i taget från närmaste egna utvinnare
+  under rälsen med något i lager och släpper den bakåt på ett band (väntar om det är fullt). Ingen ström.
+  `View/CraneView.cs` ritar räls och klo; förhandsvisning av räls och nådda utvinnare vid placering.
 - Produktionskedja (max 3 nivåer): råvara → monteringsmaskin (kugghjul/fjäder/kretskort) → truppfabrik.
 - Truppfabriker producerar automatiskt när materialet finns; trupperna går själva mot
   motståndarens leksakslåda.
@@ -112,7 +118,7 @@ Kompakt fabrik, max 3 nivåer i produktionskedjan, matcher 15–25 min.
 - Grafik: `tools/art/restyle.py` gör om alla sprites från `tools/art/source/` (palett + svarta konturer)
   och genererar golvet (stora brädor, 16x8 rutor). Nya sprites läggs i source och skriptet körs
   (`restyle.py <filer>` = bara de). Byggnader och enheter ritas av kod: `tools/art/kit.py` (plastformer, mus på
-  två ben, ark), `tools/art/buildings/*.py`, `tools/art/units/*.py`; granska med `tools/art/sheet.py`. Under
+  två ben, ark), `tools/art/buildings/*.py`, `tools/art/units/*.py`, `tools/art/logistics/*.py`; granska med `tools/art/sheet.py`. Under
   luminans 0,2 blir kontursvart, 2 px-linjer blir helt kontur, ljusa pasteller blir grå (välj mättat); paletten har två rosa för mössens öron, tassar och svansar.
 
 ## Kodstruktur
@@ -152,7 +158,7 @@ Kompakt fabrik, max 3 nivåer i produktionskedjan, matcher 15–25 min.
   `docs/plans/multiplayer.md` (online-lockstep, lösenord, startmeny, export).
   `docs/plans/refactor.md` (GridSearch, smutsflaggor för fält, rumslig målsökning, test:changed).
   `docs/plans/animations.md` (fabriker ritade av kod, rörliga delar), `docs/plans/units.md` (upprätta enheter,
-  piratmus, uträknade skuggor).
+  piratmus, uträknade skuggor), `docs/plans/belts-crane.md` (animerade band, klokran).
 
 ## Arbetsflöde (tester är feedbackloopen)
 - `Taskfile.yaml` (go-task) samlar kommandona; `task` listar dem.
@@ -189,7 +195,8 @@ Kompakt fabrik, max 3 nivåer i produktionskedjan, matcher 15–25 min.
   behåller körrättigheter, `docs/LAS-MIG.txt` följer med). Båda spelarna måste köra samma zip.
 - Godot bara för det visuella: `Scripts/_Test/VisualProbe.cs` + skärmdump (headless `--write-movie`);
   `PROBE_CAM="x,y,zoom"` tittar var som helst, `PROBE_SCENE=shadows` = lampa med byggnader och möss,
-  `PROBE_SCENE=belts` = ett band ritat klick–klick (startklick + musen vid målet).
+  `PROBE_SCENE=belts` = ett band ritat klick–klick (startklick + musen vid målet), `PROBE_SCENE=crane` = klokran
+  över klossfältet som matar ett band genom en delare.
   `Scenes/_Probe*.tscn` är gitignorerade.
 
 ## Assets

@@ -65,7 +65,7 @@ Goal:
       extractors (pure helper `Crane.Served(world, x, y, facing)` used by the preview, tested).
 - [x] 6. Crane art + CraneView: base on stilts, rail and stilts over the field, claw with open/closed and the
       carried item, interpolated; screenshot.
-- [ ] 7. CLAUDE.md (belts, crane), `task check`, push, PR link.
+- [x] 7. CLAUDE.md (belts, crane), `task check`, push, PR link.
 
 ## Log
 - Step 0: baseline: a plain brown strip with arrows, a brown quarter ring, and green boxes with brown stubs that don't match the belt.
@@ -75,3 +75,4 @@ Goal:
 - Step 4: Sim/Crane.cs: CraneStats (Reach 5, 1/8 tile per tick, grab 6 / drop 4 ticks), ClawCrane (Home -> Out -> Grab -> Back -> Drop; nearest own built extractor under the rail with something stored; drops out of the back, waits while blocked; OutputsToward = back only; RailTile, static Served for previews; all state hashed). Extractor.TryTakeOne. BuildingRules: enum (last), Buildable after Junction, cost 8 bricks + 6 plastic, 50 health, 60 build time, Create before the extractor default. Texts name/description came forward from step 5 (the every-type tests ask for them). CraneTests 5. Golden unchanged (the bot doesn't build cranes).
 - Step 5: InfoRows (carrying / waiting for room behind, reach and how many extractors it serves); menu Logistik (5th card, hotkey G); BuildController preview while placing: the rail along the turned facing (R) and the served extractors outlined (ClawCrane.Served, tested in step 4).
 - Step 6: tools/art/logistics/crane.py: yellow studded cab with a red winch on four stilts, output hatch at the back; rail piece per tile (two steel beams, ties, stilt feet beside); claw on a trolley, open/closed. View/CraneView (z 1, over buildings and units, under the fog): rail out to the reach, claw interpolated along it, closed and the item hanging while carrying. VisualProbe PROBE_SCENE=crane: the claw runs out over four extractors and drops bricks onto a belt that turns south through a splitter to the toybox.
+- Step 7: CLAUDE.md (belts, crane, art scripts, probe scenes, plan listed). Done.
