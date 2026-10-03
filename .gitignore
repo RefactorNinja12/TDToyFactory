@@ -36,3 +36,6 @@ Desktop.ini
 
 # Test run output
 TestResults/
+
+# Python bytecode caches (art tools)
+__pycache__/
