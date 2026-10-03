@@ -23,7 +23,7 @@ public partial class ShadowView : Node2D
 	{
 		_world = world;
 		_localPlayer = localPlayer;
-		var texture = SoftDisc();
+		var texture = BuildingVisuals.SoftDisc(Disc, 0.55f, 0.8f);
 		_buildings = AddMesh(texture);
 		_units = AddMesh(texture);
 	}
@@ -64,23 +64,5 @@ public partial class ShadowView : Node2D
 		};
 		AddChild(new MultiMeshInstance2D { Multimesh = mesh, Texture = texture });
 		return mesh;
-	}
-
-	/// <summary>A white disc fading out towards its rim (the instance colour makes it a dark shadow).</summary>
-	private static Texture2D SoftDisc()
-	{
-		var gradient = new Gradient();
-		gradient.SetColor(0, new Color(1, 1, 1, 1));
-		gradient.SetColor(1, new Color(1, 1, 1, 0));
-		gradient.AddPoint(0.55f, new Color(1, 1, 1, 0.8f));
-		return new GradientTexture2D
-		{
-			Gradient = gradient,
-			Fill = GradientTexture2D.FillEnum.Radial,
-			FillFrom = new Vector2(0.5f, 0.5f),
-			FillTo = new Vector2(1f, 0.5f),
-			Width = Disc,
-			Height = Disc,
-		};
 	}
 }

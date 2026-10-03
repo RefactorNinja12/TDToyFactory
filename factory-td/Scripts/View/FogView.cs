@@ -107,22 +107,7 @@ public partial class FogView : Node2D
 		public int Layer;
 		private Texture2D _glow;
 
-		public override void _Ready()
-		{
-			var gradient = new Gradient();
-			gradient.SetColor(0, new Color(1, 1, 1, 1));
-			gradient.SetColor(1, new Color(1, 1, 1, 0));
-			gradient.AddPoint(0.45f, new Color(1, 1, 1, 0.45f));
-			_glow = new GradientTexture2D
-			{
-				Gradient = gradient,
-				Fill = GradientTexture2D.FillEnum.Radial,
-				FillFrom = new Vector2(0.5f, 0.5f),
-				FillTo = new Vector2(1f, 0.5f),
-				Width = 128,
-				Height = 128,
-			};
-		}
+		public override void _Ready() => _glow = BuildingVisuals.SoftDisc(128, 0.45f, 0.45f);
 
 		public override void _Draw()
 		{

@@ -91,6 +91,27 @@ public static class BuildingVisuals
 
 	public static Texture2D GetItemTexture(ItemType type) => Load(ItemTexturePaths[type]);
 
+	/// <summary>
+	/// A white disc fading to transparent at its rim (light glows, shadows): opaque in the middle, down to
+	/// <paramref name="midAlpha"/> at <paramref name="midAt"/> of the radius, clear at the edge.
+	/// </summary>
+	public static Texture2D SoftDisc(int size, float midAt, float midAlpha)
+	{
+		var gradient = new Gradient();
+		gradient.SetColor(0, new Color(1, 1, 1, 1));
+		gradient.SetColor(1, new Color(1, 1, 1, 0));
+		gradient.AddPoint(midAt, new Color(1, 1, 1, midAlpha));
+		return new GradientTexture2D
+		{
+			Gradient = gradient,
+			Fill = GradientTexture2D.FillEnum.Radial,
+			FillFrom = new Vector2(0.5f, 0.5f),
+			FillTo = new Vector2(1f, 0.5f),
+			Width = size,
+			Height = size,
+		};
+	}
+
 	/// <summary>A moving part drawn over a building (UI/BuildingParts), from Assets/Sprites/Parts.</summary>
 	public static Texture2D GetPartTexture(string name) => Load($"res://Assets/Sprites/Parts/{name}.png");
 
