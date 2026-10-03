@@ -49,11 +49,28 @@ public partial class Game : Node2D
 
 	public World World { get; private set; }
 
+	/// <summary>
+	/// Set before the node enters the tree: a bot-against-bot match with full sight and none of the player's
+	/// UI or input, running a little fast with a drifting camera (the start menu's background, UI/MenuPreview).
+	/// </summary>
+	public bool Preview { get; set; }
+
+	private float _previewTime;
+
 	// Children are ready before their parent, so everything below exists here.
 	public override void _Ready()
 	{
-		_session = MatchSetup.Session;
-		if (_session != null)
+		_session = Preview ? null : MatchSetup.Session;
+		if (Preview)
+		{
+			World = World.CreateMatch();
+			World.FullVision = true;
+			_commands = new DirectCommands(World);
+			_bot = new BotPlayer(1);
+			_localBot = new BotPlayer(0);
+			DebugKeys = false;
+		}
+		else if (_session != null)
 		{
 			World = _session.World;
 			LocalPlayer = _session.LocalPlayer;
@@ -67,7 +84,7 @@ public partial class Game : Node2D
 			if (EnableBot)
 				_bot = new BotPlayer(World.EnemyOf(LocalPlayer), MatchSetup.BotArmyDelayTicks);
 		}
-		if (MatchSetup.LocalBot)
+		if (MatchSetup.LocalBot && !Preview)
 			_localBot = new BotPlayer(LocalPlayer);
 		Builder.Commands = _commands;
 
@@ -132,6 +149,30 @@ public partial class Game : Node2D
 		var theme = UiTheme.Create();
 		GetWindow().Theme = theme;
 		UiTheme.ApplyTo(this, theme);
+		if (Preview)
+			StartPreview();
+	}
+
+	/// <summary>The menu background: no player UI or input, the bases already standing, the camera drifting.</summary>
+	private void StartPreview()
+	{
+		foreach (var layer in new Node[] { Menu, Resources, Info, _minimap, _overlay, Builder })
+		{
+			layer.ProcessMode = ProcessModeEnum.Disabled;
+			if (layer is CanvasLayer canvas)
+				canvas.Visible = false;
+			else if (layer is CanvasItem item)
+				item.Visible = false;
+		}
+		_camera.SetProcess(false);
+		_camera.SetProcessUnhandledInput(false);
+		SkipCountdown();
+		for (int t = 0; t < UI.MenuPreview.HeadStart * World.TicksPerSecond; t++)
+		{
+			_bot.Tick(World);
+			_localBot.Tick(World, _commands);
+			World.Tick();
+		}
 	}
 
 	public override void _Process(double delta)
@@ -150,6 +191,15 @@ public partial class Game : Node2D
 		}
 		_overlay.ShowCountdown(_countdown += (float)delta);
 
+		if (Preview)
+		{
+			_previewTime += (float)delta;
+			const float ts = BuildingVisuals.TileSize;
+			var (x, y, zoom) = UI.MenuPreview.CameraAt(_previewTime, World.Map.Width * ts, World.Map.Height * ts);
+			_camera.Position = new Vector2(x, y);
+			_camera.Zoom = new Vector2(zoom, zoom);
+			delta *= UI.MenuPreview.Speed;
+		}
 		_accumulator += delta;
 		int ticks = 0;
 		while (_accumulator >= TickSeconds && ticks < MaxTicksPerFrame && !ReachedQuitStep())
