@@ -14,14 +14,15 @@ public readonly record struct HotkeyResult(HotkeyOutcome Outcome, int Category =
 /// <summary>
 /// Build hotkeys with numbers only (the hand stays on the number row): a number opens a menu category
 /// (1 = the first tab), then a number picks the building in that place of the category (1 = the first card).
-/// The category stays open, so more numbers pick other buildings in it. Esc steps back: first the building
-/// being placed (left to the build controller), then the category, after which numbers pick categories again.
-/// Letters are never taken (WASD pans, Q/E zoom, R rotates, V shows the power grid). Keys are plain characters
-/// ('1', Escape = '\u001b'), so this works without Godot.
+/// The category stays open, so more numbers pick other buildings in it. Space steps back: first what is being
+/// placed (left to the build controller: a belt's start, then the building), then the category, after which
+/// numbers pick categories again. Esc is left to the pause menu. Letters are never taken (WASD pans, Q/E zoom,
+/// R rotates, V shows the power grid). Keys are plain characters ('1', Back = ' '), so this works without Godot.
 /// </summary>
 public sealed class BuildHotkeys
 {
-	public const char Escape = '\u001b';
+	/// <summary>The step-back key: space.</summary>
+	public const char Back = ' ';
 
 	private readonly BuildingType[][] _categories;
 
@@ -40,10 +41,10 @@ public sealed class BuildHotkeys
 	/// <summary>The key shown on a card for its place in the category: '1' for the first.</summary>
 	public static char KeyFor(int place) => place < 9 ? (char)('1' + place) : ' ';
 
-	/// <param name="hasSelection">A building is picked for placing: Esc then belongs to the build controller.</param>
+	/// <param name="hasSelection">A building is picked for placing: space then belongs to the build controller.</param>
 	public HotkeyResult Press(char key, bool hasSelection = false)
 	{
-		if (key == Escape)
+		if (key == Back)
 		{
 			if (hasSelection || !Armed)
 				return default;

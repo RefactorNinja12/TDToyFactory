@@ -361,17 +361,19 @@ public class BuildHotkeyTests
 	}
 
 	[Fact]
-	public void Esc_StepsBack_FirstTheBuildingThenTheCategory()
+	public void Space_StepsBack_FirstTheBuildingThenTheCategory_EscIsLeftAlone()
 	{
 		var keys = Keys();
 		keys.Press('1');
 		keys.Press('2');
-		Assert.False(keys.Press(BuildHotkeys.Escape, hasSelection: true).Consumed); // the build controller drops the building
+		Assert.False(keys.Press(BuildHotkeys.Back, hasSelection: true).Consumed); // the build controller drops the building
 		Assert.True(keys.Armed);
-		Assert.Equal(HotkeyOutcome.Cancelled, keys.Press(BuildHotkeys.Escape).Outcome);
+		Assert.Equal(HotkeyOutcome.Cancelled, keys.Press(BuildHotkeys.Back).Outcome);
 		Assert.False(keys.Armed);
 		Assert.Equal(new HotkeyResult(HotkeyOutcome.CategoryOpened, 1), keys.Press('2')); // numbers pick categories again
 		Assert.Equal(BuildingType.Pylon, keys.Press('2').Type);
+		Assert.False(keys.Press('').Consumed); // Esc belongs to the pause menu
+		Assert.True(keys.Armed);
 	}
 
 	[Fact]
@@ -396,7 +398,7 @@ public class BuildHotkeyTests
 		keys.Press('2');
 		Assert.Equal(HotkeyOutcome.Swallowed, keys.Press('5').Outcome); // only two buildings in this category
 		Assert.True(keys.Armed);
-		Assert.True(keys.Press(BuildHotkeys.Escape).Consumed); // closes the category
+		Assert.True(keys.Press(BuildHotkeys.Back).Consumed); // closes the category
 	}
 
 	[Fact]
