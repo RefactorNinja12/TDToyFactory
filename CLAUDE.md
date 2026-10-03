@@ -6,7 +6,7 @@ leksakslåda (kärna) och producerar trupper som automatiskt anfaller motstånda
 
 ## Tema
 Leksaksvärld: två barnrum i krig. Resurser: klossar, plast, batterier.
-Torn: skumpilar, vattenpistol, katapult. Trupper: plastsoldater,
+Torn: skumpilar, vattenpistol, katapult. Trupper: piratmöss av plast,
 klossgolems, radiostyrda bilar. Kontringar: plast svag mot område,
 elektronik svag mot vatten, klossar svaga mot laser.
 
@@ -26,6 +26,9 @@ Kompakt fabrik, max 3 nivåer i produktionskedjan, matcher 15–25 min.
 - Leksakslådan (kärnan) = bank för byggkostnader. Allt annat går fysiskt på band:
   fabriker och torn hämtar aldrig direkt från lådan.
 - Logistik: transportband, delare, sorterare (senare korsning).
+  Band byggs klick–klick: första klicket = start (på en byggnad: bredvid den), vägen följer musen
+  (`UI/BeltPlanner.cs`: billigaste vägen över ledigt golv, svängar kostar lite extra, aldrig över byggnader,
+  korsar egna raka band med automatiska korsningar), andra klicket bygger den. Högerklick/Esc avbryter.
 - Produktionskedja (max 3 nivåer): råvara → monteringsmaskin (kugghjul/fjäder/kretskort) → truppfabrik.
 - Truppfabriker producerar automatiskt när materialet finns; trupperna går själva mot
   motståndarens leksakslåda.
@@ -81,8 +84,36 @@ Kompakt fabrik, max 3 nivåer i produktionskedjan, matcher 15–25 min.
   textkontur; standardtypsnitt) sätts på varje UI-rot via `UiTheme.ApplyTo` (fönstrets tema når inte
   kontroller under CanvasLayers). Lite text: siffror vid små ikoner, förklaringar i verktygstips.
   Modeller i `Scripts/UI/Hud.cs` (ResourceBarModel, BuildCardModel, Toasts); vyerna ritar bara dem.
+- Multiplayer (online, 2 spelare): deterministisk lockstep där värden är servern. Bara kommandon går över
+  nätet (`PlayerCommand`: bygg/riv/ställ in; allt spelare och bot gör går via `ICommandSink` → `World.Apply`).
+  Kommando skickat vid steg s körs vid s + InputDelay (3–12 steg efter ping) på båda maskinerna; värden
+  slår ihop båda spelarnas kommandon till en tur per steg, ingen kör ett steg utan sin tur (sen tur = vänta).
+  Kontrollsumma var 20:e steg, olika = matchen stoppas + `user://desync-TICK.txt`. Värden väljer port
+  (standard 7777) och lösenord (minst 4 tecken); lösenordet går aldrig över nätet (HMAC-SHA256 på en ny
+  utmaning varje gång), 3 fel på 60 s = IP:n spärras 30 s. Samma bygge krävs (`Protocol.BuildId` = assemblyns
+  MVID, lika på alla plattformar i exporten, annat i editorn). ENet (UDP) som rått paketrör. Spelet öppnar ALDRIG
+  portar i routern (ingen UPnP, användaren tyckte det kändes osäkert): olika nätverk = Tailscale (100.64–127.x). Startmeny (`Scenes/
+  Menu.tscn`, huvudscen): spela lokalt (Lätt/Normal), hosta, anslut. Online går inte att pausa; 10 s tystnad =
+  anslutningen bröts. Sim-koden får inte ha flyttal, klockor, slump, hashkoder eller trådar (`DeterminismGuardTests`).
+- Enheter: mössen (byggare, bonde, spejare, ostjägare, piratmusen `PlasticSoldier` "Piratmus" med tricorn/
+  ögonlapp/flintlås, byggs i Piratskeppet) ses ovanifrån och vrids dit de går, nosen österut i spriten, på två
+  ben: rosa fötter som tar steg bakom kroppen, rosa öron och svans. Ark 7x1 (stå, gå x4, handla x2). Klossgolemen
+  står upprätt (ark 7x3, vrids aldrig, fötterna på positionen); RC-bilen ovanifrån med hjulbilder.
+  `UI/UnitSheets.cs` (`UnitLayout`), `UI/UnitAnimation.cs` (gångsteg efter sträcka, anfall/arbete, riktning
+  med hysteres för golemen), UnitView (MultiMesh + shader som väljer rutan).
+- Byggnader rör sig när de arbetar (framsteg ändras senaste 0,5 s, `UI/Activity.cs`): rörliga delar ovanpå
+  stillbilden (`UI/BuildingParts.cs`: snurra, gunga, gå fram och tillbaka, glida, runda, blinka, puffa, flyta;
+  `Always` = rör sig även när den står still; `KeepsUpright` = piratskeppet ses från sidan, vrids aldrig, speglas mot väster;
+  `View/BuildingAnimator.cs`).
+- Skuggor räknas ut, målas aldrig i sprites: ingen skugga utan ljus. Ljuskällorna = samma som dimmans
+  (`UI/LightSources`); ljus inom radien och utan vägg emellan (`Vision.LightReaches`) skjuter en mjuk rund
+  skugga bort från sig, längre och svagare på avstånd; band/korsningar ligger platt (ingen skugga).
+  `UI/Shadows.cs` (Cast, ShadowCaster), `View/ShadowView.cs`.
 - Grafik: `tools/art/restyle.py` gör om alla sprites från `tools/art/source/` (palett + svarta konturer)
-  och genererar golvet (stora brädor, 16x8 rutor). Nya sprites läggs i source och skriptet körs.
+  och genererar golvet (stora brädor, 16x8 rutor). Nya sprites läggs i source och skriptet körs
+  (`restyle.py <filer>` = bara de). Byggnader och enheter ritas av kod: `tools/art/kit.py` (plastformer, mus på
+  två ben, ark), `tools/art/buildings/*.py`, `tools/art/units/*.py`; granska med `tools/art/sheet.py`. Under
+  luminans 0,2 blir kontursvart, 2 px-linjer blir helt kontur, ljusa pasteller blir grå (välj mättat); paletten har två rosa för mössens öron, tassar och svansar.
 
 ## Kodstruktur
 - `Scripts/Sim/` ren C#, deterministisk: `World` (tick 20/s, byggare/bönder/strid/underhåll), byggnader,
@@ -104,6 +135,10 @@ Kompakt fabrik, max 3 nivåer i produktionskedjan, matcher 15–25 min.
 - `Scripts/View/PowerView.cs` ritar sladdar, täckning, placeringsförhandsvisning, ikon utan ström, laddstaplar.
 - `Scripts/UI/` ren C# utan Godot-typer: texter (`Texts`), bandkurvor (`ConveyorLook`), dragväg
   (`DragPath`), matmätaren (`FoodMeter`), hoverpanelens rader (`InfoRows`). View ritar bara det.
+- `Scripts/Net/` ren C# (testas): `Protocol` (meddelanden, `PacketWriter/Reader` som aldrig kastar, lösenordsbevis),
+  `MatchSession` (lockstep, ping, timeout, desync), `HostSession`, `ClientSession`, `ITransport`. Godot-sidan:
+  `View/Net/ENetTransport.cs`, `MatchSetup` (statisk: sessionen genom scenbytet);
+  `View/MainMenu.cs` (logik/texter i `UI/MenuModel.cs`, även `LaunchArgs`), `View/MatchOverlay.cs` (vänta, slut, Esc).
 - `tests/FactoryTD.Sim.Tests/` xUnit, kompilerar `Scripts/Sim` + `Scripts/UI` direkt (internals syns).
   `Support/Scenario.cs` bygger scenarier (`Match().NoWorkers().Instant().Rich()`, `Place`, `Belt`,
   `Spawn`, `Feed`), `WorldRunner` kör tid (`Seconds`, `Until(villkor, maxSek, "vad")`).
@@ -114,6 +149,10 @@ Kompakt fabrik, max 3 nivåer i produktionskedjan, matcher 15–25 min.
   läs den först, fortsätt med första obockade steget, bocka av och logga i samma commit.
 - Klara: `docs/plans/power.md` (elnät), `docs/plans/fog.md` (dimma, ljus, spejare, minikarta),
   `docs/plans/obstacles.md` (stora leksaker som hinder), `docs/plans/mice.md` (möss, ost, ostjägare, musfälla), `docs/plans/ui.md` (UI-stil, kortkommandon).
+  `docs/plans/multiplayer.md` (online-lockstep, lösenord, startmeny, export).
+  `docs/plans/refactor.md` (GridSearch, smutsflaggor för fält, rumslig målsökning, test:changed).
+  `docs/plans/animations.md` (fabriker ritade av kod, rörliga delar), `docs/plans/units.md` (upprätta enheter,
+  piratmus, uträknade skuggor).
 
 ## Arbetsflöde (tester är feedbackloopen)
 - `Taskfile.yaml` (go-task) samlar kommandona; `task` listar dem.
@@ -125,15 +164,32 @@ Kompakt fabrik, max 3 nivåer i produktionskedjan, matcher 15–25 min.
 - Allt skriver bara problem + en sammanfattningsrad (grön körning ≈ 10 tokens). Fel med samma
   meddelande grupperas, lint grupperas per fil/regel, max ~10 rader. Läs inte råutdata från
   `dotnet test/format/build` (en CRLF-fil = ~34k tokens rått).
-- `task check` (lint + alla tester) före varje commit. `task fmt` fixar formatering.
+- `task check` (lint + dubblettkoll + alla tester) före varje commit. `task fmt` fixar formatering.
 - Lint = `dotnet format` mot `.editorconfig` (tabbar, LF) + analyzers; 0 varningar är normalläget.
   `.gitattributes` håller `.cs` i LF trots `core.autocrlf=true`.
+- Snabbast: `task test:changed` kör bara testerna för ändrade .cs-filer sedan senaste commit
+  (tabell i `tests/changed.ps1`; kärnfiler som World → alla snabba; View → build). Flera områden: `task test -- "A|B"`.
+- Golden-checksumman (`DeterminismTests.GoldenBotMatch`, 2 min bot mot bot) vaktar refaktorer: får bara
+  ändras när beteendet medvetet ändrats (felet skriver ut det nya värdet). Ren refaktor = oförändrad.
+- `task coverage` = täckning Sim/UI + 10 sämsta filer (~100 s); `-File X.cs -Reuse` (ps1) visar otestade rader.
+  `task test:timing` = 10 långsammaste testerna. Sim-hastighet: slow-testet `SimSpeed_*` (ms per sim-minut).
+- Dubblettkoll: `task dupes` (jscpd 5.4.0 via npx, `.jscpd.json`) underkänner varje block på 50+ tokens som
+  finns två gånger (spel- och testkod). Skriver `DUPE n lines A.cs:x-y ~ B.cs:x-y`. Åtgärd: bryt ut en
+  gemensam hjälpare/basklass (t.ex. `StoreBuilding`, `OneItemRouter`, `GridSearch.Flood`), höj inte gränsen.
 - Buggfix: skriv först ett test som fallerar, sedan fixen. Ny funktion: tester i samma ändring.
 - Ny logik hamnar i `Scripts/Sim` eller `Scripts/UI` (testbart), inte i View.
 - Balansändring: kör `task test:report` och uppdatera trösklarna medvetet om designen ändrats.
 - Lint FAIL med ENDOFLINE/WHITESPACE → `task fmt`, sedan `task lint`. Analyzer-varningar (t.ex.
   xUnit2013) fixas för hand. `task build` bara för View-ändringar (testerna bygger inte View).
-- Godot bara för det visuella: `Scripts/_Test/VisualProbe.cs` + skärmdump (headless `--write-movie`).
+- Nätverk: `task test -- Net` (falskt nät med latens/jitter i `Support/FakeNetwork.cs`, `NetPlayer` kör en maskin).
+  `task mp:smoke` (~40 s) = två headless spel via localhost (riktig meny, ENet, lösenord, botar) ska sluta med
+  samma kontrollsumma; kör före commits som rör nät/lockstep. Startargument: `-- --host --port N --password X
+  --bot --steps N --out FIL` / `-- --join ip:port ...`.
+- `task export` = zip per plattform i `builds/` (Godot .NET export templates krävs, `tools/build/zip_build.py`
+  behåller körrättigheter, `docs/LAS-MIG.txt` följer med). Båda spelarna måste köra samma zip.
+- Godot bara för det visuella: `Scripts/_Test/VisualProbe.cs` + skärmdump (headless `--write-movie`);
+  `PROBE_CAM="x,y,zoom"` tittar var som helst, `PROBE_SCENE=shadows` = lampa med byggnader och möss,
+  `PROBE_SCENE=belts` = ett band ritat klick–klick (startklick + musen vid målet).
   `Scenes/_Probe*.tscn` är gitignorerade.
 
 ## Assets

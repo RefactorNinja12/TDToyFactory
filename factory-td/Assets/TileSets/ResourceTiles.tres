@@ -1,9 +1,9 @@
-[gd_resource type="TileSet" format=3]
+[gd_resource type="TileSet" format=3 uid="uid://dff0nmhlbwat7"]
 
-[ext_resource type="Texture2D" path="res://Assets/Sprites/Resources/brick.png" id="1_brick"]
-[ext_resource type="Texture2D" path="res://Assets/Sprites/Resources/plastic.png" id="2_plastic"]
-[ext_resource type="Texture2D" path="res://Assets/Sprites/Resources/battery.png" id="3_battery"]
-[ext_resource type="Texture2D" path="res://Assets/Sprites/Resources/cheese.png" id="4_cheese"]
+[ext_resource type="Texture2D" uid="uid://jbor7qkwpdt0" path="res://Assets/Sprites/Resources/brick.png" id="1_brick"]
+[ext_resource type="Texture2D" uid="uid://cvjbiy210s6w1" path="res://Assets/Sprites/Resources/plastic.png" id="2_plastic"]
+[ext_resource type="Texture2D" uid="uid://b43jafdtfhg02" path="res://Assets/Sprites/Resources/battery.png" id="3_battery"]
+[ext_resource type="Texture2D" uid="uid://cgqvt4rsndhki" path="res://Assets/Sprites/Resources/cheese.png" id="4_cheese"]
 
 [sub_resource type="TileSetAtlasSource" id="TileSetAtlasSource_brick"]
 texture = ExtResource("1_brick")

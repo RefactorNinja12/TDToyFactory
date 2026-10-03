@@ -79,9 +79,17 @@ public sealed class BotPlayer
 	}
 
 	/// <summary>Call once per simulation tick, before World.Tick.</summary>
-	public void Tick(World world)
+	/// <summary>
+	/// Thinks and acts for one tick. Commands go to <paramref name="commands"/> (default: straight into the
+	/// world). With a delay the bot waits until its last command has landed before deciding again, so it
+	/// never repeats an order (a repeated configure would turn a sorter too far).
+	/// </summary>
+	public void Tick(World world, ICommandSink commands = null)
 	{
 		if (world.Winner >= 0)
+			return;
+		_commands = commands;
+		if (world.TickCount < _waitUntil)
 			return;
 		if (_width == 0)
 		{
@@ -193,6 +201,20 @@ public sealed class BotPlayer
 
 	private enum Maintenance { AllGood, Acted, Waiting }
 
+	private ICommandSink _commands;
+	private long _waitUntil;
+
+	private void Send(PlayerCommand command, World world)
+	{
+		if (_commands == null)
+		{
+			world.Apply(command);
+			return;
+		}
+		_commands.Send(command);
+		_waitUntil = world.TickCount + _commands.DelayTicks;
+	}
+
 	private Maintenance MaintainPlan(World world)
 	{
 		foreach (var step in _plan)
@@ -202,7 +224,7 @@ public sealed class BotPlayer
 			{
 				if (step.Setting != ItemType.None && SettingOf(existing) != step.Setting)
 				{
-					world.TryConfigure(step.X, step.Y, _player);
+					Send(PlayerCommand.Configure(_player, step.X, step.Y), world);
 					return Maintenance.Acted;
 				}
 				continue;
@@ -211,7 +233,7 @@ public sealed class BotPlayer
 			// A belt that is being turned into a junction: take the old conveyor up first.
 			if (step.Type == BuildingType.Junction && existing is Conveyor && existing.Owner == _player)
 			{
-				world.TryRemove(step.X, step.Y, _player);
+				Send(PlayerCommand.Remove(_player, step.X, step.Y), world);
 				return Maintenance.Acted;
 			}
 
@@ -231,7 +253,7 @@ public sealed class BotPlayer
 			}
 			if (error != PlaceError.None)
 				continue; // something else is in the way; try the rest
-			world.TryPlace(step.Type, step.X, step.Y, step.Facing, _player);
+			Send(PlayerCommand.Place(_player, step.Type, step.X, step.Y, step.Facing), world);
 			return Maintenance.Acted;
 		}
 		return Maintenance.AllGood;

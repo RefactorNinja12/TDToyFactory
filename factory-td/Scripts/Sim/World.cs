@@ -21,7 +21,13 @@ public sealed partial class World
 
 	// _fields[p] leads player p's units to the enemy core. Rebuilt lazily when buildings change.
 	private readonly FlowField[] _fields;
-	private bool _fieldsDirty = true;
+	// What has to be worked out again before it is used. The power grid changes whenever a node is placed,
+	// removed or finished; a player's flow field only when an ENEMY building appears or goes (own buildings
+	// cost nothing to walk through, and a construction site already counts as a building).
+	private bool _powerDirty = true;
+	private int _nextBuildingSerial;
+	private int _scanMark;
+	private bool[] _flowDirty;
 	private readonly PowerGrid _power;
 	private readonly Vision _vision;
 	private readonly FlowField[] _powerFields; // per player: towards the nearest tile its grid powers
@@ -58,6 +64,8 @@ public sealed partial class World
 		_cores = new Core[playerCount];
 		_fields = new FlowField[playerCount];
 		_power = new PowerGrid(map.Width, map.Height, playerCount);
+		_flowDirty = new bool[playerCount];
+		System.Array.Fill(_flowDirty, true);
 		_vision = new Vision(map.Width, map.Height, playerCount);
 		_powerFields = new FlowField[playerCount];
 		_powerFieldDirty = new bool[playerCount];
@@ -106,14 +114,9 @@ public sealed partial class World
 	public PowerNetwork NetworkOf(Building building)
 	{
 		var grid = Power;
-		for (int y = building.Y; y < building.Y + building.Height; y++)
-			for (int x = building.X; x < building.X + building.Width; x++)
-			{
-				var network = grid.NetworkAt(building.Owner, x, y);
-				if (network != null)
-					return network;
-			}
-		return null;
+		PowerNetwork found = null;
+		building.AnyTile((x, y) => (found = grid.NetworkAt(building.Owner, x, y)) != null);
+		return found;
 	}
 
 	private bool Draw(PowerNetwork network, int amount)
@@ -210,6 +213,23 @@ public sealed partial class World
 		return PlaceError.None;
 	}
 
+	/// <summary>
+	/// Carries out a player's command (the only way players and bots change the world, so it can run in
+	/// lockstep). Commands from unknown players or for tiles outside the map are ignored.
+	/// </summary>
+	public bool Apply(PlayerCommand command)
+	{
+		if (command.Player < 0 || command.Player >= _players.Length || !Map.InBounds(command.X, command.Y))
+			return false;
+		return command.Kind switch
+		{
+			CommandKind.Place => TryPlace(command.Type, command.X, command.Y, command.Facing, command.Player),
+			CommandKind.Remove => TryRemove(command.X, command.Y, command.Player),
+			CommandKind.Configure => TryConfigure(command.X, command.Y, command.Player),
+			_ => false,
+		};
+	}
+
 	public bool TryPlace(BuildingType type, int x, int y, Direction facing, int owner)
 	{
 		if (!CanPlace(type, x, y, owner))
@@ -217,11 +237,12 @@ public sealed partial class World
 
 		_players[owner].TrySpend(BuildingRules.Cost(type));
 		var building = BuildingRules.Create(type, x, y, facing, owner, this);
+		building.Serial = _nextBuildingSerial++;
 		SetFootprint(building, building);
 		_buildings.Add(building);
 		if (building is Core core)
 			_cores[owner] = core;
-		_fieldsDirty = true;
+		MarkChanged(building);
 		BuildingPlaced?.Invoke(building);
 		return true;
 	}
@@ -258,7 +279,7 @@ public sealed partial class World
 		_players[building.Owner].Refund(BuildingRules.Cost(building.Type));
 		SetFootprint(building, null);
 		_buildings.Remove(building);
-		_fieldsDirty = true;
+		MarkChanged(building);
 		BuildingRemoved?.Invoke(building);
 		return true;
 	}
@@ -562,7 +583,7 @@ public sealed partial class World
 				job.AddWork(UnitStats.BuilderWorkPerTick);
 				Face(builder, job);
 				if (job.IsBuilt)
-					_fieldsDirty = true;
+					_powerDirty = true; // finished: it may be a pylon or charger now
 				break;
 			case Walk.Unreachable:
 				builder.Job = null; // try something else next tick
@@ -754,7 +775,13 @@ public sealed partial class World
 				return Walk.Unreachable;
 		}
 
-		// Walk to the centre of the next tile on the path (a step never overshoots it).
+		StepAlongPath(unit);
+		return Walk.Walking;
+	}
+
+	/// <summary>Walks to the centre of the next tile on the unit's path (a step never overshoots it).</summary>
+	private void StepAlongPath(Unit unit)
+	{
 		if (unit.PathIndex < unit.Path.Count)
 		{
 			const int half = UnitStats.SubTile / 2;
@@ -764,7 +791,6 @@ public sealed partial class World
 			if (CloseTo(unit, goalX, goalY))
 				unit.PathIndex++;
 		}
-		return Walk.Walking;
 	}
 
 	private static void Face(Unit unit, Building building)
@@ -807,36 +833,10 @@ public sealed partial class World
 	/// Breadth-first path over floor (buildings don't block builders) to any tile around the building.
 	/// The start tile is not included. Null if unreachable.
 	/// </summary>
-	private List<(int X, int Y)> FindPathTo(int fromX, int fromY, Building target)
-	{
-		if (IsAround(target, fromX, fromY))
-			return new List<(int X, int Y)>();
+	private List<(int X, int Y)> FindPathTo(int fromX, int fromY, Building target) =>
+		GridSearch.PathTo(Map.Width, Map.Height, fromX, fromY, IsFloor, (x, y) => IsAround(target, x, y));
 
-		var previous = new Dictionary<(int, int), (int, int)> { [(fromX, fromY)] = (fromX, fromY) };
-		var queue = new Queue<(int X, int Y)>();
-		queue.Enqueue((fromX, fromY));
-		while (queue.Count > 0)
-		{
-			var tile = queue.Dequeue();
-			foreach (var (dx, dy) in Steps)
-			{
-				var next = (X: tile.X + dx, Y: tile.Y + dy);
-				if (previous.ContainsKey(next) || !Map.InBounds(next.X, next.Y) || Map[next.X, next.Y] != TileType.Floor)
-					continue;
-				previous[next] = tile;
-				if (IsAround(target, next.X, next.Y))
-				{
-					var path = new List<(int X, int Y)>();
-					for (var at = next; at != (fromX, fromY); at = previous[at])
-						path.Add(at);
-					path.Reverse();
-					return path;
-				}
-				queue.Enqueue(next);
-			}
-		}
-		return null;
-	}
+	private bool IsFloor(int x, int y) => Map[x, y] == TileType.Floor;
 
 	private void TickUnit(Unit unit)
 	{
@@ -1010,33 +1010,42 @@ public sealed partial class World
 				return (enemyUnit, null);
 		}
 
+		// Only the tiles that can be in range (a building counts when its nearest edge is in range). Ties go to
+		// the building placed first, exactly as a scan over the whole building list would choose.
 		Building tower = null, other = null, core = null;
 		long towerDistance = range2, otherDistance = range2;
-		foreach (var building in _buildings)
-		{
-			if (building.Owner == unit.Owner)
-				continue;
-			long distance = DistanceSquaredTo(building, unit.X, unit.Y);
-			if (distance > range2)
-				continue;
+		int reach = range / UnitStats.SubTile + 2, mark = ++_scanMark;
+		for (int ty = unit.TileY - reach; ty <= unit.TileY + reach; ty++)
+			for (int tx = unit.TileX - reach; tx <= unit.TileX + reach; tx++)
+			{
+				var building = GetBuilding(tx, ty);
+				if (building == null || building.Owner == unit.Owner || building.ScanMark == mark)
+					continue;
+				building.ScanMark = mark;
+				long distance = DistanceSquaredTo(building, unit.X, unit.Y);
+				if (distance > range2)
+					continue;
 
-			if (building is Tower)
-			{
-				if (tower == null || distance < towerDistance)
-					(tower, towerDistance) = (building, distance);
+				if (building is Tower)
+				{
+					if (tower == null || Closer(distance, building, towerDistance, tower))
+						(tower, towerDistance) = (building, distance);
+				}
+				else if (building is Core)
+				{
+					if (includeCore)
+						core = building;
+				}
+				else if (other == null || Closer(distance, building, otherDistance, other))
+				{
+					(other, otherDistance) = (building, distance);
+				}
 			}
-			else if (building is Core)
-			{
-				if (includeCore)
-					core = building;
-			}
-			else if (other == null || distance < otherDistance)
-			{
-				(other, otherDistance) = (building, distance);
-			}
-		}
 		return (null, tower ?? other ?? core);
 	}
+
+	private static bool Closer(long distance, Building building, long bestDistance, Building best) =>
+		distance < bestDistance || (distance == bestDistance && building.Serial < best.Serial);
 
 	/// <summary>Squared distance from a point to the nearest edge of the building's footprint (0 if inside).</summary>
 	private static long DistanceSquaredTo(Building building, int x, int y)
@@ -1105,22 +1114,37 @@ public sealed partial class World
 	{
 		SetFootprint(building, null);
 		_buildings.Remove(building);
-		_fieldsDirty = true;
+		MarkChanged(building);
 		BuildingRemoved?.Invoke(building);
+	}
+
+	/// <summary>A building appeared or went: the power grid and the enemies' flow fields are out of date.</summary>
+	private void MarkChanged(Building building)
+	{
+		_powerDirty = true;
+		for (int p = 0; p < _flowDirty.Length; p++)
+			if (p != building.Owner)
+				_flowDirty[p] = true;
 	}
 
 	private void RebuildFieldsIfDirty()
 	{
-		if (!_fieldsDirty)
-			return;
-		_fieldsDirty = false;
-		_power.Rebuild(_buildings);
+		if (_powerDirty)
+		{
+			_powerDirty = false;
+			_power.Rebuild(_buildings);
+			for (int p = 0; p < _players.Length; p++)
+				_powerFieldDirty[p] = true;
+		}
 		for (int p = 0; p < _players.Length; p++)
 		{
+			if (!_flowDirty[p])
+				continue;
+			_flowDirty[p] = false;
 			var target = _cores[EnemyOf(p)];
 			if (target != null)
 				_fields[p].Build(this, target, p);
-			_powerFieldDirty[p] = true;
+			_powerFieldDirty[p] = true; // the way back to the grid crosses enemy buildings too
 		}
 	}
 

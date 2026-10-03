@@ -175,7 +175,7 @@ public class ScenarioTests
 		Assert.True(unpowered * 100 <= working * 5, $"without power {unpowered * 100 / working}% of the time");
 	}
 
-	private static int SecondsToFindBatteries(int scouts, bool lamps)
+	private static Scenario Fog(bool lamps)
 	{
 		var s = Scenario.Match().NoWorkers().Instant().Rich().RealFog();
 		if (lamps)
@@ -183,6 +183,12 @@ public class ScenarioTests
 			s.Place(BuildingType.Lamp, 22, 38);
 			s.Place(BuildingType.Lamp, 30, 42);
 		}
+		return s;
+	}
+
+	private static int SecondsToFindBatteries(int scouts, bool lamps)
+	{
+		var s = Fog(lamps);
 		for (int i = 0; i < scouts; i++) s.Spawn(UnitType.Scout, 9, 30 + i);
 		return s.World.Until(() => s.World.IsExplored(0, 41, 47), 300, "the battery patch explored") / WorldRunner.TicksPerSecond;
 	}
@@ -200,12 +206,7 @@ public class ScenarioTests
 
 	private static int ExploredAfterAMinute(bool lamps)
 	{
-		var s = Scenario.Match().NoWorkers().Instant().Rich().RealFog();
-		if (lamps)
-		{
-			s.Place(BuildingType.Lamp, 22, 38);
-			s.Place(BuildingType.Lamp, 30, 42);
-		}
+		var s = Fog(lamps);
 		s.Spawn(UnitType.Scout, 9, 30);
 		s.World.Seconds(60);
 		return s.World.ExploredCount(0);
@@ -222,5 +223,18 @@ public class ScenarioTests
 		int perMinute = s.P0.FoodProducedLastMinute;
 		_out.WriteLine($"one cheese melter + kitchen: {perMinute} food/min");
 		Assert.True(perMinute >= 15, $"only {perMinute} food/min");
+	}
+
+	[Fact]
+	public void SimSpeed_BotVsBot_MillisecondsPerSimulatedMinute()
+	{
+		var s = Scenario.Match(obstacles: true).RealPower().RealFog();
+		var bots = new[] { new BotPlayer(0), new BotPlayer(1) };
+		s.World.Ticks(WorldRunner.TicksPerMinute * 4, bots); // into the mid game
+		var watch = System.Diagnostics.Stopwatch.StartNew();
+		s.World.Ticks(WorldRunner.TicksPerMinute * 2, bots);
+		long perMinute = watch.ElapsedMilliseconds / 2;
+		_out.WriteLine($"sim speed: {perMinute} ms per simulated minute ({s.World.Units.Count} units, {s.World.Buildings.Count} buildings)");
+		Assert.True(perMinute < 6000, $"{perMinute} ms per simulated minute: too slow to play in real time");
 	}
 }

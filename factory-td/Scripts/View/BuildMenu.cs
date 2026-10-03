@@ -117,14 +117,7 @@ public partial class BuildMenu : CanvasLayer
 		content.AddThemeConstantOverride("separation", 2);
 		button.AddChild(content);
 
-		content.AddChild(new TextureRect
-		{
-			Texture = BuildingVisuals.GetTexture(type),
-			ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize,
-			StretchMode = TextureRect.StretchModeEnum.KeepAspectCentered,
-			CustomMinimumSize = new Vector2(CardIcon, CardIcon),
-			MouseFilter = Control.MouseFilterEnum.Ignore,
-		});
+		content.AddChild(UiTheme.Icon(BuildingVisuals.GetTexture(type), CardIcon));
 		var name = new Label { Text = model.Name, HorizontalAlignment = HorizontalAlignment.Center, MouseFilter = Control.MouseFilterEnum.Ignore };
 		name.AddThemeFontSizeOverride("font_size", 11);
 		content.AddChild(name);
@@ -135,14 +128,7 @@ public partial class BuildMenu : CanvasLayer
 		var labels = new List<(Label, CostEntry)>();
 		foreach (var entry in model.Cost)
 		{
-			cost.AddChild(new TextureRect
-			{
-				Texture = BuildingVisuals.GetItemTexture(entry.Item),
-				ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize,
-				StretchMode = TextureRect.StretchModeEnum.KeepAspectCentered,
-				CustomMinimumSize = new Vector2(CostIcon, CostIcon),
-				MouseFilter = Control.MouseFilterEnum.Ignore,
-			});
+			cost.AddChild(UiTheme.Icon(BuildingVisuals.GetItemTexture(entry.Item), CostIcon));
 			var amount = new Label { Text = entry.Amount.ToString(), MouseFilter = Control.MouseFilterEnum.Ignore };
 			amount.AddThemeFontSizeOverride("font_size", 11);
 			cost.AddChild(amount);

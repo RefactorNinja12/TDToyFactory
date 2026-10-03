@@ -6,6 +6,7 @@
     tests/run.ps1 -Slow           only the slow scenario tests
     tests/run.ps1 -All            everything
     tests/run.ps1 -Slow -Report   also print what each passing test measured (balance numbers) and its time
+    tests/run.ps1 -All -Timing    also list the 10 slowest tests (one line each)
 
   Prints compile errors, or each failing test with its message and the line in the test file,
   then one summary line:  PASS 142/142 (fast) in 3.1s   /   FAIL 2/142 ...
@@ -14,7 +15,8 @@ param(
 	[string]$Name = "",
 	[switch]$Slow,
 	[switch]$All,
-	[switch]$Report
+	[switch]$Report,
+	[switch]$Timing
 )
 
 # Continue: dotnet writes test failures to stderr, which Windows PowerShell would otherwise treat as fatal.
@@ -29,7 +31,8 @@ $filters = @()
 if ($Slow) { $filters += "Speed=Slow"; $scope = "slow" }
 elseif (-not $All) { $filters += "Speed!=Slow"; $scope = "fast" }
 else { $scope = "all" }
-if ($Name) { $filters += "FullyQualifiedName~$Name"; $scope += ", ~$Name" }
+# "A|B|C" = tests whose name contains A, B or C.
+if ($Name) { $filters += "(" + ((($Name -split "\|") | ForEach-Object { "FullyQualifiedName~$_" }) -join "|") + ")"; $scope += ", ~$Name" }
 
 $arguments = @("test", $project, "--nologo", "-v", "q", "--logger", "trx;LogFileName=run.trx", "--results-directory", $results)
 if ($filters.Count -gt 0) { $arguments += @("--filter", ($filters -join "&")) }
@@ -97,7 +100,16 @@ if ($Report) {
 	}
 }
 
+# -Timing: the slowest tests, to see where the feedback loop spends its time.
+if ($Timing) {
+	$runs | Sort-Object { [TimeSpan]::Parse($_.duration) } -Descending | Select-Object -First 10 | ForEach-Object {
+		Write-Output ("  {0,5:N1}s  {1}" -f ([TimeSpan]::Parse($_.duration)).TotalSeconds, (Short $_.testName))
+	}
+}
+
 if ($total -eq 0) { Write-Output "NO TESTS MATCHED ($scope) in ${seconds}s"; exit 1 }
 if ($failed.Count -eq 0) { Write-Output "PASS $total/$total ($scope) in ${seconds}s"; exit 0 }
-Write-Output "FAIL $($failed.Count)/$total ($scope) in ${seconds}s"
+$classes = @($failed | ForEach-Object { (Short $_.testName) -replace '\..*$', '' } | Sort-Object -Unique)
+$where = if ($classes.Count -eq 1) { ", all in $($classes[0])" } else { "" }
+Write-Output "FAIL $($failed.Count)/$total ($scope$where) in ${seconds}s"
 exit 1

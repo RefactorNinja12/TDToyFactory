@@ -2,7 +2,8 @@
 Restyles every sprite into one look: a shared muted night palette (fits the navy fog), near-black
 outlines, a little less saturated and "cartoony"; and generates the dark wooden floor (big boards, as seen by a toy).
 
-    python tools/art/restyle.py
+    python tools/art/restyle.py                          (everything, and the floor)
+    python tools/art/restyle.py Buildings/kitchen.png ... (just those)
 
 Reads the originals from tools/art/source/ (copied there from factory-td/Assets/Sprites on the first
 run) and writes factory-td/Assets/Sprites/, so it can be re-run with a tweaked palette without
@@ -30,8 +31,8 @@ PALETTE_HEX = [
     "2b1d1c", "3e2a24", "57392c", "7a5236", "a5733f", "c99a5c",
     # warm lamp light
     "8a3b1f", "c4602a", "e38b35", "f2b64a", "f7dd7a", "fff3c4",
-    # reds / pinks
-    "4a1a2a", "7e2536", "b8384a", "e0646a",
+    # reds / pinks (the last two: mouse ears, paws and tails)
+    "4a1a2a", "7e2536", "b8384a", "e0646a", "c98c96", "9a5c6c",
     # purples
     "3a2350", "5e3a7a", "8a5ea8",
     # greys
@@ -199,16 +200,21 @@ def wall_tile(path_out, size=64):
     img.save(path_out)
 
 
-def main():
+def main(only=None):
+    """only: source-relative paths (e.g. Buildings/assembler.png) to restyle just those; None = all + floor."""
     if not os.path.isdir(SOURCE):
         shutil.copytree(SPRITES, SOURCE, ignore=shutil.ignore_patterns("*.import"))
+    wanted = {os.path.normpath(p) for p in only} if only else None
     for folder, _, files in os.walk(SOURCE):
         rel = os.path.relpath(folder, SOURCE)
         for name in files:
             if not name.endswith(".png"):
                 continue
+            if wanted is not None and os.path.normpath(os.path.join(rel, name)) not in wanted:
+                continue
             src = os.path.join(folder, name)
             dst = os.path.join(SPRITES, rel, name)
+            os.makedirs(os.path.dirname(dst), exist_ok=True)
             if rel == "Tiles" and name == "floor_wood.png":
                 continue
             if rel == "Tiles" and name == "wall.png":
@@ -216,9 +222,13 @@ def main():
                 continue
             # Full-tile pictures (belts, walls, deposits on the floor) get no outline at their edges.
             restyle(src, dst, outline=rel not in ("Tiles", "Conveyors"), vivid=name in VIVID)
+    if wanted is not None:
+        print("restyled", len(wanted), "files")
+        return
     floor_tiles(os.path.join(SPRITES, "Tiles", "floor_wood.png"))
     print("restyled", sum(len(f) for _, _, f in os.walk(SOURCE)), "files")
 
 
 if __name__ == "__main__":
-    main()
+    import sys
+    main(sys.argv[1:] or None)

@@ -6,7 +6,7 @@ mono_crash.*.json
 
 # Local Godot overrides and exported builds
 override.cfg
-export_presets.cfg
+# export_presets.cfg is versioned: it holds no secrets (no signing certificates or passwords)
 /builds/
 *.exe
 *.pck
@@ -36,3 +36,6 @@ Desktop.ini
 
 # Test run output
 TestResults/
+
+# Python bytecode caches (art tools)
+__pycache__/

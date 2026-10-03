@@ -147,34 +147,14 @@ public sealed partial class World
 
 		int width = Map.Width;
 		var distance = _homeDistance[player] ??= new int[width * Map.Height];
-		System.Array.Fill(distance, -1);
 		_homeDistanceStamp[player] = stamp;
 		var core = _cores[player];
-		if (core == null)
-			return distance;
-		var queue = new Queue<int>();
-		for (int y = core.Y; y < core.Y + core.Height; y++)
-			for (int x = core.X; x < core.X + core.Width; x++)
-			{
-				distance[y * width + x] = 0;
-				queue.Enqueue(y * width + x);
-			}
-		while (queue.Count > 0)
-		{
-			int index = queue.Dequeue();
-			int x = index % width, y = index / width;
-			foreach (var (dx, dy) in Steps)
-			{
-				int nx = x + dx, ny = y + dy;
-				if (!Map.InBounds(nx, ny) || Map[nx, ny] != TileType.Floor || !IsExplored(player, nx, ny))
-					continue;
-				int next = ny * width + nx;
-				if (distance[next] >= 0)
-					continue;
-				distance[next] = distance[index] + 1;
-				queue.Enqueue(next);
-			}
-		}
+		var sources = new List<int>();
+		if (core != null)
+			for (int y = core.Y; y < core.Y + core.Height; y++)
+				for (int x = core.X; x < core.X + core.Width; x++)
+					sources.Add(y * width + x);
+		GridSearch.Distances(width, Map.Height, distance, sources, (x, y) => IsFloor(x, y) && IsExplored(player, x, y));
 		return distance;
 	}
 
@@ -194,42 +174,9 @@ public sealed partial class World
 				return;
 			}
 		}
-		if (unit.PathIndex < unit.Path.Count)
-		{
-			const int half = UnitStats.SubTile / 2;
-			var (tx, ty) = unit.Path[unit.PathIndex];
-			int goalX = tx * UnitStats.SubTile + half, goalY = ty * UnitStats.SubTile + half;
-			TryStep(unit, goalX, goalY);
-			if (CloseTo(unit, goalX, goalY))
-				unit.PathIndex++;
-		}
+		StepAlongPath(unit);
 	}
 
-	private List<(int X, int Y)> FindPathToTile(int fromX, int fromY, int toX, int toY)
-	{
-		var previous = new Dictionary<(int, int), (int, int)> { [(fromX, fromY)] = (fromX, fromY) };
-		var queue = new Queue<(int X, int Y)>();
-		queue.Enqueue((fromX, fromY));
-		while (queue.Count > 0)
-		{
-			var tile = queue.Dequeue();
-			if (tile == (toX, toY))
-			{
-				var path = new List<(int X, int Y)>();
-				for (var at = tile; at != (fromX, fromY); at = previous[at])
-					path.Add(at);
-				path.Reverse();
-				return path;
-			}
-			foreach (var (dx, dy) in Steps)
-			{
-				var next = (X: tile.X + dx, Y: tile.Y + dy);
-				if (previous.ContainsKey(next) || !Map.InBounds(next.X, next.Y) || Map[next.X, next.Y] != TileType.Floor)
-					continue;
-				previous[next] = tile;
-				queue.Enqueue(next);
-			}
-		}
-		return null;
-	}
+	private List<(int X, int Y)> FindPathToTile(int fromX, int fromY, int toX, int toY) =>
+		GridSearch.PathTo(Map.Width, Map.Height, fromX, fromY, IsFloor, (x, y) => x == toX && y == toY);
 }

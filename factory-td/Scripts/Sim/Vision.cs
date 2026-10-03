@@ -204,14 +204,8 @@ public sealed class Vision
 		}
 	}
 
-	private bool AnyVisible(int player, int x, int y, int width, int height)
-	{
-		for (int ty = y; ty < y + height; ty++)
-			for (int tx = x; tx < x + width; tx++)
-				if (IsVisible(player, tx, ty))
-					return true;
-		return false;
-	}
+	private bool AnyVisible(int player, int x, int y, int width, int height) =>
+		Footprint.Any(x, y, width, height, (tx, ty) => IsVisible(player, tx, ty));
 
 	private void Light(MapLayout map, int player, int x, int y, Ray[] shape)
 	{
@@ -271,6 +265,15 @@ public sealed class Vision
 				}
 			return Cones[direction] = rays.ToArray();
 		}
+	}
+
+	/// <summary>Whether light gets from one tile to another: no wall on the tiles strictly between (toys don't block).</summary>
+	public static bool LightReaches(MapLayout map, int fromX, int fromY, int toX, int toY)
+	{
+		foreach (var (dx, dy) in Line(toX - fromX, toY - fromY))
+			if (map[fromX + dx, fromY + dy] == TileType.Wall)
+				return false;
+		return true;
 	}
 
 	/// <summary>Bresenham from (0,0) to (dx,dy): the tiles strictly between.</summary>

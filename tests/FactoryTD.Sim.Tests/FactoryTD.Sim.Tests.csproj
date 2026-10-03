@@ -16,11 +16,14 @@
     <Compile Include="../../factory-td/Scripts/Sim/**/*.cs" Link="Sim/%(RecursiveDir)%(Filename)%(Extension)" />
     <!-- Godot-free UI logic (texts, conveyor look, drag path, food meter, hover panel rows). -->
     <Compile Include="../../factory-td/Scripts/UI/**/*.cs" Link="UI/%(RecursiveDir)%(Filename)%(Extension)" />
+    <!-- Network protocol and lockstep sessions (no Godot types). -->
+    <Compile Include="../../factory-td/Scripts/Net/**/*.cs" Link="Net/%(RecursiveDir)%(Filename)%(Extension)" />
   </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.11.1" />
     <PackageReference Include="xunit" Version="2.9.2" />
     <PackageReference Include="xunit.runner.visualstudio" Version="2.8.2" />
+    <PackageReference Include="coverlet.collector" Version="6.0.2" />
   </ItemGroup>
 </Project>

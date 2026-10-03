@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using FactoryTD.Sim;
+using FactoryTD.UI;
 using Godot;
 
 namespace FactoryTD.View;
@@ -56,6 +57,12 @@ public static class BuildingVisuals
 		("Försvar", new[] { BuildingType.FoamTower, BuildingType.Catapult, BuildingType.WaterTower, BuildingType.LaserTower }),
 	};
 
+	/// <summary>A unit's picture for the UI (the idle front view): Units/&lt;UnitSheets.FileName&gt;.png.</summary>
+	public static Texture2D GetUnitTexture(UnitType type) => Load($"res://Assets/Sprites/Units/{UnitSheets.FileName(type)}.png");
+
+	/// <summary>A unit's animation sheet (layout: UI/UnitSheets).</summary>
+	public static Texture2D GetUnitSheet(UnitType type) => Load($"res://Assets/Sprites/Units/{UnitSheets.FileName(type)}_sheet.png");
+
 	private static readonly Dictionary<ItemType, string> ItemTexturePaths = new()
 	{
 		[ItemType.Brick] = "res://Assets/Sprites/Resources/brick.png",
@@ -77,6 +84,30 @@ public static class BuildingVisuals
 	public static Texture2D GetTexture(BuildingType type) => Load(TexturePaths[type]);
 
 	public static Texture2D GetItemTexture(ItemType type) => Load(ItemTexturePaths[type]);
+
+	/// <summary>
+	/// A white disc fading to transparent at its rim (light glows, shadows): opaque in the middle, down to
+	/// <paramref name="midAlpha"/> at <paramref name="midAt"/> of the radius, clear at the edge.
+	/// </summary>
+	public static Texture2D SoftDisc(int size, float midAt, float midAlpha)
+	{
+		var gradient = new Gradient();
+		gradient.SetColor(0, new Color(1, 1, 1, 1));
+		gradient.SetColor(1, new Color(1, 1, 1, 0));
+		gradient.AddPoint(midAt, new Color(1, 1, 1, midAlpha));
+		return new GradientTexture2D
+		{
+			Gradient = gradient,
+			Fill = GradientTexture2D.FillEnum.Radial,
+			FillFrom = new Vector2(0.5f, 0.5f),
+			FillTo = new Vector2(1f, 0.5f),
+			Width = size,
+			Height = size,
+		};
+	}
+
+	/// <summary>A moving part drawn over a building (UI/BuildingParts), from Assets/Sprites/Parts.</summary>
+	public static Texture2D GetPartTexture(string name) => Load($"res://Assets/Sprites/Parts/{name}.png");
 
 	/// <summary>Crop field look for growth stage 0 (just planted) .. 3 (ripe).</summary>
 	public static Texture2D CropFieldTexture(int stage) => Load(stage switch

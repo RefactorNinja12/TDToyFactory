@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using FactoryTD.Sim;
 using FactoryTD.UI;
 using Godot;
@@ -8,7 +9,8 @@ namespace FactoryTD.View;
 
 /// <summary>
 /// Placing and removing buildings with the mouse.
-/// Left click / drag: place the selected building (dragged conveyors face the drag direction). R: rotate.
+/// Left click / drag: place the selected building. Belts: click the start, then click the end: the planned way
+/// (round buildings, crossing our own belts with junctions) follows the mouse until the second click. R: rotate.
 /// Right click: cancel the selection, or remove a building if nothing is selected. Esc: cancel.
 /// Left click with nothing selected: cycle the setting of a sorter / assembler.
 /// </summary>
@@ -37,7 +39,18 @@ public partial class BuildController : Node2D
 
 	private bool _dragging;
 	private Vector2I _dragCell;
-	private bool _dragPlacedLast; // whether the tile at _dragCell was built by this drag
+
+	// Belts are drawn click, click: the first click sets the start, the planned way follows the mouse
+	// (UI/BeltPlanner: round buildings, crossing our own belts with junctions), the second click builds it.
+	private Vector2I? _beltStart;
+	private Vector2I _beltEnd = new(-1, -1);
+	private List<BeltStep> _beltPlan;
+	private static readonly Color PlanColor = new(0.6f, 1f, 0.6f, 0.75f);
+	private static readonly Color PlanJunctionColor = new(1f, 0.85f, 0.4f, 0.9f);
+
+	// Online, a placement lands a few ticks after the click: drawn faintly until then.
+	private readonly List<(BuildingType Type, Vector2I Cell, Direction Facing, long Until)> _sent = new();
+	private static readonly Color SentColor = new(1f, 1f, 1f, 0.45f);
 
 	// Tiles where the selected building can go, outlined while it needs a specific deposit.
 	private readonly List<Vector2I> _highlights = new();
@@ -48,12 +61,15 @@ public partial class BuildController : Node2D
 	/// <summary>Why the hovered tile can't be built on, or "" when it can (or nothing is selected).</summary>
 	public event Action<string> StatusChanged;
 
-	// TODO: owner should come from the local player once there is networking.
 	public int LocalPlayer { get; set; }
+
+	/// <summary>Where placing/removing/configuring goes (straight into the world, or into the online match).</summary>
+	public ICommandSink Commands { get; set; }
 
 	public void Init(World world)
 	{
 		_world = world;
+		Commands ??= new DirectCommands(world);
 		_world.BuildingPlaced += _ => RefreshHighlights();
 		_world.BuildingRemoved += _ => RefreshHighlights();
 	}
@@ -67,6 +83,7 @@ public partial class BuildController : Node2D
 	public void Select(BuildingType? type)
 	{
 		_selected = type;
+		ClearBelt();
 		if (type is { } t)
 			_ghost.Texture = BuildingVisuals.GetTexture(t);
 		RefreshHighlights();
@@ -91,6 +108,28 @@ public partial class BuildController : Node2D
 
 		foreach (var cell in _highlights)
 			DrawRect(new Rect2(cell.X * ts + 3, cell.Y * ts + 3, ts - 6, ts - 6), HighlightColor, filled: false, width: 4);
+
+		if (_beltPlan != null)
+		{
+			var belt = BuildingVisuals.GetTexture(BuildingType.Conveyor);
+			var junction = BuildingVisuals.GetTexture(BuildingType.Junction);
+			foreach (var step in _beltPlan)
+			{
+				DrawSetTransform(new Vector2((step.X + 0.5f) * ts, (step.Y + 0.5f) * ts), step.Junction ? 0 : BuildingVisuals.Rotation(step.Facing));
+				var texture = step.Junction ? junction : belt;
+				DrawTexture(texture, -texture.GetSize() / 2, step.Junction ? PlanJunctionColor : PlanColor);
+			}
+			DrawSetTransform(Vector2.Zero, 0);
+		}
+
+		foreach (var (type, cell, facing, _) in _sent)
+		{
+			var texture = BuildingVisuals.GetTexture(type);
+			var (w, h) = BuildingRules.Size(type);
+			DrawSetTransform(new Vector2((cell.X + w / 2f) * ts, (cell.Y + h / 2f) * ts), BuildingVisuals.Rotation(facing));
+			DrawTexture(texture, -texture.GetSize() / 2, SentColor);
+		}
+		DrawSetTransform(Vector2.Zero, 0);
 	}
 
 	private void RefreshHighlights()
@@ -107,7 +146,15 @@ public partial class BuildController : Node2D
 		QueueRedraw();
 	}
 
-	public override void _Process(double delta) => UpdateGhost();
+	public override void _Process(double delta)
+	{
+		UpdateGhost();
+		RefreshBelt();
+		if (_sent.Count == 0)
+			return;
+		_sent.RemoveAll(s => _world.TickCount > s.Until || _world.GetBuilding(s.Cell.X, s.Cell.Y) != null);
+		QueueRedraw();
+	}
 
 	public override void _UnhandledInput(InputEvent @event)
 	{
@@ -116,19 +163,35 @@ public partial class BuildController : Node2D
 
 		switch (@event)
 		{
+			case InputEventMouseButton { Pressed: true, ButtonIndex: MouseButton.Left } when _selected == BuildingType.Conveyor:
+				if (_beltStart == null)
+				{
+					_beltStart = MouseCell();
+					RefreshBelt(force: true);
+				}
+				else
+					BuildBelt();
+				break;
 			case InputEventMouseButton { Pressed: true, ButtonIndex: MouseButton.Left } when _selected != null:
 				StartDrag();
 				break;
 			case InputEventMouseButton { Pressed: true, ButtonIndex: MouseButton.Left }:
 				var clicked = MouseCell();
-				if (!_world.TryConfigure(clicked.X, clicked.Y, LocalPlayer))
+				if (_world.GetBuilding(clicked.X, clicked.Y)?.Owner != LocalPlayer)
 					return;
+				Commands.Send(PlayerCommand.Configure(LocalPlayer, clicked.X, clicked.Y));
 				break;
 			case InputEventMouseButton { Pressed: false, ButtonIndex: MouseButton.Left }:
 				_dragging = false;
 				return;
 			case InputEventMouseMotion when _dragging && _selected != null:
 				ContinueDrag();
+				break;
+			case InputEventMouseButton { Pressed: true, ButtonIndex: MouseButton.Right } when _beltStart != null:
+				ClearBelt();
+				break;
+			case InputEventKey { Pressed: true, Keycode: Key.Escape } when _beltStart != null:
+				ClearBelt();
 				break;
 			case InputEventMouseButton { Pressed: true, ButtonIndex: MouseButton.Right }:
 				if (_selected != null)
@@ -152,39 +215,39 @@ public partial class BuildController : Node2D
 	{
 		_dragging = true;
 		_dragCell = MouseCell();
-		_dragPlacedLast = _world.TryPlace(_selected.Value, _dragCell.X, _dragCell.Y, _facing, LocalPlayer);
+		Place(_selected.Value, _dragCell, _facing);
+	}
+
+	/// <summary>Sends a placement; whether it will work is judged now (it may land a few ticks later online).</summary>
+	private bool Place(BuildingType type, Vector2I cell, Direction facing)
+	{
+		bool ok = _world.CanPlace(type, cell.X, cell.Y, LocalPlayer);
+		if (!ok)
+			return false;
+		Commands.Send(PlayerCommand.Place(LocalPlayer, type, cell.X, cell.Y, facing));
+		if (Commands.DelayTicks > 0)
+			_sent.Add((type, cell, facing, _world.TickCount + Commands.DelayTicks + World.TicksPerSecond));
+		return true;
 	}
 
 	/// <summary>
-	/// Walks tile by tile from the last drag tile to the mouse, so fast mouse moves leave no gaps.
-	/// Conveyors turn to face the way you drag, and the previous one turns with them, so dragging
-	/// around a corner makes a working turn.
+	/// Walks tile by tile from the last drag tile to the mouse, so fast mouse moves leave no gaps
+	/// (dragging places a row of the selected building; belts are drawn click, click instead).
 	/// </summary>
 	private void ContinueDrag()
 	{
 		var target = MouseCell();
-		foreach (var (x, y, moving) in DragPath.Walk(_dragCell.X, _dragCell.Y, target.X, target.Y))
+		foreach (var (x, y, _) in DragPath.Walk(_dragCell.X, _dragCell.Y, target.X, target.Y))
 		{
-			var previous = _dragCell;
 			_dragCell = new Vector2I(x, y);
-			if (_selected == BuildingType.Conveyor)
-			{
-				_facing = moving;
-				if (_dragPlacedLast)
-				{
-					// Re-place the conveyor we just built so it points at the new one.
-					_world.TryRemove(previous.X, previous.Y, LocalPlayer);
-					_world.TryPlace(BuildingType.Conveyor, previous.X, previous.Y, _facing, LocalPlayer);
-				}
-			}
-			_dragPlacedLast = _world.TryPlace(_selected.Value, _dragCell.X, _dragCell.Y, _facing, LocalPlayer);
+			Place(_selected.Value, _dragCell, _facing);
 		}
 	}
 
 	private void RemoveAtMouse()
 	{
 		var cell = MouseCell();
-		_world.TryRemove(cell.X, cell.Y, LocalPlayer);
+		Commands.Send(PlayerCommand.Remove(LocalPlayer, cell.X, cell.Y));
 	}
 
 	private void Cancel()
@@ -203,6 +266,14 @@ public partial class BuildController : Node2D
 		}
 
 		var cell = MouseCell();
+		if (type == BuildingType.Conveyor)
+		{
+			// Belts: the planned way is drawn instead of one ghost; the status says what it costs.
+			_ghost.Visible = false;
+			int junctions = _beltPlan?.Count(s => s.Junction) ?? 0;
+			SetStatus(Texts.BeltPlanText(_beltStart != null, (_beltPlan?.Count ?? 0) - junctions, junctions, _beltPlan != null));
+			return;
+		}
 		var error = _world.CheckPlace(type, cell.X, cell.Y, LocalPlayer);
 		_ghost.Visible = true;
 		var (w, h) = BuildingRules.Size(type);
@@ -210,6 +281,42 @@ public partial class BuildController : Node2D
 		_ghost.Rotation = BuildingVisuals.Rotation(_facing);
 		_ghost.Modulate = error == PlaceError.None ? ValidColor : InvalidColor;
 		SetStatus(Texts.ErrorText(type, error));
+	}
+
+	/// <summary>Plans the belt from the start to the mouse again when the mouse moved to another tile.</summary>
+	private void RefreshBelt(bool force = false)
+	{
+		if (_beltStart is not { } start)
+			return;
+		var end = MouseCell();
+		if (!force && end == _beltEnd)
+			return;
+		_beltEnd = end;
+		_beltPlan = BeltPlanner.Plan(_world, LocalPlayer, (start.X, start.Y), (end.X, end.Y));
+		QueueRedraw();
+	}
+
+	/// <summary>The second click: build the whole planned way (junctions where it crosses our belts).</summary>
+	private void BuildBelt()
+	{
+		RefreshBelt(force: true);
+		if (_beltPlan == null)
+			return;
+		foreach (var command in BeltPlanner.Commands(_beltPlan, LocalPlayer))
+		{
+			Commands.Send(command);
+			if (Commands.DelayTicks > 0 && command.Kind == CommandKind.Place)
+				_sent.Add((command.Type, new Vector2I(command.X, command.Y), command.Facing, _world.TickCount + Commands.DelayTicks + World.TicksPerSecond));
+		}
+		ClearBelt();
+	}
+
+	private void ClearBelt()
+	{
+		_beltStart = null;
+		_beltPlan = null;
+		_beltEnd = new Vector2I(-1, -1);
+		QueueRedraw();
 	}
 
 	private void SetStatus(string status)

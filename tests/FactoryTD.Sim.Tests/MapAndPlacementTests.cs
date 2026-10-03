@@ -6,6 +6,26 @@ namespace FactoryTD.Sim.Tests;
 
 public class MapTests
 {
+	[Fact]
+	public void BothToyboxes_HaveBatteriesInTheirLight_FromTheStart()
+	{
+		var s = Scenario.Match().RealFog();
+		s.World.Ticks(4); // the fog is worked out
+		foreach (var core in new[] { s.World.GetCore(0), s.World.GetCore(1) })
+		{
+			int found = 0;
+			for (int y = 0; y < s.World.Map.Height; y++)
+				for (int x = 0; x < s.World.Map.Width; x++)
+				{
+					int dx = x - core.CenterX / UnitStats.SubTile, dy = y - core.CenterY / UnitStats.SubTile;
+					if (s.World.Map.GetResource(x, y) == ResourceType.Battery && dx * dx + dy * dy <= 8 * 8
+						&& s.World.IsVisible(core.Owner, x, y))
+						found++;
+				}
+			Assert.True(found >= 4, $"player {core.Owner}: {found} battery tiles in sight of the toybox");
+		}
+	}
+
 	private static readonly MapLayout Map = MapLayout.CreateDefault();
 
 	[Fact]

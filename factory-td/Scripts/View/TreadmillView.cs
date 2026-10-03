@@ -16,7 +16,7 @@ public partial class TreadmillView : Node2D
 	private const float BeltTop = 41 - 64, BeltBottom = 91 - 64;
 	private const float SlatSpacing = 10f;
 	private const float RunSpeed = 70f;                             // belt pixels per second while a mouse runs
-	private const float MouseSize = 40f;
+	private const float StepsPerSecond = 10f;                       // running steps on the belt
 
 	private static readonly Color Slat = new(0.29f, 0.29f, 0.35f);
 	private static readonly Color SlatEdge = new(0.43f, 0.43f, 0.5f);
@@ -30,7 +30,7 @@ public partial class TreadmillView : Node2D
 	{
 		_world = world;
 		_localPlayer = localPlayer;
-		_mouse = GD.Load<Texture2D>("res://Assets/Sprites/Units/builder.png");
+		_mouse = BuildingVisuals.GetUnitSheet(UnitType.Builder);
 		TextureFilter = TextureFilterEnum.Nearest;
 	}
 
@@ -61,13 +61,14 @@ public partial class TreadmillView : Node2D
 
 			if (mill.HasTrainee && _mouse != null)
 			{
-				// Running towards the cheese: a quick hop each stride and a little sway.
-				float stride = time * 16f + mill.X;
-				float hop = -Mathf.Abs(Mathf.Sin(stride)) * 3f;
-				float sway = Mathf.Sin(stride * 0.5f) * 0.08f;
-				var at = new Vector2(-14f, 2f + hop);
-				DrawSetTransformMatrix(GetTransformFor(mill) * new Transform2D(sway, at));
-				DrawTextureRect(_mouse, new Rect2(-MouseSize / 2, -MouseSize / 2, MouseSize, MouseSize), false,
+				// Running towards the cheese (east on the sprite, turned with the building) with its walk frames,
+				// a quick hop each stride.
+				int step = (int)(time * StepsPerSecond + mill.X) % 4;
+				float cell = UnitSheets.CellSize(UnitType.Builder);
+				int column = UnitSheets.Column(new UnitFrame(Facing.Right, PoseKind.Walk, step));
+				float hop = -Mathf.Abs(Mathf.Sin(time * StepsPerSecond * Mathf.Pi / 2)) * 1.5f;
+				DrawSetTransformMatrix(GetTransformFor(mill) * new Transform2D(0, new Vector2(-14f, 2f + hop)));
+				DrawTextureRectRegion(_mouse, new Rect2(-cell / 2, -cell / 2, cell, cell), new Rect2(column * cell, 0, cell, cell),
 					UnitView.PlayerTints[mill.Owner % UnitView.PlayerTints.Length]);
 			}
 		}

@@ -125,14 +125,7 @@ public partial class InfoPanel : CanvasLayer
 	{
 		var row = new HBoxContainer { MouseFilter = Control.MouseFilterEnum.Ignore };
 		row.AddThemeConstantOverride("separation", 6);
-		row.AddChild(new TextureRect
-		{
-			Texture = BuildingVisuals.GetTexture(_shownType),
-			ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize,
-			StretchMode = TextureRect.StretchModeEnum.KeepAspectCentered,
-			CustomMinimumSize = new Vector2(28, 28),
-			MouseFilter = Control.MouseFilterEnum.Ignore,
-		});
+		row.AddChild(UiTheme.Icon(BuildingVisuals.GetTexture(_shownType), 28));
 		var label = new Label { Text = text, VerticalAlignment = VerticalAlignment.Center, MouseFilter = Control.MouseFilterEnum.Ignore };
 		label.AddThemeFontSizeOverride("font_size", 16);
 		label.AddThemeColorOverride("font_color", UiTheme.Accent);
@@ -157,14 +150,7 @@ public partial class InfoPanel : CanvasLayer
 	private void Item(ItemType item, string text, Color? color = null)
 	{
 		var row = new HBoxContainer { MouseFilter = Control.MouseFilterEnum.Ignore };
-		row.AddChild(new TextureRect
-		{
-			Texture = BuildingVisuals.GetItemTexture(item),
-			ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize,
-			StretchMode = TextureRect.StretchModeEnum.KeepAspectCentered,
-			CustomMinimumSize = new Vector2(IconSize, IconSize),
-			MouseFilter = Control.MouseFilterEnum.Ignore,
-		});
+		row.AddChild(UiTheme.Icon(BuildingVisuals.GetItemTexture(item), IconSize));
 		row.AddChild(new Label { Text = text, Modulate = color ?? Colors.White, VerticalAlignment = VerticalAlignment.Center, MouseFilter = Control.MouseFilterEnum.Ignore });
 		_rows.AddChild(row);
 	}

@@ -9,13 +9,7 @@ public static class Knowledge
 	/// <summary>Own buildings always; enemy ones while any of their tiles is lit.</summary>
 	public static bool ShowBuilding(World world, int player, Building building)
 	{
-		if (building.Owner == player)
-			return true;
-		for (int y = building.Y; y < building.Y + building.Height; y++)
-			for (int x = building.X; x < building.X + building.Width; x++)
-				if (world.IsVisible(player, x, y))
-					return true;
-		return false;
+		return building.Owner == player || building.AnyTile((x, y) => world.IsVisible(player, x, y));
 	}
 
 	/// <summary>Remembered enemy buildings that are out of sight now: drawn as faded ghosts.</summary>
@@ -23,14 +17,8 @@ public static class Knowledge
 	{
 		var ghosts = new List<RememberedBuilding>();
 		foreach (var r in world.RememberedBuildings(player))
-		{
-			bool inSight = false;
-			for (int y = r.Y; y < r.Y + r.Height && !inSight; y++)
-				for (int x = r.X; x < r.X + r.Width && !inSight; x++)
-					inSight = world.IsVisible(player, x, y);
-			if (!inSight)
+			if (!Footprint.Any(r.X, r.Y, r.Width, r.Height, (x, y) => world.IsVisible(player, x, y)))
 				ghosts.Add(r);
-		}
 		return ghosts;
 	}
 }

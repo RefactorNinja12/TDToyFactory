@@ -174,11 +174,23 @@ public class CraftingTests
 	[Fact]
 	public void Kitchen_TakesTenCrops_CooksIntoTheToybox()
 	{
-		var s = Scenario.Match().NoWorkers().Instant();
-		var kitchen = s.Place<Kitchen>(BuildingType.Kitchen, 6, 32, Direction.North); // into the core
+		var (s, kitchen) = KitchenIntoToybox();
 		Assert.True(kitchen.CanTake(ItemType.Crop));
 		Assert.Equal(10, s.Feed(kitchen, ItemType.Crop, 20));
 		Assert.False(kitchen.CanTake(ItemType.Crop));
+		CooksFive(s);
+	}
+
+	/// <summary>A kitchen whose output faces the toybox.</summary>
+	internal static (Scenario, Kitchen) KitchenIntoToybox()
+	{
+		var s = Scenario.Match().NoWorkers().Instant();
+		return (s, s.Place<Kitchen>(BuildingType.Kitchen, 6, 32, Direction.North));
+	}
+
+	/// <summary>Five meals reach the toybox within five cooking times.</summary>
+	internal static void CooksFive(Scenario s)
+	{
 		int food = s.P0.GetCount(ItemType.Food);
 		s.World.Ticks(Kitchen.CookTicks * 5 + 5);
 		Assert.Equal(food + 5, s.P0.GetCount(ItemType.Food));

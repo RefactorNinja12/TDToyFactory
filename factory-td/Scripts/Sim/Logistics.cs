@@ -1,24 +1,21 @@
 namespace FactoryTD.Sim;
 
 /// <summary>
-/// Takes an item from any side and hands items out in turn straight on, to the right and to the left,
-/// relative to the way the item came in. A blocked side is skipped, so one full belt doesn't stop the others.
-/// Its own facing doesn't matter.
+/// Holds one item at a time, taken from any side; remembers which way it was moving. Outputs to every side.
 /// </summary>
-public sealed class Splitter : Building
+public abstract class OneItemRouter : Building
 {
-	private ItemType _held;
-	private Direction _heldMoving; // the way the held item was travelling when it came in
-	private int _next;             // 0 = straight, 1 = right, 2 = left
+	protected ItemType _held;
+	protected Direction _heldMoving; // the way the held item was travelling when it came in
 
-	public Splitter(int x, int y, Direction facing, int owner)
-		: base(BuildingType.Splitter, x, y, facing, owner) { }
+	protected OneItemRouter(BuildingType type, int x, int y, Direction facing, int owner)
+		: base(type, x, y, facing, owner) { }
 
 	public override bool OutputsToward(Direction direction) => true;
 
 	protected override void HashState(ref StateHash hash)
 	{
-		hash.Add((int)_held); hash.Add((int)_heldMoving); hash.Add(_next);
+		hash.Add((int)_held); hash.Add((int)_heldMoving);
 	}
 
 	public override bool TryAccept(ItemType item, Direction moving)
@@ -28,6 +25,24 @@ public sealed class Splitter : Building
 		_held = item;
 		_heldMoving = moving;
 		return true;
+	}
+}
+
+/// <summary>
+/// Takes an item from any side and hands items out in turn straight on, to the right and to the left,
+/// relative to the way the item came in. A blocked side is skipped, so one full belt doesn't stop the others.
+/// Its own facing doesn't matter.
+/// </summary>
+public sealed class Splitter : OneItemRouter
+{
+	private int _next;             // 0 = straight, 1 = right, 2 = left
+
+	public Splitter(int x, int y, Direction facing, int owner)
+		: base(BuildingType.Splitter, x, y, facing, owner) { }
+
+	protected override void HashState(ref StateHash hash)
+	{
+		base.HashState(ref hash); hash.Add(_next);
 	}
 
 	public override void Tick(World world)
@@ -106,10 +121,8 @@ public sealed class Junction : Building
 /// to the sides, alternating right and left. Players cycle the filter by clicking the sorter.
 /// Its own facing doesn't matter.
 /// </summary>
-public sealed class Sorter : Building
+public sealed class Sorter : OneItemRouter
 {
-	private ItemType _held;
-	private Direction _heldMoving;
 	private bool _leftNext;
 
 	public ItemType Filter { get; private set; } = ItemType.Brick;
@@ -117,26 +130,15 @@ public sealed class Sorter : Building
 	public Sorter(int x, int y, Direction facing, int owner)
 		: base(BuildingType.Sorter, x, y, facing, owner) { }
 
-	public override bool OutputsToward(Direction direction) => true;
-
 	protected override void HashState(ref StateHash hash)
 	{
-		hash.Add((int)_held); hash.Add((int)_heldMoving); hash.Add(_leftNext); hash.Add((int)Filter);
+		base.HashState(ref hash); hash.Add(_leftNext); hash.Add((int)Filter);
 	}
 
 	public override bool CycleSetting()
 	{
 		int index = System.Array.IndexOf(Items.All, Filter);
 		Filter = Items.All[(index + 1) % Items.All.Length];
-		return true;
-	}
-
-	public override bool TryAccept(ItemType item, Direction moving)
-	{
-		if (_held != ItemType.None)
-			return false;
-		_held = item;
-		_heldMoving = moving;
 		return true;
 	}
 

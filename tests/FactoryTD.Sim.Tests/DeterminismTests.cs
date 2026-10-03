@@ -25,6 +25,24 @@ public class DeterminismTests
 		return sums;
 	}
 
+	/// <summary>
+	/// The recorded result of 2 minutes of bot vs bot (default map and seed): every second's checksum folded
+	/// into one number. A refactor must leave it unchanged. When a change is MEANT to change how the game
+	/// plays, update the value on purpose (the failure message prints the new one) and say so in the commit.
+	/// </summary>
+	private const ulong GoldenBotMatch = 0x299E99DC031BB7E0UL;
+
+	[Fact]
+	public void Golden_BotMatch_PlaysExactlyAsRecorded()
+	{
+		var hash = StateHash.Start();
+		foreach (ulong sum in BotMatchChecksums(WorldRunner.TicksPerMinute * 2, every: 20))
+			hash.Add((long)sum);
+		Assert.True(hash.Value == GoldenBotMatch,
+			$"Behaviour changed: golden bot match is now 0x{hash.Value:X}UL (was 0x{GoldenBotMatch:X}UL). " +
+			"Refactor: find what changed. Intended change: update GoldenBotMatch.");
+	}
+
 	[Fact]
 	public void SameScenario_SameChecksumsEveryTick()
 	{
@@ -35,18 +53,23 @@ public class DeterminismTests
 			s.Belt(13, 26, 13, 29).Belt(13, 30, 8, 30);
 			s.Place(BuildingType.CropField, 3, 34);
 			s.Spawn(UnitType.PlasticSoldier, 100, 30, owner: 1);
-			var sums = new List<ulong>();
-			for (int t = 0; t < 20 * 60; t++)
-			{
-				s.World.Tick();
-				sums.Add(s.World.Checksum());
-			}
-			return sums;
+			return EveryTick(s, 20 * 60);
 		}
 		AssertSame(Run(), Run(), "tick");
 	}
 
 	/// <summary>Reports only the first point where two runs differ.</summary>
+	private static List<ulong> EveryTick(Scenario s, int ticks)
+	{
+		var sums = new List<ulong>();
+		for (int t = 0; t < ticks; t++)
+		{
+			s.World.Tick();
+			sums.Add(s.World.Checksum());
+		}
+		return sums;
+	}
+
 	private static void AssertSame(List<ulong> first, List<ulong> second, string unit)
 	{
 		for (int i = 0; i < System.Math.Min(first.Count, second.Count); i++)
@@ -112,13 +135,7 @@ public class DeterminismTests
 			for (int k = 0; k < 3; k++) s.Spawn(UnitType.Scout, 9, 29 + k);
 			s.Spawn(UnitType.RcCar, 70, 30);
 			s.Spawn(UnitType.PlasticSoldier, 40, 20, owner: 1);
-			var sums = new List<ulong>();
-			for (int t = 0; t < 20 * 90; t++)
-			{
-				s.World.Tick();
-				sums.Add(s.World.Checksum());
-			}
-			return sums;
+			return EveryTick(s, 20 * 90);
 		}
 		AssertSame(Run(), Run(), "tick");
 	}
@@ -136,13 +153,7 @@ public class DeterminismTests
 			s.Place<UnitFactory>(BuildingType.GolemWorkshop, 16, 26);
 			for (int k = 0; k < 4; k++) s.Spawn(UnitType.BrickGolem, 30 + k, 32).Charge = 500 * k;
 			for (int k = 0; k < 3; k++) s.Spawn(UnitType.RcCar, 30 + k, 34);
-			var sums = new List<ulong>();
-			for (int t = 0; t < 20 * 90; t++)
-			{
-				s.World.Tick();
-				sums.Add(s.World.Checksum());
-			}
-			return sums;
+			return EveryTick(s, 20 * 90);
 		}
 		AssertSame(Run(), Run(), "tick");
 	}
