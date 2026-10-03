@@ -31,6 +31,8 @@ public partial class Game : Node2D
 	[Export] public bool EnableBot = true;
 
 	private BotPlayer _bot, _localBot;
+	private CameraController _camera;
+	private float _countdown;
 	private CraneView _cranes;
 	private MatchSession _session;
 	private ICommandSink _commands;
@@ -110,10 +112,14 @@ public partial class Game : Node2D
 		AddChild(_power);
 		_power.Bind(World, Builder, LocalPlayer);
 
-		// The scene's camera looks at the left room; the right-hand player gets the mirror image.
-		var camera = GetNode<CameraController>("Camera");
-		if (World.GetCore(LocalPlayer).X > World.Map.Width / 2)
-			camera.StartAt(new Vector2(World.Map.Width * BuildingVisuals.TileSize - camera.Position.X, camera.Position.Y));
+		// The camera starts over the player's own toybox (and flies in from the room during the countdown).
+		_camera = GetNode<CameraController>("Camera");
+		// A few tiles in from the toybox towards the middle, so the view stays inside the room by the outer wall.
+		var core = BuildingVisuals.FootprintCenter(World.GetCore(LocalPlayer));
+		float inwards = core.X < World.Map.Width * BuildingVisuals.TileSize / 2f ? 1 : -1;
+		_camera.StartAt(core + new Vector2(inwards * 4 * BuildingVisuals.TileSize, 0), UI.Countdown.CloseZoom);
+		if (MatchSetup.QuitAfterSteps > 0)
+			SkipCountdown(); // smoke tests play straight away
 		_overlay = new MatchOverlay { Name = "Overlay" };
 		AddChild(_overlay);
 		_overlay.Bind(World, _session, LeaveMatch);
@@ -134,6 +140,15 @@ public partial class Game : Node2D
 		LogDesync();
 		if (QuitWhenDone(delta) || _overlay.PausesGame)
 			return;
+		if (!UI.Countdown.Started(_countdown))
+		{
+			// 3, 2, 1: the match waits (look round, plan, place) while the camera flies in to the toybox.
+			_countdown += (float)delta;
+			_camera.Zoom = Vector2.One * UI.Countdown.Zoom(_countdown);
+			_overlay.ShowCountdown(_countdown);
+			return;
+		}
+		_overlay.ShowCountdown(_countdown += (float)delta);
 
 		_accumulator += delta;
 		int ticks = 0;
@@ -167,6 +182,13 @@ public partial class Game : Node2D
 	{
 		if (what == NotificationWMCloseRequest)
 			MatchSetup.EndOnline(); // tells the other side and closes the router port
+	}
+
+	/// <summary>Starts the match at once, without the countdown (smoke tests, VisualProbe).</summary>
+	public void SkipCountdown()
+	{
+		_countdown = UI.Countdown.Seconds + UI.Countdown.GoSeconds;
+		_camera?.StartAt(_camera.Position, UI.Countdown.CloseZoom);
 	}
 
 	private void LeaveMatch()

@@ -15,7 +15,7 @@ public partial class MatchOverlay : CanvasLayer
 	private World _world;
 	private MatchSession _session;
 	private Action _leave;
-	private Label _waiting, _message;
+	private Label _waiting, _message, _count;
 	private PanelContainer _panel;
 	private Button _resume;
 	private bool _shownEnd;
@@ -35,6 +35,13 @@ public partial class MatchOverlay : CanvasLayer
 		_waiting.Position += new Vector2(0, 90);
 		AddChild(_waiting);
 
+		_count = new Label { Visible = false, HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center, Modulate = UiTheme.Accent };
+		_count.AddThemeFontSizeOverride("font_size", 96);
+		_count.AddThemeConstantOverride("outline_size", 16);
+		_count.SetAnchorsAndOffsetsPreset(Control.LayoutPreset.FullRect);
+		_count.MouseFilter = Control.MouseFilterEnum.Ignore;
+		AddChild(_count);
+
 		var center = new CenterContainer { MouseFilter = Control.MouseFilterEnum.Ignore };
 		center.SetAnchorsAndOffsetsPreset(Control.LayoutPreset.FullRect);
 		AddChild(center);
@@ -52,6 +59,20 @@ public partial class MatchOverlay : CanvasLayer
 		var leave = new Button { Text = "Lämna matchen" };
 		leave.Pressed += () => _leave?.Invoke();
 		column.AddChild(leave);
+	}
+
+	/// <summary>The countdown before the match (UI/Countdown): each number pops up big and settles, then "Kör!".</summary>
+	public void ShowCountdown(float elapsed)
+	{
+		string text = UI.Countdown.Text(elapsed);
+		_count.Visible = text != "";
+		if (!_count.Visible)
+			return;
+		_count.Text = text;
+		float beat = UI.Countdown.Beat(elapsed);
+		_count.PivotOffset = _count.Size / 2;
+		_count.Scale = Vector2.One * (1.4f - 0.4f * Mathf.Min(1, beat * 3));
+		_count.Modulate = UiTheme.Accent with { A = text == "Kör!" ? 1 - beat : 1 };
 	}
 
 	/// <summary>Local play stands still while this panel is open (online can't pause: the other side plays on).</summary>
