@@ -1,12 +1,13 @@
 """
-The worker mice and the cheese hunter as upright sprite sheets (UI/UnitSheets layout):
-  builder       - hard hat, orange vest, hammer; act = hammering (up, down)
-  farmer        - straw hat, blue overalls, a carrot; act = picking (down, up)
-  scout         - green cap, binoculars on a strap; act = looking through them
+The mice seen from above (nose east, turned by the game), on two legs:
+  builder       - hard hat, orange vest, hammer; act = hammering (back, forward)
+  farmer        - straw hat, blue overalls, a carrot; act = picking (reach down, lift)
+  scout         - green cap, binoculars; act = looking through them
   cheese_hunter - red headband, boxing gloves; act = punching (wind up, hit)
+  pirate        - tricorn, eye patch, striped shirt, flintlock; act = aim, fire (puff)
 
     python tools/art/units/mice.py && python tools/art/restyle.py <the files it lists>
-Writes Units/<name>_sheet.png (7x3 cells of 48 px) and Units/<name>.png (the idle front cell, for the UI).
+Writes Units/<name>_sheet.png (one row of 7 cells, UI/UnitSheets) and Units/<name>.png (idle, for the UI).
 """
 import os
 import sys
@@ -15,123 +16,138 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from kit import *  # noqa: E402,F403
 
 WRITTEN = []
+HAT = (74, 52, 64)
+STEEL = (170, 176, 192)
 
 
 def write(name, cell_fn):
-    sheet = unit_sheet(cell_fn)
-    save(sheet, f"Units/{name}_sheet.png")
-    save(cell_fn("toward", "idle", 0), f"Units/{name}.png")
+    save(strip_sheet(cell_fn), f"Units/{name}_sheet.png")
+    save(cell_fn("idle", 0), f"Units/{name}.png")
     WRITTEN.extend([f"Units/{name}_sheet.png", f"Units/{name}.png"])
 
 
-# ---- hats: drawn on the head centre (hx, hy) ----
+# ---- hats from above, on the head centre (hx, hy), nose east ----
 
-def hard_hat(d, hx, hy, facing):
-    if facing == "side":
-        d.chord((hx - 9, hy - 12, hx + 7, hy + 2), 180, 360, fill=YELLOW)
-        d.rectangle((hx - 9, hy - 5, hx + 11, hy - 4), fill=tint(YELLOW, -0.25))
-    else:
-        d.chord((hx - 9, hy - 13, hx + 9, hy + 3), 180, 360, fill=YELLOW)
-        d.rectangle((hx - 11, hy - 5, hx + 11, hy - 4), fill=tint(YELLOW, -0.25))
-        d.line((hx, hy - 12, hx, hy - 6), fill=tint(YELLOW, 0.4))
+def hard_hat(d, hx, hy):
+    d.ellipse((hx - 6, hy - 5, hx + 4, hy + 5), fill=tint(YELLOW, -0.25))
+    d.ellipse((hx - 5, hy - 4, hx + 3, hy + 4), fill=YELLOW)
+    d.line((hx - 4, hy, hx + 2, hy), fill=tint(YELLOW, 0.45))
 
 
-def straw_hat(d, hx, hy, facing):
+def straw_hat(d, hx, hy):
     straw = (226, 190, 110)
-    d.ellipse((hx - 14, hy - 9, hx + 14, hy - 2), fill=tint(straw, -0.15))
-    d.chord((hx - 7, hy - 15, hx + 7, hy - 1), 180, 360, fill=straw)
-    d.rectangle((hx - 7, hy - 9, hx + 7, hy - 7), fill=RED)
+    d.ellipse((hx - 8, hy - 8, hx + 6, hy + 8), fill=tint(straw, -0.15))
+    d.ellipse((hx - 5, hy - 5, hx + 3, hy + 5), outline=RED, width=2)
+    d.ellipse((hx - 3, hy - 3, hx + 1, hy + 3), fill=straw)
 
 
-def cap(d, hx, hy, facing):
+def cap(d, hx, hy):
     green = (80, 150, 90)
-    d.chord((hx - 9, hy - 12, hx + 9, hy + 2), 180, 360, fill=green)
-    if facing == "side":
-        d.rectangle((hx + 4, hy - 6, hx + 12, hy - 4), fill=tint(green, -0.3))
-    elif facing == "toward":
-        d.ellipse((hx - 7, hy - 7, hx + 7, hy - 3), fill=tint(green, -0.3))
-    d.ellipse((hx - 1, hy - 13, hx + 1, hy - 11), fill=tint(green, 0.3))
+    d.ellipse((hx + 1, hy - 3, hx + 7, hy + 3), fill=tint(green, -0.3))   # the visor, forward
+    d.ellipse((hx - 5, hy - 5, hx + 3, hy + 5), fill=green)
+    d.ellipse((hx - 1, hy - 1, hx + 1, hy + 1), fill=tint(green, 0.3))
 
 
-def headband(d, hx, hy, facing):
-    d.rectangle((hx - 9, hy - 6, hx + 8, hy - 4), fill=RED)
-    if facing != "toward":
-        tail_x = hx - 9 if facing == "side" else hx + 2
-        d.line((tail_x, hy - 5, tail_x - 4, hy), fill=RED, width=2)
+def headband(d, hx, hy):
+    d.ellipse((hx - 7, hy - 7, hx + 6, hy + 6), outline=RED, width=2)
+    d.line((hx - 7, hy, hx - 12, hy - 3), fill=RED, width=2)
+    d.line((hx - 7, hy, hx - 12, hy + 2), fill=RED, width=2)
 
 
-# ---- held things and actions ----
+def tricorn(d, hx, hy):
+    d.polygon([(hx + 5, hy), (hx - 6, hy - 7), (hx - 3, hy), (hx - 6, hy + 7)], fill=HAT)
+    d.line((hx + 4, hy, hx - 4, hy - 5), fill=tint(YELLOW, -0.2))
+    d.line((hx + 4, hy, hx - 4, hy + 5), fill=tint(YELLOW, -0.2))
+    disc(d, hx, hy, 2, WHITE, shine=False)
 
-def hammer(d, x, y, facing, pose, step):
-    up = pose == "act" and step == 0
-    head = (x + 1, y - 7) if up else (x + 4, y - 3)
-    d.line((x, y, head[0], head[1]), fill=WOOD, width=2)
-    box(d, (head[0] - 3, head[1] - 3, head[0] + 3, head[1] + 1), GREY, radius=1, bevel=1)
+
+# ---- held things and actions (hand = (x, y) of the right hand, the south side) ----
+
+def hammer(d, x, y, pose, step):
+    forward = pose == "act" and step == 1
+    tip = (x + 8, y) if not forward else (x + 6, y - 2)
+    d.line((x, y, *tip), fill=WOOD, width=2)
+    box(d, (tip[0] - 1, tip[1] - 4, tip[0] + 3, tip[1] + 4), GREY, radius=1, bevel=1)
 
 
 def hammering(info):
-    hx, hy = info["head"]
-    return {"hand": (hx + 8, hy - 4)} if info["step"] == 0 else {"hand": (info["cx"] + 11, info["hip"] - 1)}
+    bx, cy = info["body"]
+    return {"hand": (bx - 2, cy + 12)} if info["step"] == 0 else {"hand": (bx + 14, cy + 8)}
 
 
-def carrot(d, x, y, facing, pose, step):
-    d.polygon([(x - 1, y), (x + 3, y), (x + 1, y + 6)], fill=ORANGE)
-    d.line((x + 1, y, x - 1, y - 3), fill=GREEN)
-    d.line((x + 1, y, x + 3, y - 3), fill=GREEN)
+def carrot(d, x, y, pose, step):
+    d.polygon([(x, y - 2), (x, y + 2), (x + 7, y)], fill=ORANGE)
+    d.line((x, y, x - 3, y - 2), fill=GREEN)
+    d.line((x, y, x - 3, y + 2), fill=GREEN)
 
 
 def picking(info):
-    return {"hand": (info["cx"] + 6, FEET - 3)} if info["step"] == 0 else {"hand": (info["cx"] + 8, info["hip"] - 10)}
+    bx, cy = info["body"]
+    return {"hand": (bx + 16, cy + 6)} if info["step"] == 0 else {"hand": (bx + 6, cy + 11)}
 
 
-def binoculars(d, x, y, facing, pose, step):
-    if pose == "act":
-        return  # drawn at the eyes by `looking`
-    d.rectangle((x - 2, y - 1, x + 3, y + 2), fill=DARK)
+def binoculars(d, x, y, pose, step):
+    if pose != "act":
+        d.rectangle((x - 2, y - 1, x + 3, y + 2), fill=DARK)
 
 
 def looking(info):
     hx, hy = info["head"]
-    return {"hand": (hx + 6, hy + 2), "back_hand": (hx - 6, hy + 2)}
+    return {"hand": (hx + 2, hy + 6), "back_hand": (hx + 2, hy - 6)}
 
 
 def binocular_eyes(d, info):
-    if info["pose"] != "act" or info["facing"] == "away":
+    if info["pose"] != "act":
         return
     hx, hy = info["head"]
-    xs = (hx + 6, hx + 10) if info["facing"] == "side" else (hx - 4, hx + 4)
-    for x in xs:
-        d.ellipse((x - 3, hy - 4, x + 3, hy + 2), fill=DARK)
-        d.ellipse((x - 1, hy - 2, x + 1, hy), fill=(120, 190, 240))
+    for side in (-1, 1):
+        d.ellipse((hx + 6, hy + 3 * side - 2, hx + 12, hy + 3 * side + 2), fill=DARK)
 
 
-def glove(d, x, y, facing, pose, step):
+def glove(d, x, y, pose, step):
     disc(d, x, y, 4, RED)
 
 
 def punching(info):
-    cx, hip = info["cx"], info["hip"]
-    if info["facing"] == "side":
-        return {"hand": (cx + 4, hip - 9)} if info["step"] == 0 else {"hand": (cx + 16, hip - 8)}
-    return {"hand": (cx + 5, hip - 9)} if info["step"] == 0 else {"hand": (cx + 2, hip - 4)}
+    bx, cy = info["body"]
+    return {"hand": (bx + 2, cy + 10)} if info["step"] == 0 else {"hand": (bx + 19, cy + 4)}
 
 
 def back_glove(d, info):
-    # the other glove: on the back hand (the kit only draws the front one)
-    if info["facing"] == "side":
-        return
-    cx, hip = info["cx"], info["hip"]
-    swing = {"walk": 0}.get(info["pose"], 0)
-    disc(d, cx - 9, hip - 3 + swing, 4, RED)
+    bx, cy = info["body"]
+    swing = {0: -3, 2: 3}.get(info["step"], 0) if info["pose"] == "walk" else 0
+    disc(d, bx + 3 + swing, cy - 10, 4, RED)
+
+
+def pistol(d, x, y, pose, step):
+    d.rectangle((x - 1, y - 1, x + 2, y + 2), fill=WOOD)
+    d.rectangle((x + 2, y - 1, x + 9, y), fill=STEEL)           # barrel, pointing forward
+
+
+def aiming(info):
+    bx, cy = info["body"]
+    return {"hand": (bx + 15, cy + 5)}
+
+
+def patch_and_puff(d, info):
+    hx, hy = info["head"]
+    d.line((hx - 6, hy - 6, hx + 5, hy + 1), fill=INK)          # the eye patch's strap
+    d.ellipse((hx + 2, hy - 5, hx + 6, hy - 1), fill=INK)       # the patch over the left eye
+    if info["pose"] == "act" and info["step"] == 1:
+        x, y = info["hand"]
+        for dx, dy, r in ((13, 0, 3), (15, -2, 2), (15, 2, 2)):
+            d.ellipse((x + dx - r, y + dy - r, x + dx + r, y + dy + r), fill=WHITE)
 
 
 def main():
-    write("builder", lambda f, p, s: upright_mouse(f, p, s, hat=hard_hat, shirt=ORANGE, held=hammer, act=hammering))
-    write("farmer", lambda f, p, s: upright_mouse(f, p, s, hat=straw_hat, shirt=BLUE, held=carrot, act=picking))
-    write("scout", lambda f, p, s: upright_mouse(f, p, s, hat=cap, shirt=(80, 150, 90), held=binoculars, act=looking,
-                                                 extra=binocular_eyes))
-    write("cheese_hunter", lambda f, p, s: upright_mouse(f, p, s, hat=headband, shirt=YELLOW, held=glove, act=punching,
-                                                         extra=back_glove))
+    write("builder", lambda p, s: topdown_mouse(p, s, hat=hard_hat, shirt=ORANGE, held=hammer, act=hammering))
+    write("farmer", lambda p, s: topdown_mouse(p, s, hat=straw_hat, shirt=BLUE, held=carrot, act=picking))
+    write("scout", lambda p, s: topdown_mouse(p, s, hat=cap, shirt=(80, 150, 90), held=binoculars, act=looking,
+                                              extra=binocular_eyes))
+    write("cheese_hunter", lambda p, s: topdown_mouse(p, s, hat=headband, shirt=YELLOW, held=glove, act=punching,
+                                                      extra=back_glove))
+    write("pirate", lambda p, s: topdown_mouse(p, s, hat=tricorn, shirt=WHITE, stripes=RED, held=pistol, act=aiming,
+                                               extra=patch_and_puff))
     print(" ".join(WRITTEN))
 
 

@@ -61,18 +61,15 @@ public partial class TreadmillView : Node2D
 
 			if (mill.HasTrainee && _mouse != null)
 			{
-				// Running towards the cheese with its side walk frames, upright (not turned with the building):
-				// the belt spot follows the building's turn, the mouse only looks left or right.
+				// Running towards the cheese (east on the sprite, turned with the building) with its walk frames,
+				// a quick hop each stride.
 				int step = (int)(time * StepsPerSecond + mill.X) % 4;
-				var frame = new UnitFrame(mill.Facing == Direction.West ? Facing.Left : Facing.Right, PoseKind.Walk, step);
-				var (column, row, mirror) = UnitSheets.Cell(frame);
 				float cell = UnitSheets.CellSize(UnitType.Builder);
-				var spot = GetTransformFor(mill) * new Vector2(-14f, 14f); // the feet on the belt
-				DrawSetTransform(spot, 0);
-				var source = new Rect2(column * cell, row * cell, cell, cell);
-				float feet = UnitSheets.FeetY(UnitType.Builder);
-				var target = mirror ? new Rect2(cell / 2, -feet, -cell, cell) : new Rect2(-cell / 2, -feet, cell, cell);
-				DrawTextureRectRegion(_mouse, target, source, UnitView.PlayerTints[mill.Owner % UnitView.PlayerTints.Length]);
+				int column = UnitSheets.Column(new UnitFrame(Facing.Right, PoseKind.Walk, step));
+				float hop = -Mathf.Abs(Mathf.Sin(time * StepsPerSecond * Mathf.Pi / 2)) * 1.5f;
+				DrawSetTransformMatrix(GetTransformFor(mill) * new Transform2D(0, new Vector2(-14f, 2f + hop)));
+				DrawTextureRectRegion(_mouse, new Rect2(-cell / 2, -cell / 2, cell, cell), new Rect2(column * cell, 0, cell, cell),
+					UnitView.PlayerTints[mill.Owner % UnitView.PlayerTints.Length]);
 			}
 		}
 		DrawSetTransform(Vector2.Zero, 0);

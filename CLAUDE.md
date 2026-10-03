@@ -92,11 +92,12 @@ Kompakt fabrik, max 3 nivåer i produktionskedjan, matcher 15–25 min.
   portar i routern (ingen UPnP, användaren tyckte det kändes osäkert): olika nätverk = Tailscale (100.64–127.x). Startmeny (`Scenes/
   Menu.tscn`, huvudscen): spela lokalt (Lätt/Normal), hosta, anslut. Online går inte att pausa; 10 s tystnad =
   anslutningen bröts. Sim-koden får inte ha flyttal, klockor, slump, hashkoder eller trådar (`DeterminismGuardTests`).
-- Enheter står upprätt (snett framifrån, vrids aldrig): mössen går på två ben, piratmusen (`PlasticSoldier`,
-  "Piratmus", tricorn/ögonlapp/flintlås, byggs i Piratskeppet) och klossgolemen också; RC-bilen ritas ovanifrån och vrids. Spritark
-  7x3 (stå, gå x4, handla x2 × mot/bort/sida; vänster = speglad sida), `UI/UnitSheets.cs`; rutan väljs av
-  `UI/UnitAnimation.cs` (riktning med hysteres, gångsteg efter sträcka, anfall/arbete) och ritas av UnitView
-  (MultiMesh + shader, fötterna på positionen, y-sorterat).
+- Enheter: mössen (byggare, bonde, spejare, ostjägare, piratmusen `PlasticSoldier` "Piratmus" med tricorn/
+  ögonlapp/flintlås, byggs i Piratskeppet) ses ovanifrån och vrids dit de går, nosen österut i spriten, på två
+  ben: rosa fötter som tar steg bakom kroppen, rosa öron och svans. Ark 7x1 (stå, gå x4, handla x2). Klossgolemen
+  står upprätt (ark 7x3, vrids aldrig, fötterna på positionen); RC-bilen ovanifrån med hjulbilder.
+  `UI/UnitSheets.cs` (`UnitLayout`), `UI/UnitAnimation.cs` (gångsteg efter sträcka, anfall/arbete, riktning
+  med hysteres för golemen), UnitView (MultiMesh + shader som väljer rutan).
 - Byggnader rör sig när de arbetar (framsteg ändras senaste 0,5 s, `UI/Activity.cs`): rörliga delar ovanpå
   stillbilden (`UI/BuildingParts.cs`: snurra, gunga, gå fram och tillbaka, glida, runda, blinka, puffa, flyta;
   `Always` = rör sig även när den står still; `KeepsUpright` = piratskeppet ses från sidan, vrids aldrig, speglas mot väster;

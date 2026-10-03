@@ -184,152 +184,93 @@ def part(w, h):
     return canvas(w, h)
 
 
-# ---- upright mice (units): a chibi mouse standing on two legs, seen at an angle from the front ----
+# ---- mice (units): seen from above, nose to the east (the game turns them the way they go) ----
 
 CELL = 48          # unit sheet cell (UI/UnitSheets.CellSize)
-FEET = CELL - 6    # where the feet touch the ground (UnitSheets.FeetY)
+FEET = CELL - 6    # upright units: where the feet touch the ground (UnitSheets.FeetY)
 FUR = MOUSE
 BELLY = (214, 212, 222)
 TAIL = (200, 100, 125)     # darker pink than the ears, so it reads against the floor
 
-# walk steps: (left foot lift, right foot lift, body bob, arm swing, side stride)
-WALK = [(2, 0, 0, 1, 4), (0, 0, -1, 0, 0), (0, 2, 0, -1, -4), (0, 0, -1, 0, 0)]
+# walk steps: (left foot ahead, right foot ahead, arm swing, tail wiggle) in pixels along the nose
+STRIDE = [(6, -12, -3, 2), (-4, -4, 0, 0), (-12, 6, 3, -2), (-4, -4, 0, 0)]
+IDLE_FEET = (-10, -10)   # both heels show behind the body
 
 
-def _limb(d, x0, y0, x1, y1, color, w=3):
-    d.line((x0, y0, x1, y1), fill=color, width=w)
-
-
-def _leg(d, x0, y0, x1, y1, color):
-    """A short chubby leg: thick, with rounded ends (not a matchstick)."""
-    d.line((x0, y0, x1, y1), fill=color, width=6)
-    for x, y in ((x0, y0), (x1, y1)):
-        d.ellipse((x - 3, y - 3, x + 3, y + 3), fill=color)
-
-
-def _paw(d, x, y, toe_right=True):
-    """A pink foot, a little wider than the leg, with a hint of toes."""
-    d.ellipse((x - 4, y - 3, x + 4, y + 2), fill=PINK)
-    d.point((x + (2 if toe_right else -2), y - 1), fill=tint(PINK, -0.3))
-
-
-def upright_mouse(facing, pose="idle", step=0, hat=None, shirt=None, held=None, act=None, extra=None, stripes=None):
+def topdown_mouse(pose="idle", step=0, hat=None, shirt=None, held=None, act=None, extra=None, stripes=None):
     """
-    One 48x48 cell: a mouse standing on two legs. facing: "toward", "away", "side" (looking right; the game
-    mirrors it for left). pose: "idle", "walk" (step 0-3) or "act" (step 0-1, drawn by `act`).
-    hat(d, hx, hy, facing): draws headwear on the head centre (hx, hy). shirt: body colour (None = fur).
-    held(d, x, y, facing, pose, step): draws what the front hand holds at (x, y).
-    act(pose_info) -> overrides for arms in action frames: a dict with "hand" (x, y) of the front hand.
-    extra(d, info): anything else drawn last (eye patch, puffs).
+    One 48x48 cell: a mouse on two legs seen from above, nose to the east. Its two pink feet step out from
+    under the body, the arms swing the other way, the pink tail wiggles behind. hat(d, hx, hy) on the head
+    centre; shirt = body colour; held(d, x, y, pose, step) in the right hand (the south side); act(info)
+    returns {"hand": (x, y)} for the action frames; extra(d, info) draws last; stripes = shirt stripes.
     """
     img, d = canvas(CELL, CELL)
-    lift_l, lift_r, bob, swing, stride = WALK[step] if pose == "walk" else (0, 0, 0, 0, 0)
-    cx = CELL // 2
-    hip = FEET - 8 + bob
-    body_top = hip - 12
-    head_y = body_top - 6
+    left, right, swing, wiggle = STRIDE[step] if pose == "walk" else (*IDLE_FEET, 0, 0)
+    cy = CELL // 2
+    bx = 23                       # body centre
+    hx, hy = bx + 10, cy          # head centre
     body = shirt or FUR
-    info = {"facing": facing, "pose": pose, "step": step, "cx": cx, "head": (cx, head_y), "hip": hip, "bob": bob}
-
-    # front hand position (the one holding things): right side of the picture
-    if facing == "side":
-        hand = (cx + 6 + swing * 2, hip - 4)
-        back_hand = (cx - 5 - swing * 2, hip - 4)
-    else:
-        hand = (cx + 9, hip - 3 + swing)
-        back_hand = (cx - 9, hip - 3 - swing)
+    hand = (bx + 3 - swing, cy + 10)          # right hand (south side)
+    back_hand = (bx + 3 + swing, cy - 10)     # left hand (north side)
+    info = {"pose": pose, "step": step, "head": (hx, hy), "body": (bx, cy)}
     if pose == "act" and act:
-        over = act(dict(info, step=step)) or {}
+        over = act(dict(info)) or {}
         hand = over.get("hand", hand)
         back_hand = over.get("back_hand", back_hand)
     info["hand"] = hand
 
-    # tail: behind (towards / side), in front (away)
-    def tail():
-        if facing == "side":
-            pts = [(cx - 6, hip - 2), (cx - 11, hip - 2), (cx - 15, hip - 5 + bob), (cx - 17, hip - 10 + bob),
-                   (cx - 15, hip - 15), (cx - 12, hip - 16)]
-        else:
-            s = 1 if facing == "toward" else -1
-            pts = [(cx + 3 * s, hip - 1), (cx + 9 * s, hip + 2), (cx + 14 * s, hip - 1), (cx + 16 * s, hip - 6),
-                   (cx + 14 * s, hip - 11), (cx + 11 * s, hip - 12)]
-        d.line(pts, fill=TAIL, width=3, joint="curve")
-
-    if facing != "away":
-        tail()
-
-    # legs and feet
-    if facing == "side":
-        for dx, lift, shade in ((stride, lift_l, -0.25), (-stride, lift_r, -0.05)):
-            fx = cx + dx
-            _leg(d, cx + dx // 3, hip - 1, fx, FEET - 3 - lift, tint(FUR, shade))
-            _paw(d, fx + 1, FEET - 1 - lift)
-    else:
-        for dx, lift in ((-4, lift_l), (4, lift_r)):
-            _leg(d, cx + dx, hip - 1, cx + dx, FEET - 3 - lift, tint(FUR, -0.1))
-            _paw(d, cx + dx, FEET - 1 - lift, toe_right=dx > 0)
-
-    # back arm (behind the body)
-    if facing == "side":
-        _limb(d, cx - 1, body_top + 4, *back_hand, tint(FUR, -0.25))
-    # body
-    d.ellipse((cx - 8, body_top, cx + 8, hip + 2), fill=tint(body, -0.25))
-    d.ellipse((cx - 8, body_top, cx + 7, hip + 1), fill=body)
-    if facing == "toward" and shirt is None:
-        d.ellipse((cx - 4, body_top + 4, cx + 4, hip + 1), fill=BELLY)
+    # tail behind, wiggling
+    d.line([(bx - 7, cy), (bx - 12, cy + 2 + wiggle), (bx - 16, cy - 1 - wiggle), (bx - 20, cy + 2 + wiggle),
+            (bx - 22, cy - 1)], fill=TAIL, width=3, joint="curve")
+    # feet: the one behind steps out from under the body (left and right take turns), toes forward
+    for ahead, y in ((left, cy - 4), (right, cy + 4)):
+        fx = bx + ahead
+        d.line((bx - 2, y, fx + 1, y), fill=tint(FUR, -0.15), width=4)     # the leg
+        d.ellipse((fx - 3, y - 3, fx + 5, y + 3), fill=PINK)
+        d.point((fx + 4, y), fill=tint(PINK, -0.3))
+    # arms and hands at the sides
+    for x, y in (back_hand, hand):
+        d.line((bx + 2, cy + (6 if y > cy else -6), x, y), fill=tint(body, -0.1), width=3)
+    # body, with an optional striped shirt
+    d.ellipse((bx - 8, cy - 9, bx + 8, cy + 9), fill=tint(body, -0.25))
+    d.ellipse((bx - 8, cy - 9, bx + 7, cy + 8), fill=body)
     if stripes:
-        # stripes across the shirt, kept inside the body's outline
         mask, md = canvas(CELL, CELL)
-        md.ellipse((cx - 7, body_top + 1, cx + 6, hip), fill=(255, 255, 255, 255))
+        md.ellipse((bx - 7, cy - 8, bx + 6, cy + 7), fill=(255, 255, 255, 255))
         layer, ld = canvas(CELL, CELL)
-        for y in range(body_top + 3, hip + 1, 4):
-            ld.rectangle((cx - 8, y, cx + 8, y + 1), fill=stripes)
+        for x in range(bx - 7, bx + 7, 4):
+            ld.rectangle((x, cy - 9, x + 1, cy + 9), fill=stripes)
         img.paste(layer, (0, 0), Image.composite(layer, Image.new("RGBA", layer.size), mask.split()[3]))
-    if facing == "away":
-        tail()
-    # arms
-    if facing == "side":
-        _limb(d, cx + 1, body_top + 4, *hand, tint(body, 0.1))
-        disc(d, hand[0], hand[1], 2, FUR, shine=False)
-    else:
-        _limb(d, cx - 6, body_top + 4, *back_hand, tint(body, 0.05))
-        _limb(d, cx + 6, body_top + 4, *hand, tint(body, 0.05))
-        for x, y in (back_hand, hand):
-            disc(d, x, y, 2, FUR, shine=False)
-
-    # head with ears
-    hx, hy = cx + (2 if facing == "side" else 0), head_y
-    if facing == "side":
-        d.ellipse((hx - 10, hy - 15, hx + 2, hy - 3), fill=FUR)
-        d.ellipse((hx - 8, hy - 13, hx, hy - 5), fill=PINK)
-    else:
-        for s in (-1, 1):
-            ex = hx + 8 * s
-            d.ellipse((ex - 6, hy - 14, ex + 6, hy - 2), fill=FUR if facing == "toward" else tint(FUR, -0.25))
-            if facing == "toward":
-                d.ellipse((ex - 4, hy - 12, ex + 4, hy - 4), fill=PINK)
-    d.ellipse((hx - 9, hy - 9, hx + 9, hy + 8), fill=tint(FUR, -0.2))
-    d.ellipse((hx - 9, hy - 9, hx + 8, hy + 7), fill=FUR)
-    if facing == "toward":
-        d.ellipse((hx - 4, hy + 1, hx + 4, hy + 7), fill=BELLY)
-        d.ellipse((hx - 1, hy + 1, hx + 1, hy + 3), fill=PINK)
-        for ex in (hx - 4, hx + 4):
-            d.ellipse((ex - 1, hy - 3, ex + 1, hy), fill=INK)
-        for s in (-1, 1):
-            d.line((hx + 5 * s, hy + 4, hx + 10 * s, hy + 3), fill=tint(FUR, 0.4))
-    elif facing == "side":
-        d.ellipse((hx + 3, hy - 1, hx + 12, hy + 6), fill=BELLY)
-        d.ellipse((hx + 11, hy + 1, hx + 13, hy + 3), fill=PINK)
-        d.ellipse((hx + 3, hy - 4, hx + 5, hy - 1), fill=INK)
-        d.line((hx + 8, hy + 5, hx + 14, hy + 6), fill=tint(FUR, 0.4))
-    info["head"] = (hx, hy)
+    for x, y in (back_hand, hand):
+        disc(d, x, y, 2, FUR, shine=False)
+    # head: round ears with pink insides on both sides, the snout forward, eyes, whiskers
+    for side in (-1, 1):
+        ex, ey = hx - 3, hy + 8 * side
+        d.ellipse((ex - 5, ey - 5, ex + 5, ey + 5), fill=FUR)
+        d.ellipse((ex - 3, ey - 3, ex + 3, ey + 3), fill=PINK)
+    d.ellipse((hx - 7, hy - 7, hx + 7, hy + 7), fill=tint(FUR, -0.2))
+    d.ellipse((hx - 7, hy - 7, hx + 6, hy + 6), fill=FUR)
+    d.ellipse((hx + 3, hy - 4, hx + 11, hy + 4), fill=BELLY)
+    d.ellipse((hx + 9, hy - 1, hx + 12, hy + 2), fill=PINK)
+    for side in (-1, 1):
+        d.ellipse((hx + 3, hy + 3 * side - 1, hx + 5, hy + 3 * side + 1), fill=INK)
+        d.line((hx + 9, hy + 2 * side, hx + 14, hy + 5 * side), fill=tint(FUR, 0.4))
     if hat:
-        hat(d, hx, hy, facing)
+        hat(d, hx - 1, hy)
     if held:
-        held(d, hand[0], hand[1], facing, pose, step)
+        held(d, hand[0], hand[1], pose, step)
     if extra:
         extra(d, info)
     return img
+
+
+def strip_sheet(cell_fn):
+    """A one-row sheet (top-down units): idle, walk 0-3, act 0-1 (UI/UnitSheets)."""
+    poses = [("idle", 0)] + [("walk", i) for i in range(4)] + [("act", i) for i in range(2)]
+    sheet = Image.new("RGBA", (CELL * len(poses), CELL), (0, 0, 0, 0))
+    for col, (pose, step) in enumerate(poses):
+        sheet.alpha_composite(cell_fn(pose, step), (col * CELL, 0))
+    return sheet
 
 
 def unit_sheet(cell_fn, columns=7, cell=CELL):

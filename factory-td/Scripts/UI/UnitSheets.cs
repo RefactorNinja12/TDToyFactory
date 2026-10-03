@@ -2,10 +2,17 @@ using FactoryTD.Sim;
 
 namespace FactoryTD.UI;
 
+/// <summary>How a unit is drawn.</summary>
+public enum UnitLayout
+{
+	TopDown, // seen from above, nose east, turned the way it goes: one row (idle, walk 1-4, act 1-2) - the mice
+	Upright, // seen from the front, never turned: rows towards / away / side (left = side mirrored) - the golem
+	Vehicle, // seen from above and turned, one row of wheel frames - the RC car
+}
+
 /// <summary>
 /// How the unit sprite sheets are laid out (Assets/Sprites/Units/&lt;name&gt;_sheet.png, drawn by
-/// tools/art/units). Upright units: rows towards / away / side (left = the side row mirrored), columns
-/// idle, walk 1-4, act 1-2. The RC car is a vehicle: drawn from above and turned, one row of wheel frames.
+/// tools/art/units): columns idle, walk 1-4, act 1-2 (vehicles: wheel frames); rows per UnitLayout.
 /// </summary>
 public static class UnitSheets
 {
@@ -28,13 +35,31 @@ public static class UnitSheets
 		_ => type.ToString().ToLowerInvariant(),
 	};
 
-	/// <summary>Sheet size in pixels: 7x3 cells for upright units, a row of wheel frames for vehicles.</summary>
-	public static (int Width, int Height) SheetSize(UnitType type) => IsUpright(type)
-		? (Columns * CellSize(type), Rows * CellSize(type))
-		: (VehicleFrames * CellSize(type), CellSize(type));
+	/// <summary>Sheet size in pixels: 7x3 cells upright, 7x1 top-down, a row of wheel frames for vehicles.</summary>
+	public static (int Width, int Height) SheetSize(UnitType type) => Layout(type) switch
+	{
+		UnitLayout.Upright => (Columns * CellSize(type), Rows * CellSize(type)),
+		UnitLayout.TopDown => (Columns * CellSize(type), CellSize(type)),
+		_ => (VehicleFrames * CellSize(type), CellSize(type)),
+	};
 
-	/// <summary>Drawn upright from the front (not turned); everything else is a vehicle.</summary>
-	public static bool IsUpright(UnitType type) => type != UnitType.RcCar;
+	public static UnitLayout Layout(UnitType type) => type switch
+	{
+		UnitType.BrickGolem => UnitLayout.Upright,
+		UnitType.RcCar => UnitLayout.Vehicle,
+		_ => UnitLayout.TopDown,
+	};
+
+	/// <summary>Drawn upright from the front (not turned, stands on its feet).</summary>
+	public static bool IsUpright(UnitType type) => Layout(type) == UnitLayout.Upright;
+
+	/// <summary>The column of a frame in a one-row sheet (top-down units): idle, walk 1-4, act 1-2.</summary>
+	public static int Column(UnitFrame frame) => frame.Kind switch
+	{
+		PoseKind.Walk => WalkColumn + frame.Step % 4,
+		PoseKind.Act => ActColumn + frame.Step % 2,
+		_ => 0,
+	};
 
 	/// <summary>Pixels per cell of the sheet.</summary>
 	public static int CellSize(UnitType type) => type switch
@@ -49,12 +74,7 @@ public static class UnitSheets
 	/// <summary>The cell for a frame, and whether to mirror it (looking left).</summary>
 	public static (int Column, int Row, bool Mirror) Cell(UnitFrame frame)
 	{
-		int column = frame.Kind switch
-		{
-			PoseKind.Walk => WalkColumn + frame.Step % 4,
-			PoseKind.Act => ActColumn + frame.Step % 2,
-			_ => 0,
-		};
+		int column = Column(frame);
 		int row = frame.Facing switch
 		{
 			Facing.Toward => 0,

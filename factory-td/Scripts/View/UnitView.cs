@@ -10,8 +10,8 @@ namespace FactoryTD.View;
 /// Draws all units with one MultiMesh per unit type (one draw call per type however many units there are),
 /// interpolated between simulation ticks. Each instance shows one cell of its type's sprite sheet (UI/UnitSheets),
 /// picked by a small shader from the instance's custom data (column, row, mirrored), as UI/UnitAnimation says:
-/// upright units stand on their feet at their position and are never turned (sorted by y, front ones on top);
-/// the RC car is turned the way it drives.
+/// the mice and the RC car are seen from above and turned the way they go; the upright golem stands on its
+/// feet at its position and is never turned (sorted by y, front ones on top).
 /// </summary>
 public partial class UnitView : Node2D
 {
@@ -61,7 +61,12 @@ void fragment() {
 				// QuadMesh is y-up; a negative height flips it to match 2D textures.
 				Mesh = new QuadMesh { Size = new Vector2(size, -size) },
 			};
-			var (columns, rows) = UnitSheets.IsUpright(type) ? (UnitSheets.Columns, UnitSheets.Rows) : (UnitSheets.VehicleFrames, 1);
+			var (columns, rows) = UnitSheets.Layout(type) switch
+			{
+				UnitLayout.Upright => (UnitSheets.Columns, UnitSheets.Rows),
+				UnitLayout.TopDown => (UnitSheets.Columns, 1),
+				_ => (UnitSheets.VehicleFrames, 1),
+			};
 			var material = new ShaderMaterial { Shader = shader };
 			material.SetShaderParameter("cells", new Vector2(columns, rows));
 			AddChild(new MultiMeshInstance2D
@@ -117,19 +122,21 @@ void fragment() {
 				}
 				else
 				{
-					// Vehicles face east at angle 0 and keep the last direction they moved or aimed in.
+					// Seen from above (mice, cars): nose east at angle 0, keeping the last direction moved or aimed in.
 					if (unit.MoveX != 0 || unit.MoveY != 0)
 						_angles[unit.Id] = Mathf.Atan2(unit.MoveY, unit.MoveX);
 					_angles.TryGetValue(unit.Id, out float angle);
-					int wheel = frame.Kind == PoseKind.Walk ? frame.Step % UnitSheets.VehicleFrames : 0;
+					int column = UnitSheets.Layout(type) == UnitLayout.TopDown
+						? UnitSheets.Column(frame)
+						: frame.Kind == PoseKind.Walk ? frame.Step % UnitSheets.VehicleFrames : 0;
 					mesh.SetInstanceTransform2D(i, new Transform2D(angle, position));
-					mesh.SetInstanceCustomData(i, new Color(wheel, 0, 0, 0));
+					mesh.SetInstanceCustomData(i, new Color(column, 0, 0, 0));
 				}
 				mesh.SetInstanceColor(i, PlayerTints[unit.Owner % PlayerTints.Length]);
 			}
 		}
 
-		// Forget the facing of dead vehicles now and then.
+		// Forget the facing of dead units now and then.
 		if (_angles.Count > 64)
 		{
 			var alive = new HashSet<int>();
