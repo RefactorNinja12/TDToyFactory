@@ -26,6 +26,9 @@ Kompakt fabrik, max 3 nivåer i produktionskedjan, matcher 15–25 min.
 - Leksakslådan (kärnan) = bank för byggkostnader. Allt annat går fysiskt på band:
   fabriker och torn hämtar aldrig direkt från lådan.
 - Logistik: transportband, delare, sorterare (senare korsning).
+  Band byggs klick–klick: första klicket = start (på en byggnad: bredvid den), vägen följer musen
+  (`UI/BeltPlanner.cs`: billigaste vägen över ledigt golv, svängar kostar lite extra, aldrig över byggnader,
+  korsar egna raka band med automatiska korsningar), andra klicket bygger den. Högerklick/Esc avbryter.
 - Produktionskedja (max 3 nivåer): råvara → monteringsmaskin (kugghjul/fjäder/kretskort) → truppfabrik.
 - Truppfabriker producerar automatiskt när materialet finns; trupperna går själva mot
   motståndarens leksakslåda.
@@ -185,7 +188,8 @@ Kompakt fabrik, max 3 nivåer i produktionskedjan, matcher 15–25 min.
 - `task export` = zip per plattform i `builds/` (Godot .NET export templates krävs, `tools/build/zip_build.py`
   behåller körrättigheter, `docs/LAS-MIG.txt` följer med). Båda spelarna måste köra samma zip.
 - Godot bara för det visuella: `Scripts/_Test/VisualProbe.cs` + skärmdump (headless `--write-movie`);
-  `PROBE_CAM="x,y,zoom"` tittar var som helst, `PROBE_SCENE=shadows` = lampa med byggnader och möss.
+  `PROBE_CAM="x,y,zoom"` tittar var som helst, `PROBE_SCENE=shadows` = lampa med byggnader och möss,
+  `PROBE_SCENE=belts` = ett band ritat klick–klick (startklick + musen vid målet).
   `Scenes/_Probe*.tscn` är gitignorerade.
 
 ## Assets

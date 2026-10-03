@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using FactoryTD.Sim;
 
 namespace FactoryTD.UI;
@@ -88,6 +89,22 @@ public static class Texts
 		ResourceType.Cheese => "ost",
 		_ => "",
 	};
+
+	/// <summary>The status line while drawing a belt (click, then click again).</summary>
+	public static string BeltPlanText(bool started, int belts, int junctions, bool found)
+	{
+		if (!started)
+			return "Klicka där bandet ska börja (på en byggnad: bredvid den).";
+		if (!found)
+			return "Ingen väg dit för bandet.";
+		var total = new Dictionary<ItemType, int>();
+		foreach (var (type, count) in new[] { (BuildingType.Conveyor, belts), (BuildingType.Junction, junctions) })
+			foreach (var stack in BuildingRules.Cost(type))
+				total[stack.Type] = total.GetValueOrDefault(stack.Type) + stack.Amount * count;
+		var cost = total.Count == 0 ? "gratis" : string.Join(", ", total.Select(t => ItemCount(t.Key, t.Value)));
+		string crossings = junctions == 0 ? "" : junctions == 1 ? ", 1 korsning" : $", {junctions} korsningar";
+		return $"{belts} band{crossings}: {cost}. Klicka för att bygga, högerklick avbryter.";
+	}
 
 	/// <summary>E.g. "10 klossar, 5 plast".</summary>
 	public static string CostText(BuildingType type, string separator = ", ")
