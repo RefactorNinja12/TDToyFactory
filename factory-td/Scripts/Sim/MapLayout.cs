@@ -121,6 +121,8 @@ public sealed partial class MapLayout
 		AddMirroredDeposit(10, 22, 13, 25, ResourceType.Brick);
 		AddMirroredDeposit(10, 36, 13, 39, ResourceType.Plastic);
 		AddMirroredDeposit(40, 46, 42, 48, ResourceType.Battery);
+		// A few batteries just west of the core, in its light from the start (between the warehouse and the fields).
+		AddMirroredDeposit(2, 31, 3, 32, ResourceType.Battery);
 		// Cheese, a starting resource: just north of the core, in its light from the start.
 		AddMirroredDeposit(5, 22, 7, 23, ResourceType.Cheese);
 
