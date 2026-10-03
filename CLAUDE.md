@@ -28,7 +28,7 @@ Kompakt fabrik, max 3 nivåer i produktionskedjan, matcher 15–25 min.
 - Logistik: transportband, delare, sorterare (senare korsning).
   Band byggs klick–klick: första klicket = start (på en byggnad: bredvid den), vägen följer musen
   (`UI/BeltPlanner.cs`: billigaste vägen över ledigt golv, svängar kostar lite extra, aldrig över byggnader,
-  korsar egna raka band med automatiska korsningar), andra klicket bygger den. Högerklick/Esc avbryter.
+  korsar egna raka band med automatiska korsningar), andra klicket bygger den. Högerklick/mellanslag avbryter.
   Band ritas som leksaksband (gula skenor, gummiband) som skarvas ihop med delare/sorterare/korsning; räfflorna
   rör sig i föremålens fart via en shader (`UI/BeltLook.cs`, `View/BeltMaterials.cs`).
 - Klokran (`Sim/Crane.cs`, Logistik, G): bas på styltor vid ett resursfälts kant, vänd in mot fältet; rälsen
@@ -83,8 +83,9 @@ Kompakt fabrik, max 3 nivåer i produktionskedjan, matcher 15–25 min.
   på enheter och byggnader. Byggare på väg till ett löpband räknas inte; en kallad byggare som skulle
   bli den sista kliver inte in. Dör sista byggaren kommer en ny ur leksakslådan (`ReplaceLostBuilders`,
   av i `Scenario.NoWorkers()`). Musfälla = hinder. Närstrid (räckvidd ≤ 1,5 ruta) = `DamageKind.Punch`.
-- Kortkommandon för bygge: siffra 1–7 väljer kategori (flik), sedan Z X C F G T byggnaden på den
-  platsen. Bokstäverna krockar inte med kameran (WASD/QE), R (rotera) eller V (elnät).
+- Kortkommandon för bygge, bara siffror: siffra 1–7 öppnar en kategori (flik), sedan väljer en siffra kortet på
+  den platsen (1 = första). Kategorin står kvar öppen; mellanslag backar (bandets start, bygget, sedan kategorin). Esc = pausmenyn.
+  Bokstäver tas aldrig.
   Logik i `Scripts/UI/BuildHotkeys.cs`, BuildMenu läser den i `_Input`.
 - UI-stil: `View/UiTheme.cs` (halvgenomskinliga marinblå ramade paneler, rundade hörn, skugga, gul accent,
   textkontur; standardtypsnitt) sätts på varje UI-rot via `UiTheme.ApplyTo` (fönstrets tema når inte

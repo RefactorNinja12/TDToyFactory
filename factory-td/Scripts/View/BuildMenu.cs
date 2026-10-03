@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using FactoryTD.Sim;
 using FactoryTD.UI;
 using Godot;
@@ -9,7 +10,7 @@ namespace FactoryTD.View;
 /// <summary>
 /// Bottom bar: category tabs and one card per building in the open category (UI.BuildCardModel: icon,
 /// name, cost as small item icons that turn red when you have too little, the hotkey letter as a badge).
-/// Keyboard: a number opens a category, then Z X C F G T picks the building (UI.BuildHotkeys).
+/// Keyboard: a number opens a category, then a number picks the building on that card (UI.BuildHotkeys).
 /// Status messages appear as a fading toast above the bar (UI.Toasts).
 /// </summary>
 public partial class BuildMenu : CanvasLayer
@@ -88,7 +89,7 @@ public partial class BuildMenu : CanvasLayer
 
 		var hint = new Label
 		{
-			Text = "1–7 → Z X C F G T  •  R rotera  •  dra: band  •  högerklick: avbryt / riv",
+			Text = "flik 1–7, sedan kort 1–6  •  R rotera  •  band: klicka start, klicka mål  •  mellanslag backar  •högerklick: avbryt / riv",
 			HorizontalAlignment = HorizontalAlignment.Center,
 			Modulate = UiTheme.TextDim,
 		};
@@ -136,7 +137,7 @@ public partial class BuildMenu : CanvasLayer
 		}
 		_costLabels[type] = labels;
 
-		// The hotkey letter as a small badge in the corner.
+		// The hotkey number as a small badge in the corner.
 		var badge = new Label
 		{
 			Text = model.Hotkey.ToString(),
@@ -163,18 +164,18 @@ public partial class BuildMenu : CanvasLayer
 	{
 		if (_hotkeys == null || @event is not InputEventKey key || key.Echo || !key.Pressed)
 			return;
-		char c = key.Keycode == Key.Escape ? BuildHotkeys.Escape
-			: (long)key.Keycode is >= 32 and < 127 ? (char)(long)key.Keycode : '\0';
+		char c = (long)key.Keycode is >= 32 and < 127 ? (char)(long)key.Keycode : '\0'; // space = BuildHotkeys.Back
 		if (c == '\0')
 			return;
-		var result = _hotkeys.Press(c);
+		bool placing = _buttons.Values.Any(b => b.ButtonPressed);
+		var result = _hotkeys.Press(c, placing);
 		switch (result.Outcome)
 		{
 			case HotkeyOutcome.None:
 				return;
 			case HotkeyOutcome.CategoryOpened:
 				ShowCategory(result.Category);
-				ShowStatus($"{BuildingVisuals.MenuCategories[result.Category].Name}: välj med Z X C F G T (Esc avbryter)");
+				ShowStatus($"{BuildingVisuals.MenuCategories[result.Category].Name}: välj med 1–{BuildingVisuals.MenuCategories[result.Category].Types.Length} (mellanslag tillbaka)");
 				break;
 			case HotkeyOutcome.Selected:
 				ShowCategory(result.Category);

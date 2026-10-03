@@ -12,15 +12,17 @@ public readonly record struct HotkeyResult(HotkeyOutcome Outcome, int Category =
 }
 
 /// <summary>
-/// Two-step build hotkeys: a number picks a menu category (1 = the first tab), then one of Z X C F G T
-/// picks the building in that place of the category. None of those letters is used by anything else
-/// (WASD pans, Q/E zoom, R rotates, V shows the power grid), so the camera never has to give way. Esc
-/// cancels. Keys are plain characters ('1', 'Z', Escape = '\u001b'), so this works without Godot.
+/// Build hotkeys with numbers only (the hand stays on the number row): a number opens a menu category
+/// (1 = the first tab), then a number picks the building in that place of the category (1 = the first card).
+/// The category stays open, so more numbers pick other buildings in it. Space steps back: first what is being
+/// placed (left to the build controller: a belt's start, then the building), then the category, after which
+/// numbers pick categories again. Esc is left to the pause menu. Letters are never taken (WASD pans, Q/E zoom,
+/// R rotates, V shows the power grid). Keys are plain characters ('1', Back = ' '), so this works without Godot.
 /// </summary>
 public sealed class BuildHotkeys
 {
-	public const string Letters = "ZXCFGT";
-	public const char Escape = '\u001b';
+	/// <summary>The step-back key: space.</summary>
+	public const char Back = ' ';
 
 	private readonly BuildingType[][] _categories;
 
@@ -31,37 +33,37 @@ public sealed class BuildHotkeys
 			_categories[i] = categories[i];
 	}
 
-	/// <summary>The category waiting for its letter, or -1.</summary>
+	/// <summary>The open category whose buildings the numbers pick, or -1 (numbers pick categories).</summary>
 	public int ArmedCategory { get; private set; } = -1;
 
 	public bool Armed => ArmedCategory >= 0;
 
-	/// <summary>The letter that picks a building by its place in the category, e.g. 'Z' for the first.</summary>
-	public static char LetterFor(int place) => place < Letters.Length ? Letters[place] : ' ';
+	/// <summary>The key shown on a card for its place in the category: '1' for the first.</summary>
+	public static char KeyFor(int place) => place < 9 ? (char)('1' + place) : ' ';
 
-	public HotkeyResult Press(char key)
+	/// <param name="hasSelection">A building is picked for placing: space then belongs to the build controller.</param>
+	public HotkeyResult Press(char key, bool hasSelection = false)
 	{
-		key = char.ToUpperInvariant(key);
-		if (key >= '1' && key <= '9' && key - '1' < _categories.Length)
+		if (key == Back)
 		{
-			ArmedCategory = key - '1';
-			return new HotkeyResult(HotkeyOutcome.CategoryOpened, ArmedCategory);
-		}
-		if (!Armed)
-			return default;
-		if (key == Escape)
-		{
+			if (hasSelection || !Armed)
+				return default;
 			ArmedCategory = -1;
 			return new HotkeyResult(HotkeyOutcome.Cancelled);
 		}
-		int place = Letters.IndexOf(key);
-		if (place < 0)
-			return default; // anything else (WASD, Q/E, R...) keeps working while a category waits
+		if (key < '1' || key > '9')
+			return default;
+		int number = key - '1';
+		if (!Armed)
+		{
+			if (number >= _categories.Length)
+				return default;
+			ArmedCategory = number;
+			return new HotkeyResult(HotkeyOutcome.CategoryOpened, ArmedCategory);
+		}
 		var category = _categories[ArmedCategory];
-		if (place >= category.Length)
-			return new HotkeyResult(HotkeyOutcome.Swallowed, ArmedCategory); // no building there: still waiting
-		int chosen = ArmedCategory;
-		ArmedCategory = -1;
-		return new HotkeyResult(HotkeyOutcome.Selected, chosen, category[place]);
+		if (number >= category.Length)
+			return new HotkeyResult(HotkeyOutcome.Swallowed, ArmedCategory); // no building there: nothing happens
+		return new HotkeyResult(HotkeyOutcome.Selected, ArmedCategory, category[number]);
 	}
 }

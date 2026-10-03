@@ -105,7 +105,7 @@ public static class Texts
 				total[stack.Type] = total.GetValueOrDefault(stack.Type) + stack.Amount * count;
 		var cost = total.Count == 0 ? "gratis" : string.Join(", ", total.Select(t => ItemCount(t.Key, t.Value)));
 		string crossings = junctions == 0 ? "" : junctions == 1 ? ", 1 korsning" : $", {junctions} korsningar";
-		return $"{belts} band{crossings}: {cost}. Klicka för att bygga, högerklick avbryter.";
+		return $"{belts} band{crossings}: {cost}. Klicka för att bygga, högerklick eller mellanslag avbryter.";
 	}
 
 	/// <summary>E.g. "10 klossar, 5 plast".</summary>
