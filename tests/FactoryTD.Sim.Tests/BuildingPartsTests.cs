@@ -18,6 +18,7 @@ public class BuildingPartsTests
 	[InlineData(Motion.Bob)]
 	[InlineData(Motion.Orbit)]
 	[InlineData(Motion.Blink)]
+	[InlineData(Motion.Float)]
 	public void Motions_LoopWithoutAJump(Motion motion)
 	{
 		var part = new Part("x", 3, -4, motion, Speed: 0.8f, DX: 10, DY: 6, Amount: 0.4f, Phase: 0.25f);
@@ -47,6 +48,19 @@ public class BuildingPartsTests
 		var orbit = new Part("x", 0, 0, Motion.Orbit, DX: 20, DY: 10);
 		Near(20, BuildingParts.PoseAt(orbit, 0).X, "orbit starts at the right");
 		Near(10, BuildingParts.PoseAt(orbit, 0.25f).Y, "and drives down (y grows) first");
+	}
+
+	[Fact]
+	public void Float_BobsAndRocks_AQuarterBeatApart_AndAlwaysPartsUseTheWallClock()
+	{
+		var ship = new Part("x", 0, 0, Motion.Float, DY: 3, Amount: 0.05f, Always: true);
+		Near(3, BuildingParts.PoseAt(ship, 0.25f).Y, "highest bob a quarter in");
+		Near(0, BuildingParts.PoseAt(ship, 0.25f).Angle, "level while at the top");
+		Near(0.05f, BuildingParts.PoseAt(ship, 0).Angle, "most tilted at the middle of the bob");
+		Assert.Equal(7f, BuildingParts.TimeFor(ship, workTime: 2, wallTime: 7));
+		Assert.Equal(2f, BuildingParts.TimeFor(ship with { Always = false }, workTime: 2, wallTime: 7));
+		Assert.True(BuildingParts.KeepsUpright(BuildingType.SoldierFactory));
+		Assert.False(BuildingParts.KeepsUpright(BuildingType.Assembler));
 	}
 
 	[Fact]

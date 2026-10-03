@@ -1,6 +1,6 @@
 """
 Army factories (2x2 = 128 px, output east):
-  soldier - a toy pirate ship on blue water: the sail billows, the flag flaps, cannons puff, waves roll by
+  soldier - a toy pirate ship seen from the side, sails full of wind, bobbing on the water; cannons puff while it builds
   golem   - a toy crane stacking ABC blocks: the hook lowers a block, a mouse swings a mallet
   car     - a slot-car track round a paint booth: two cars lap it, a mouse waves the chequered flag
 
@@ -22,52 +22,81 @@ def out(img, rel):
     WRITTEN.append(rel)
 
 
+def _billow(d, x, top, bottom, width, bulge, color):
+    """A square sail full of wind from behind (the left): the right edge bulges out in a curve."""
+    pts = [(x, top), (x + width, top)]
+    steps = 8
+    for k in range(1, steps):
+        t = k / steps
+        pts.append((x + width + bulge * 4 * t * (1 - t), top + (bottom - top) * t))
+    pts += [(x + width, bottom), (x, bottom)]
+    d.polygon(pts, fill=tint(color, -0.15))
+    d.polygon([(px - 2 if i > 1 and i < len(pts) - 2 else px, py) for i, (px, py) in enumerate(pts)], fill=color)
+    d.line((x - 2, top, x + width + 2, top), fill=tint(WOOD, -0.3), width=2)       # the yard
+    d.line((x - 2, bottom, x + width + 2, bottom), fill=tint(WOOD, -0.3), width=1)
+
+
 def soldier_factory():
-    """The pirate ship the plastic pirate mice are built in (bow east = the output side)."""
+    """
+    The pirate ship the plastic pirate mice are built in. The base is the water with a little pier at the
+    output (it turns with the building); the ship itself is a part seen from the side, bow to the right,
+    sails full of wind, floating up and down (it never turns, only mirrors when facing west).
+    """
     img, d = canvas(128, 128)
     water = (70, 130, 200)
     baseplate(img, d, color=water)
-    chute(d, 128, 128)
-    # ripples on the water round the ship
-    for x, y in ((14, 14), (40, 10), (90, 16), (20, 112), (70, 116), (104, 108)):
+    for x, y in ((10, 12), (44, 8), (92, 14), (14, 112), (64, 118), (100, 106), (8, 60), (110, 84)):
         d.arc((x, y, x + 12, y + 6), 200, 340, fill=tint(water, 0.35), width=1)
-    # hull: a wooden toy boat seen from above, pointed bow to the east, a red stripe round the rail
-    hull = [(14, 44), (86, 34), (114, 64), (86, 94), (14, 84)]
-    d.polygon(hull, fill=tint(WOOD, -0.3))
-    inner = [(20, 50), (84, 41), (104, 64), (84, 87), (20, 78)]
-    d.polygon(inner, fill=WOOD)
-    for y in range(46, 84, 6):
-        d.line((20, y, 98 - abs(y - 64) // 2, y), fill=tint(WOOD, -0.18))
-    d.line(hull + [hull[0]], fill=RED, width=2)
-    # cannons poking out of both sides
-    for x in (34, 54, 74):
-        d.rectangle((x, 36 + (x - 34) // 8 - 6, x + 6, 40 + (x - 34) // 8), fill=DARK)
-        d.rectangle((x, 88 - (x - 34) // 8, x + 6, 94 - (x - 34) // 8 + 4), fill=DARK)
-    # the gangplank down to the output, a hatch, the mast foot and the crow's nest
-    box(d, (104, 60, 124, 68), tint(WOOD, 0.15), radius=1, bevel=1)
-    box(d, (26, 56, 40, 72), tint(WOOD, -0.25), radius=1, bevel=1)
-    disc(d, 62, 64, 4, tint(WOOD, -0.4), shine=False)
+    box(d, (106, 56, 127, 72), tint(WOOD, 0.1), radius=1, bevel=1)          # the pier to the output
+    for x in (110, 116, 122):
+        d.line((x, 57, x, 71), fill=tint(WOOD, -0.25))
+    chute(d, 128, 128)
     out(img, "Buildings/factory_soldier.png")
 
-    sail, s_ = part(46, 36)             # the main sail, centred on the mast
-    box(s_, (2, 2, 43, 33), WHITE, radius=2, bevel=1)
-    s_.line((2, 18, 43, 18), fill=tint(WHITE, -0.2))
-    disc(s_, 23, 15, 6, INK, shine=False)                    # the skull
-    for ex in (21, 25):
-        s_.point((ex, 14), fill=WHITE)
-    s_.line((17, 24, 29, 28), fill=INK, width=2)             # crossed bones
-    s_.line((17, 28, 29, 24), fill=INK, width=2)
-    out(sail, "Parts/ship_sail.png")
+    ship, s_ = part(116, 100)
+    sail = (240, 236, 222)
+    # masts (behind the sails) and the crow's nest
+    s_.line((54, 64, 54, 4), fill=tint(WOOD, -0.35), width=3)
+    s_.line((82, 64, 82, 20), fill=tint(WOOD, -0.35), width=3)
+    box(s_, (48, 14, 60, 19), tint(WOOD, -0.1), radius=1, bevel=1)
+    # the flag streaming in the wind, then the sails
+    s_.polygon([(55, 2), (66, 0), (72, 4), (66, 8), (55, 8)], fill=(60, 50, 60))
+    s_.point((61, 4), fill=WHITE)
+    _billow(s_, 40, 22, 54, 26, 8, sail)
+    _billow(s_, 72, 28, 52, 18, 6, sail)
+    disc(s_, 54, 37, 5, INK, shine=False)                        # skull on the main sail
+    s_.line((48, 45, 60, 49), fill=INK, width=2)
+    s_.line((48, 49, 60, 45), fill=INK, width=2)
+    # the jib from the fore mast to the bowsprit
+    s_.line((100, 58, 114, 50), fill=tint(WOOD, -0.3), width=2)
+    s_.polygon([(84, 24), (112, 50), (86, 54)], fill=sail)
+    # hull: stern castle on the left, pointed bow on the right
+    hull = [(6, 46), (30, 46), (32, 60), (100, 58), (108, 56), (98, 72), (86, 84), (28, 86), (14, 76), (8, 62)]
+    s_.polygon(hull, fill=tint(WOOD, -0.25))
+    s_.polygon([(8, 48), (29, 48), (31, 61), (99, 60), (104, 58), (96, 70), (85, 81), (29, 83), (16, 74), (10, 62)],
+               fill=WOOD)
+    for y in (66, 72, 78):
+        s_.line((16, y, 94 - (y - 66), y), fill=tint(WOOD, -0.2))
+    s_.line((10, 62, 104, 60), fill=YELLOW, width=1)               # gold trim along the rail
+    s_.line((14, 68, 98, 66), fill=RED, width=3)                   # the red stripe
+    for x in (40, 56, 72):
+        s_.ellipse((x - 4, 71, x + 4, 79), fill=INK)               # cannon ports
+        s_.ellipse((x - 2, 73, x + 2, 77), fill=GREY)
+    for x in (12, 20):
+        s_.rectangle((x, 51, x + 4, 56), fill=YELLOW)              # lit stern windows
+    # the pirate mouse at the wheel on the stern castle
+    disc(s_, 24, 41, 4, MOUSE, shine=False)
+    for ex in (21, 27):
+        s_.ellipse((ex - 2, 35, ex + 2, 39), fill=MOUSE)
+    s_.polygon([(18, 38), (24, 33), (30, 38), (24, 40)], fill=(60, 50, 60))
+    s_.ellipse((33, 41, 41, 49), outline=tint(WOOD, -0.35), width=2)  # the wheel
+    out(ship, "Parts/pirate_ship.png")
 
-    flag, f = part(22, 22)              # centre = the top of the mast
-    f.line((11, 11, 11, 2), fill=GREY)
-    f.rectangle((11, 2, 21, 9), fill=(60, 50, 60))
-    f.point((16, 5), fill=WHITE)
-    out(flag, "Parts/jolly_roger.png")
-
-    wave, w = part(14, 6)
-    w.arc((0, 0, 13, 6), 200, 340, fill=WHITE, width=2)
-    out(wave, "Parts/wave.png")
+    front, f = part(124, 16)            # water in front of the hull's bottom
+    f.rectangle((0, 6, 123, 15), fill=water)
+    for x in range(0, 124, 12):
+        f.arc((x, 2, x + 12, 10), 180, 360, fill=tint(water, 0.4), width=2)
+    out(front, "Parts/ship_water.png")
 
 
 def abc_block(d, x, y, size, color, letter):

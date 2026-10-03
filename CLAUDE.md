@@ -98,7 +98,8 @@ Kompakt fabrik, max 3 nivåer i produktionskedjan, matcher 15–25 min.
   `UI/UnitAnimation.cs` (riktning med hysteres, gångsteg efter sträcka, anfall/arbete) och ritas av UnitView
   (MultiMesh + shader, fötterna på positionen, y-sorterat).
 - Byggnader rör sig när de arbetar (framsteg ändras senaste 0,5 s, `UI/Activity.cs`): rörliga delar ovanpå
-  stillbilden (`UI/BuildingParts.cs`: snurra, gunga, gå fram och tillbaka, glida, runda, blinka, puffa;
+  stillbilden (`UI/BuildingParts.cs`: snurra, gunga, gå fram och tillbaka, glida, runda, blinka, puffa, flyta;
+  `Always` = rör sig även när den står still; `KeepsUpright` = piratskeppet ses från sidan, vrids aldrig, speglas mot väster;
   `View/BuildingAnimator.cs`).
 - Skuggor räknas ut, målas aldrig i sprites: ingen skugga utan ljus. Ljuskällorna = samma som dimmans
   (`UI/LightSources`); ljus inom radien och utan vägg emellan (`Vision.LightReaches`) skjuter en mjuk rund

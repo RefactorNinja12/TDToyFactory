@@ -50,10 +50,14 @@ public partial class BuildingAnimator : Node2D
 			if (!visible.HasPoint(center) || !Knowledge.ShowBuilding(_world, _localPlayer, building))
 				continue;
 			float time = _clocks.Advance(building, _activity.IsWorking(building), _delta);
-			var place = new Transform2D(BuildingVisuals.Rotation(building.Facing), center);
+			float wall = Time.GetTicksMsec() / 1000f + building.X * 0.37f + building.Y * 0.61f;
+			// Side-view buildings (the ship) stay upright and only mirror when facing west.
+			var place = BuildingParts.KeepsUpright(building.Type)
+				? new Transform2D(0, new Vector2(building.Facing == Direction.West ? -1 : 1, 1), 0, center)
+				: new Transform2D(BuildingVisuals.Rotation(building.Facing), center);
 			foreach (var part in parts)
 			{
-				var pose = BuildingParts.PoseAt(part, time);
+				var pose = BuildingParts.PoseAt(part, BuildingParts.TimeFor(part, time, wall));
 				var texture = BuildingVisuals.GetPartTexture(part.Sprite);
 				DrawSetTransformMatrix(place * new Transform2D(pose.Angle, new Vector2(pose.Scale, pose.Scale), 0, new Vector2(pose.X, pose.Y)));
 				DrawTexture(texture, -texture.GetSize() / 2, new Color(1, 1, 1, pose.Alpha));

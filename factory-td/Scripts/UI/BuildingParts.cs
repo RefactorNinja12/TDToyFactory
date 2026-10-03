@@ -13,15 +13,17 @@ public enum Motion
 	Orbit,  // goes round an ellipse with radii (DX, DY), facing the way it drives
 	Blink,  // on for the first half of each beat, dim for the rest
 	Puff,   // rises by (DX, DY), growing and fading (steam, bubbles)
+	Float,  // bobs DY up and down and rocks by Amount radians, a quarter beat apart (a ship on the water)
 }
 
 /// <summary>
 /// A moving piece drawn over a building's still sprite while it works. X/Y = anchor in the building sprite's
 /// pixels from its centre (before the building turns); DX/DY = how far it travels. Speed = cycles per second.
-/// Phase (0..1) lets several copies of one part run out of step.
+/// Phase (0..1) lets several copies of one part run out of step. Always = moves even while the building is idle
+/// (a floating ship); the rest only moves while it works.
 /// </summary>
 public sealed record Part(string Sprite, float X, float Y, Motion Motion, float Speed = 1,
-	float DX = 0, float DY = 0, float Amount = 0, float Phase = 0);
+	float DX = 0, float DY = 0, float Amount = 0, float Phase = 0, bool Always = false);
 
 /// <summary>Where a part is at a moment: offset from the building centre in sprite pixels, turn, size, opacity.</summary>
 public readonly record struct Pose(float X, float Y, float Angle, float Scale, float Alpha);
@@ -70,12 +72,10 @@ public static class BuildingParts
 		},
 		[BuildingType.SoldierFactory] = new[]
 		{
-			new Part("wave", -50, -46, Motion.Puff, Speed: 0.3f, DX: 20),
-			new Part("wave", 10, 50, Motion.Puff, Speed: 0.3f, DX: 20, Phase: 0.5f),
-			new Part("steam", -27, -32, Motion.Puff, Speed: 0.4f, DY: -10),
-			new Part("steam", -7, 34, Motion.Puff, Speed: 0.4f, DY: 10, Phase: 0.5f),
-			new Part("ship_sail", -2, 0, Motion.Swing, Speed: 0.5f, Amount: 0.06f),
-			new Part("jolly_roger", -2, -18, Motion.Swing, Speed: 1.6f, Amount: 0.35f),
+			// Seen from the side (KeepsUpright): the ship floats all the time, the water in front sways with it.
+			new Part("pirate_ship", -4, -8, Motion.Float, Speed: 0.45f, DY: 2.5f, Amount: 0.04f, Always: true),
+			new Part("steam", -12, 22, Motion.Puff, Speed: 0.4f, DX: 4, DY: 8),
+			new Part("ship_water", 0, 26, Motion.Bob, Speed: 0.3f, DX: 6, Always: true),
 		},
 		[BuildingType.GolemWorkshop] = new[]
 		{
@@ -137,6 +137,10 @@ public static class BuildingParts
 			case Motion.Blink:
 				alpha = f < 0.5f ? 1 : 0.25f;
 				break;
+			case Motion.Float:
+				y += part.DY * wave;
+				angle = part.Amount * MathF.Cos(f * MathF.Tau);
+				break;
 			case Motion.Puff:
 				x += part.DX * f;
 				y += part.DY * f;
@@ -146,6 +150,15 @@ public static class BuildingParts
 		}
 		return new Pose(x, y, angle, scale, alpha);
 	}
+
+	/// <summary>
+	/// Buildings drawn from the side (the pirate ship): their parts are never turned with the building, only
+	/// mirrored when it faces west; the base sprite under them (water and output) still turns.
+	/// </summary>
+	public static bool KeepsUpright(BuildingType type) => type == BuildingType.SoldierFactory;
+
+	/// <summary>The time a part is posed at: its building's work clock, or the wall clock if it always moves.</summary>
+	public static float TimeFor(Part part, float workTime, float wallTime) => part.Always ? wallTime : workTime;
 
 	/// <summary>The rest pose (when the building stands still): where the motion starts.</summary>
 	public static Pose Rest(Part part) => PoseAt(part with { Phase = 0 }, 0);
