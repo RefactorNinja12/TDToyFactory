@@ -110,4 +110,30 @@ public class BeltPlannerTests
 		Assert.StartsWith("12 band, 2 korsningar: ", text);
 		Assert.Contains("Klicka för att bygga", text);
 	}
+
+	[Fact]
+	public void Preview_ShowsCurvesWhereTheBeltTurns_LikeBuiltBelts()
+	{
+		var s = Floor();
+		var plan = BeltPlanner.Plan(s.World, 0, (20, 40), (24, 43));
+		var looks = BeltPlanner.Looks(plan).ToList();
+		Assert.Equal(1, looks.Count(l => l.Look.Curve));
+		int turn = plan.FindIndex(step => step.Facing != plan[0].Facing);
+		Assert.True(looks[turn].Look.Curve, "the tile where it turns is a curve");
+
+		// The same as the built belt shows.
+		foreach (var command in BeltPlanner.Commands(plan, 0))
+			s.World.Apply(command);
+		s.Instant();
+		foreach (var (step, look) in looks)
+			Assert.Equal(ConveyorLook.For(s.World, (Conveyor)s.World.GetBuilding(step.X, step.Y)).Curve && step != plan[0], look.Curve);
+	}
+
+	[Fact]
+	public void OneTile_PointsTheWayItWasTurned()
+	{
+		var s = Floor();
+		var plan = BeltPlanner.Plan(s.World, 0, (20, 40), (20, 40), alone: Direction.North);
+		Assert.Equal(Direction.North, Assert.Single(plan).Facing);
+	}
 }

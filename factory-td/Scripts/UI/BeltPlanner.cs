@@ -18,8 +18,11 @@ public static class BeltPlanner
 {
 	private const int StepCost = 10, TurnCost = 3, CrossingCost = 6;
 
-	/// <summary>The belt from <paramref name="from"/> to <paramref name="to"/>, or null if there is no way.</summary>
-	public static List<BeltStep> Plan(World world, int owner, (int X, int Y) from, (int X, int Y) to)
+	/// <summary>
+	/// The belt from <paramref name="from"/> to <paramref name="to"/>, or null if there is no way. A belt of one
+	/// tile on open floor points <paramref name="alone"/> (the way the player turned it with R).
+	/// </summary>
+	public static List<BeltStep> Plan(World world, int owner, (int X, int Y) from, (int X, int Y) to, Direction alone = Direction.East)
 	{
 		var map = world.Map;
 		if (!map.InBounds(from.X, from.Y) || !map.InBounds(to.X, to.Y))
@@ -126,10 +129,25 @@ public static class BeltPlanner
 			else if (goals[tiles[i].Tile] is { } into)
 				facing = into;                                 // the last belt points into the goal building
 			else
-				facing = i > 0 ? Between(tiles[i - 1].Tile % width, tiles[i - 1].Tile / width, x, y) : Direction.East;
+				facing = i > 0 ? Between(tiles[i - 1].Tile % width, tiles[i - 1].Tile / width, x, y) : alone;
 			plan.Add(new BeltStep(x, y, facing, tiles[i].Junction));
 		}
 		return plan;
+	}
+
+	/// <summary>
+	/// How each planned tile looks: the way items reach it (from the tile before; nothing for the first one) decides
+	/// whether it is drawn as a curve, exactly like built conveyors (UI/ConveyorLook).
+	/// </summary>
+	public static IEnumerable<(BeltStep Step, ConveyorLook Look)> Looks(List<BeltStep> plan)
+	{
+		for (int i = 0; i < plan.Count; i++)
+		{
+			Direction? moving = i == 0 ? null : plan[i - 1].Junction
+				? Between(plan[i - 1].X, plan[i - 1].Y, plan[i].X, plan[i].Y)
+				: plan[i - 1].Facing;
+			yield return (plan[i], ConveyorLook.Turning(plan[i].Facing, moving));
+		}
 	}
 
 	/// <summary>The commands that build a plan: new conveyors, and existing conveyors swapped for junctions.</summary>

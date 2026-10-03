@@ -11,11 +11,20 @@ public readonly record struct ConveyorLook(bool Curve, bool FlipV, int QuarterTu
 	public static ConveyorLook For(World world, Conveyor conveyor)
 	{
 		var facing = conveyor.Facing;
-		bool fromBack = IsFedMoving(world, conveyor, facing);
 		// Right turn: e.g. moving east, then turning south (clockwise).
-		bool rightTurn = IsFedMoving(world, conveyor, facing.RotatedCounterClockwise());
-		bool leftTurn = IsFedMoving(world, conveyor, facing.RotatedClockwise());
+		return Of(facing, IsFedMoving(world, conveyor, facing), IsFedMoving(world, conveyor, facing.RotatedCounterClockwise()),
+			IsFedMoving(world, conveyor, facing.RotatedClockwise()));
+	}
 
+	/// <summary>
+	/// A planned belt (not built yet) pointing <paramref name="facing"/> that items reach moving
+	/// <paramref name="moving"/> (null: nothing feeds it yet).
+	/// </summary>
+	public static ConveyorLook Turning(Direction facing, Direction? moving) =>
+		Of(facing, moving == facing, moving == facing.RotatedCounterClockwise(), moving == facing.RotatedClockwise());
+
+	private static ConveyorLook Of(Direction facing, bool fromBack, bool rightTurn, bool leftTurn)
+	{
 		if (!fromBack && rightTurn != leftTurn)
 		{
 			var reference = rightTurn ? Direction.South : Direction.North;

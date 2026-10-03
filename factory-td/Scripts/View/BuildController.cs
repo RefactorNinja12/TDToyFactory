@@ -111,12 +111,15 @@ public partial class BuildController : Node2D
 
 		if (_beltPlan != null)
 		{
-			var belt = BuildingVisuals.GetTexture(BuildingType.Conveyor);
-			var junction = BuildingVisuals.GetTexture(BuildingType.Junction);
-			foreach (var step in _beltPlan)
+			// Drawn like built belts: curves where it turns (UI/ConveyorLook), junctions where it crosses.
+			foreach (var (step, look) in BeltPlanner.Looks(_beltPlan))
 			{
-				DrawSetTransform(new Vector2((step.X + 0.5f) * ts, (step.Y + 0.5f) * ts), step.Junction ? 0 : BuildingVisuals.Rotation(step.Facing));
-				var texture = step.Junction ? junction : belt;
+				var at = new Vector2((step.X + 0.5f) * ts, (step.Y + 0.5f) * ts);
+				var texture = step.Junction ? BuildingVisuals.GetTexture(BuildingType.Junction)
+					: look.Curve ? BuildingVisuals.ConveyorCurveTexture : BuildingVisuals.GetTexture(BuildingType.Conveyor);
+				var turn = step.Junction ? 0 : look.QuarterTurns * Mathf.Pi / 2f;
+				var flip = look.FlipV && !step.Junction ? new Vector2(1, -1) : Vector2.One;
+				DrawSetTransformMatrix(new Transform2D(turn, flip, 0, at));
 				DrawTexture(texture, -texture.GetSize() / 2, step.Junction ? PlanJunctionColor : PlanColor);
 			}
 			DrawSetTransform(Vector2.Zero, 0);
@@ -201,6 +204,7 @@ public partial class BuildController : Node2D
 				break;
 			case InputEventKey { Pressed: true, Echo: false, Keycode: Key.R }:
 				_facing = _facing.RotatedClockwise();
+				RefreshBelt(force: true);
 				break;
 			case InputEventKey { Pressed: true, Keycode: Key.Escape } when _selected != null:
 				Cancel();
@@ -266,9 +270,9 @@ public partial class BuildController : Node2D
 		}
 
 		var cell = MouseCell();
-		if (type == BuildingType.Conveyor)
+		if (type == BuildingType.Conveyor && _beltStart != null)
 		{
-			// Belts: the planned way is drawn instead of one ghost; the status says what it costs.
+			// Drawing a belt: the planned way is drawn instead of one ghost; the status says what it costs.
 			_ghost.Visible = false;
 			int junctions = _beltPlan?.Count(s => s.Junction) ?? 0;
 			SetStatus(Texts.BeltPlanText(_beltStart != null, (_beltPlan?.Count ?? 0) - junctions, junctions, _beltPlan != null));
@@ -280,7 +284,9 @@ public partial class BuildController : Node2D
 		_ghost.Position = new Vector2((cell.X + w / 2f) * BuildingVisuals.TileSize, (cell.Y + h / 2f) * BuildingVisuals.TileSize);
 		_ghost.Rotation = BuildingVisuals.Rotation(_facing);
 		_ghost.Modulate = error == PlaceError.None ? ValidColor : InvalidColor;
-		SetStatus(Texts.ErrorText(type, error));
+		SetStatus(type == BuildingType.Conveyor && error == PlaceError.None
+			? Texts.BeltPlanText(false, 0, 0, false)
+			: Texts.ErrorText(type, error));
 	}
 
 	/// <summary>Plans the belt from the start to the mouse again when the mouse moved to another tile.</summary>
@@ -292,7 +298,7 @@ public partial class BuildController : Node2D
 		if (!force && end == _beltEnd)
 			return;
 		_beltEnd = end;
-		_beltPlan = BeltPlanner.Plan(_world, LocalPlayer, (start.X, start.Y), (end.X, end.Y));
+		_beltPlan = BeltPlanner.Plan(_world, LocalPlayer, (start.X, start.Y), (end.X, end.Y), _facing);
 		QueueRedraw();
 	}
 
