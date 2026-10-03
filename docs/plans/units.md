@@ -41,8 +41,8 @@ what they are doing (hammering, harvesting) and fighters show their attacks. Uni
   - Its name becomes "Piratmus" (in `Texts`); the type in the code stays `PlasticSoldier`.
   - The soldier factory's press stamps little plastic pirates on the sprue instead of army men.
 - **Shadows are computed, never painted into sprites** (a painted shadow turns with the sprite):
-  - Every unit and building gets a soft round shadow at its feet / the bottom of its footprint.
-  - It never turns with the sprite: by default it lies straight down (south).
+  - A unit or building in reach of a light gets a soft round shadow at its feet / the bottom of its footprint.
+  - It never turns with the sprite. **No light, no shadow**: in the dark there is none at all.
   - Light pushes the shadow the other way. The lights are the same list the fog glow uses
     (`UI/LightSources`: toybox, lamps, pylons, chargers, shots, crowds of units).
   - Only lights that reach count: within their radius and with a clear ray. Walls block light (the
@@ -60,7 +60,7 @@ what they are doing (hammering, harvesting) and fighters show their attacks. Uni
 - The treadmill view runs the builder mouse with its side walk frames (no longer a rotated top view).
 
 ## Test loop
-- `task test -- "UnitAnimation|Shadows"` (shadows: none → straight down, light to the west → shadow
+- `task test -- "UnitAnimation|Shadows"` (shadows: no light → no shadow, light to the west → shadow
   east, further → longer and fainter, a wall in between → the light doesn't count, opposite lights → short;
   facing, hysteresis, walk frames from distance, idle, action states).
 - Art: `python tools/art/units/<name>.py && python tools/art/restyle.py <files>`, then
@@ -83,11 +83,11 @@ what they are doing (hammering, harvesting) and fighters show their attacks. Uni
       name "Piratmus"; soldier factory sprue redrawn with pirate figures.
 - [ ] 6. Brick golem upright (stomping walk, swinging fist), RC car (wheel frames, antenna wobble, still rotated).
 - [ ] 7. Shadows (pure): `Shadows.For(world, player, lights)` per unit and building (offset, angle, stretch,
-      opacity; default straight down; lights within their radius and with a clear ray; summed by strength;
+      opacity; no reaching light = no shadow; lights within their radius and with a clear ray; summed by strength;
       eased over time); lights in a tile grid so it stays cheap with hundreds of things. Tests as above.
 - [ ] 8. Shadows (view): `ShadowView` (a generated soft disc, one MultiMesh for buildings, one for units, under
       both, hidden in fog); painted shadows removed from the old sprites. Screenshot: shadows lean away from
-      a lamp, straight down where it's dark.
+      a lamp, none where it's dark.
 - [ ] 9. View: UnitView with sheets (custom data + shader, y-sort, feet anchor, shadow), RC car rotated as before;
       TreadmillView with the side walk frames; UI icons from `Units/<name>.png`. `task build` + screenshots.
 - [ ] 10. In-game pass: speeds (feet don't slide), readability at normal zoom, fog/minimap unaffected,
