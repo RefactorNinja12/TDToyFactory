@@ -82,10 +82,10 @@ what they are doing (hammering, harvesting) and fighters show their attacks. Uni
 - [x] 5. Pirate mouse (bandana/tricorn, eye patch, striped shirt, flintlock; action = aim + puff); `Texts`
       name "Piratmus"; soldier factory sprue redrawn with pirate figures.
 - [x] 6. Brick golem upright (stomping walk, swinging fist), RC car (wheel frames, antenna wobble, still rotated).
-- [ ] 7. Shadows (pure): `Shadows.For(world, player, lights)` per unit and building (offset, angle, stretch,
+- [x] 7. Shadows (pure): `Shadows.For(world, player, lights)` per unit and building (offset, angle, stretch,
       opacity; no reaching light = no shadow; lights within their radius and with a clear ray; summed by strength;
       eased over time); lights in a tile grid so it stays cheap with hundreds of things. Tests as above.
-- [ ] 8. Shadows (view): `ShadowView` (a generated soft disc, one MultiMesh for buildings, one for units, under
+- [x] 8. Shadows (view): `ShadowView` (a generated soft disc, one MultiMesh for buildings, one for units, under
       both, hidden in fog); painted shadows removed from the old sprites. Screenshot: shadows lean away from
       a lamp, none where it's dark.
 - [ ] 9. View: UnitView with sheets (custom data + shader, y-sort, feet anchor, shadow), RC car rotated as before;
@@ -102,3 +102,5 @@ what they are doing (hammering, harvesting) and fighters show their attacks. Uni
 - Step 4: tools/art/units/mice.py: builder (hard hat, orange vest, hammer: up/down), farmer (straw hat, blue overalls, carrot: down/up), scout (green cap, binoculars to the eyes), cheese hunter (headband, two boxing gloves: wind up/hit).
 - Step 5: tools/art/units/pirate.py: tricorn with a skull badge, eye patch, red/white striped shirt, belt with a gold buckle, flintlock (hangs down; aim; puff). Texts: Piratmus, Piratfabrik (descriptions and the catapult hint updated). Soldier factory sprue: little plastic pirate mice with tricorns.
 - Step 6: tools/art/units/golem_car.py: brick golem 64 px (stud bricks, yellow eyes, stomping 4 px lifts, fist raised/slammed); RC car 48 px from above, 2 frames (treads move, antenna tip wobbles). UnitSheets.FileName/SheetSize + test: every unit has its sheet at the right size and an icon (PNG header via Support/ArtFiles). Old Units/soldier.png goes in step 9 with the view switch.
+- Step 7: UI/Shadows.cs: Shadows.Cast (lights within radius, not closer than 0.4 tiles = the thing's own torch/glow, ray not through walls via the new Vision.LightReaches; weight = strength x nearness, stretch grows with distance; summed, so opposite lights give a short round shadow; null when the summed light < 0.03 = no light, no shadow), ShadowCaster (every visible unit and shown building, belts/junctions are flat and get none, eased over 0.25 s, fades out when the light goes). The light-grid idea was not needed: a bounding-box filter over the light list is enough. ShadowsTests 7.
+- Step 8: View/ShadowView.cs: generated radial soft disc, two MultiMeshes (buildings, units), inserted before the Buildings node (over the floor, under everything standing). VisualProbe PROBE_SCENE=shadows: a lamp on open floor with assemblers and builder mice round it. Seen: shadows lean away from the lamp on every side. The mice still cover most of theirs because their old sprites are centred on the position: fixed by the feet anchor in step 9. Painted shadows go with the old unit sprites in step 9 (obstacles keep theirs: they don't turn).

@@ -267,6 +267,15 @@ public sealed class Vision
 		}
 	}
 
+	/// <summary>Whether light gets from one tile to another: no wall on the tiles strictly between (toys don't block).</summary>
+	public static bool LightReaches(MapLayout map, int fromX, int fromY, int toX, int toY)
+	{
+		foreach (var (dx, dy) in Line(toX - fromX, toY - fromY))
+			if (map[fromX + dx, fromY + dy] == TileType.Wall)
+				return false;
+		return true;
+	}
+
 	/// <summary>Bresenham from (0,0) to (dx,dy): the tiles strictly between.</summary>
 	private static (int DX, int DY)[] Line(int dx, int dy)
 	{

@@ -83,6 +83,11 @@ public partial class Game : Node2D
 		var treadmills = new TreadmillView { Name = "Treadmills" };
 		AddChild(treadmills);
 		treadmills.Bind(World, LocalPlayer);
+		// Shadows from the light sources: over the floor, under buildings and units.
+		var shadows = new ShadowView { Name = "Shadows" };
+		AddChild(shadows);
+		MoveChild(shadows, Buildings.GetIndex());
+		shadows.Bind(World, LocalPlayer);
 		var animator = new BuildingAnimator { Name = "BuildingParts" };
 		AddChild(animator);
 		animator.Bind(World, LocalPlayer);
