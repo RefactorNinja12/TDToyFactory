@@ -327,7 +327,75 @@ def flower_patch(w, h, pixel=2):
     return pixel_art(small, pixel, 28)
 
 
+def drop_specks(pic, smallest=40):
+    """Clears little islands of pixels (bits of a cut-away shadow or halo) from a picture, in place."""
+    px = pic.load()
+    seen = set()
+    for y0 in range(pic.height):
+        for x0 in range(pic.width):
+            if (x0, y0) in seen or px[x0, y0][3] < 128:
+                continue
+            island, todo = [], [(x0, y0)]
+            seen.add((x0, y0))
+            while todo:
+                x, y = todo.pop()
+                island.append((x, y))
+                for nx, ny in ((x + 1, y), (x - 1, y), (x, y + 1), (x, y - 1)):
+                    if 0 <= nx < pic.width and 0 <= ny < pic.height and (nx, ny) not in seen and px[nx, ny][3] >= 128:
+                        seen.add((nx, ny))
+                        todo.append((nx, ny))
+            if len(island) < smallest:
+                for x, y in island:
+                    px[x, y] = (0, 0, 0, 0)
+
+
+def painting(name, w, h, colours=32, greens=True, shadow=False):
+    """
+    A finished picture with a transparent background (the user's own sprite, tools/art/reference/<name>.png) made
+    to fit the game without losing its detail: fitted on the footprint (standing on the bottom), half resolution
+    with hard pixels and flat colours. Its greens (a stem) become the palette's greens, which otherwise turn brown
+    or into outline black; the real black lines stay (greens=False: left as they are). shadow=True: the picture
+    has a painted grey shadow (and light halos), cut away; the game casts its own shadows (no shadow without light).
+    """
+    pic = Image.open(os.path.join(REFERENCE, name + ".png")).convert("RGBA")
+    if shadow:
+        px = pic.load()
+        for y in range(pic.height):
+            for x in range(pic.width):
+                r, g, b, a = px[x, y]
+                grey = max(r, g, b) - min(r, g, b) < 34 and max(r, g, b) > 70        # the shadow, a halo
+                bluish = b >= r - 6 and max(r, g, b) - min(r, g, b) < 44 and max(r, g, b) > 30  # the shadow's dark rim
+                if a and (grey or bluish):
+                    px[x, y] = (0, 0, 0, 0)
+        drop_specks(pic)
+    pic = pic.crop(pic.getchannel("A").point(lambda a: 255 if a >= 128 else 0).getbbox())
+    scale = min(w / pic.width, h / pic.height)
+    pic = pic.resize((round(pic.width * scale), round(pic.height * scale)), Image.LANCZOS)
+    fitted, _ = canvas(w, h)
+    fitted.alpha_composite(pic, ((w - pic.width) // 2, h - pic.height))
+    small = fitted.resize((w // 2, h // 2), Image.LANCZOS)
+    flat = pixel_art(small, 2, colours)
+    if not greens:
+        return flat
+    src, dst = small.load(), flat.load()
+    for y in range(small.height):
+        for x in range(small.width):
+            r, g, b, a = src[x, y]
+            lum = 0.299 * r + 0.587 * g + 0.114 * b
+            if a < 128 or lum < 30 or g < r * 0.9 or g < b:
+                continue
+            green = (58, 107, 53) if lum < 80 else (95, 154, 69)
+            for dy in (0, 1):
+                for dx in (0, 1):
+                    dst[2 * x + dx, 2 * y + dy] = (*green, 255)
+    return flat
+
+
 def pumpkin():
+    if os.path.exists(os.path.join(REFERENCE, "pumpkin_top.png")):
+        # The user's own pumpkin seen from above (ribs, speckles, twisted stem), on its 4x4 footprint + one tile.
+        out(painting("pumpkin_top", 4 * T, 5 * T), "Obstacles/pumpkin.png")
+        return
     if os.path.exists(os.path.join(REFERENCE, "pumpkin.png")):
         # The user's pumpkin (smiling face, curly vine, leaf), fitted on its 4x4 footprint + one tile of height.
         out(from_reference("pumpkin", 4 * T, 5 * T), "Obstacles/pumpkin.png")
@@ -356,6 +424,10 @@ def pumpkin():
 
 
 def sunflower():
+    if os.path.exists(os.path.join(REFERENCE, "sunflower.png")):
+        # The user's own sunflower, on its 3x4 footprint + one tile; just fitted (its leaves are green enough).
+        out(painting("sunflower", 3 * T, 5 * T, colours=64, greens=False), "Obstacles/sunflower.png")
+        return
     w, h = 3 * T, 5 * T
     img, d = canvas(w, h)
     cx = w // 2
@@ -396,6 +468,10 @@ def cabbage():
 
 
 def carrot():
+    if os.path.exists(os.path.join(REFERENCE, "carrot.png")):
+        # The user's own carrot lying on the lawn, on its 5x3 footprint + one tile; its painted shadow cut away.
+        out(painting("carrot", 5 * T, 4 * T, colours=64, greens=False, shadow=True), "Obstacles/carrot.png")
+        return
     w, h = 5 * T, 4 * T
     img, d = canvas(w, h)
     body = (240, 130, 40)
