@@ -77,7 +77,7 @@ def grass():
 def path():
     w = h = 4 * T
     rnd = random.Random(5)
-    gravel = (176, 160, 134)
+    gravel = (150, 134, 110)
     img = Image.new("RGBA", (w, h), (*gravel, 255))
     d = ImageDraw.Draw(img)
     for _ in range(2600):

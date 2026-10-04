@@ -63,7 +63,7 @@ public partial class Game : Node2D
 		_session = Preview ? null : MatchSetup.Session;
 		if (Preview)
 		{
-			World = World.CreateMatch();
+			World = World.CreateMatch(theme: MatchSetup.Theme);
 			World.FullVision = true;
 			_commands = new DirectCommands(World);
 			_bot = new BotPlayer(1);
@@ -79,7 +79,7 @@ public partial class Game : Node2D
 		}
 		else
 		{
-			World = World.CreateMatch();
+			World = World.CreateMatch(theme: MatchSetup.Theme);
 			_commands = new DirectCommands(World);
 			if (EnableBot)
 				_bot = new BotPlayer(World.EnemyOf(LocalPlayer), MatchSetup.BotArmyDelayTicks);

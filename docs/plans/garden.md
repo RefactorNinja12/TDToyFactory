@@ -43,7 +43,7 @@ online; the client gets the host's choice).
 - [x] 2. Net + settings: MatchSettings(Seed, Theme) for world creation, Start carries the theme (protocol 2),
       MenuModel map list, MenuSettings.Map, LaunchArgs --map; tests.
 - [x] 3. Art: grass, path, flower bed wall, and the five obstacles (tools/art/garden.py), restyled; sheet.
-- [ ] 4. View: GardenTiles.tres, MapView by theme (path in the hall), ObstacleView kinds; VisualProbe
+- [x] 4. View: GardenTiles.tres, MapView by theme (path in the hall), ObstacleView kinds; VisualProbe
       PROBE_MAP; screenshots of both maps.
 - [ ] 5. Menu: "Karta" on the local and host pages (remembered), MatchSetup.Theme, the menu background on
       the chosen map; mp:smoke with --map garden.
@@ -53,3 +53,4 @@ online; the client gets the host's choice).
 - Step 1: MapTheme (Nursery, Garden) in MapLayout.cs, MapLayout.Theme, CreateDefault/CreateMatch take it (default Nursery: golden unchanged). ObstacleKind + Pumpkin 4x4, Sunflower 3x4, Cabbage 3x3, Carrot 5x3, Tulips 3x2 (GardenPlants), placed by the same seeded rules. GardenTests: same walls/deposits/zones as the room, only plants, mirrored, all floor reachable, a bot builds at least 80% as much in 90 s.
 - Step 2: Net: MatchSettings(Seed, Theme) (Protocol.cs); sessions create worlds from it; HostSession.Start(seed, theme); Start carries the theme byte (client accepts only known themes); Protocol.Version 2; DesyncReport names the map. MenuModel.Maps (Barnrummet, Trädgården) + MapIndex; MenuSettings.Map (saved as map=Garden, unknown -> Nursery); LaunchArgs --map. Tests: the host's garden is the client's (same checksums), maps list, --map, settings.
 - Step 3: tools/art/garden.py: lawn 16x8 tiles (stripes, patches, blades, clover, daisies; strokes over the edge drawn again on the other side, or they become lines across the whole picture), gravel path 4x4 tiles with stepping stones, flower bed tile (wooden planter, soil, eight little flowers), pumpkin (ribs clipped to the body), sunflower, cabbage (explicit yellow-greens: lighter greens mute to teal), carrot lying down, three tulips. All restyled.
+- Step 4: Assets/TileSets/GardenTiles.tres (0 lawn 16x8, 1 flower bed, 2 path 4x4); MapView picks the set by MapLayout.Theme and lays the path on the garden's hall floor; ObstacleView reads pictures from a kind -> file table; MinimapView: garden colours (lawn green, flower beds, path in the hall, plants). MatchSetup.Theme (local play and the menu background); VisualProbe PROBE_MAP=garden (children are ready before Game makes the world). Gravel toned down (it outshone the lawn). Screens: lawn under the fog with the pumpkin, flower beds along the room and hall walls, the gravel path with stepping stones; the nursery unchanged.

@@ -29,6 +29,23 @@ public partial class MinimapView : CanvasLayer
 		new(0.95f, 0.78f, 0.30f),   // cheese
 	};
 
+	/// <summary>The garden map's own ground colours (the rest as above): flower beds, lawn, giant plants, path.</summary>
+	private static readonly Color GardenWall = new(0.42f, 0.27f, 0.25f), GardenFloor = new(0.22f, 0.40f, 0.20f),
+		GardenPlant = new(0.55f, 0.70f, 0.28f), GardenPath = new(0.48f, 0.44f, 0.38f);
+
+	private Color ColourOf(byte kind, int x, int y)
+	{
+		if (_world.Map.Theme != MapTheme.Garden)
+			return Colours[kind];
+		return kind switch
+		{
+			Minimap.Wall => GardenWall,
+			Minimap.Floor => _world.Map.GetZone(x, y) == Zone.Hall ? GardenPath : GardenFloor,
+			Minimap.Toy => GardenPlant,
+			_ => Colours[kind],
+		};
+	}
+
 	private World _world;
 	private int _localPlayer;
 	private Camera2D _camera;
@@ -75,7 +92,7 @@ public partial class MinimapView : CanvasLayer
 		for (int i = 0; i < _cells.Length; i++)
 		{
 			byte cell = _cells[i];
-			var colour = Colours[Minimap.Kind(cell)];
+			var colour = ColourOf(Minimap.Kind(cell), i % w, i / w);
 			if (Minimap.Kind(cell) != Minimap.Unknown && !Minimap.IsLit(cell))
 				colour = colour.Darkened(0.45f);
 			_image.SetPixel(i % w, i / w, colour);
