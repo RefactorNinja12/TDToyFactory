@@ -6,6 +6,7 @@ night palette (tiles without outlines, plants with).
   Tiles/grass.png        1024x512: the lawn, repeats every 16x8 tiles (like the floorboards)
   Tiles/clover.png       192x24: six clovers and two clover flowers, laid in patches on the lawn by UI/Lawn
   Tiles/garden_path.png  256x256: cobbles in dark soil, repeats every 4x4 tiles (the hall)
+  Tiles/dirt.png         576x192: three patches of bare soil, laid on the lawn by UI/FloorDecor
   Tiles/hedge.png        256x256: a trimmed hedge from above, repeats every 4x4 tiles (the walls)
   Obstacles/pumpkin.png, sunflower.png, cabbage.png, carrot.png, flowers.png: footprint + one tile on top
   Obstacles/plantbed.png 320x320: dug soil with stones, drawn under each plant (footprint + half a tile round)
@@ -124,6 +125,44 @@ def clover():
     clover_leaf(d, 7 * cell + cell / 2 - 3, cell / 2 + 3, 6, rnd)        # a flower peeking out of a clover
     clover_flower(d, 7 * cell + cell / 2 + 3, cell / 2 - 3)
     out(img, "Tiles/clover.png")
+
+
+def dirt():
+    """
+    Bare soil on the lawn (UI/FloorDecor puts a few patches in each room): three uneven patches side by side, each
+    192x192 (drawn stretched over 2x2 to 3x3 tiles), with crumbs, a few pebbles and grass reaching in at the edge.
+    Drawn at half size and blown up with hard pixels.
+    """
+    size = 3 * T // 2
+    sheet = Image.new("RGBA", (3 * size * 2, size * 2))
+    for v in range(3):
+        rnd = random.Random(40 + v)
+        img, d = canvas(size, size)
+        soil, dry, wet = (122, 82, 54), (150, 108, 70), (87, 57, 44)
+        c = size / 2
+        pts = []
+        for k in range(40):                                     # an uneven, lumpy edge
+            a = k * math.tau / 40
+            r = c * (0.8 + 0.08 * math.sin(a * 2 + v) + 0.04 * math.sin(a * 5 + 2 * v) + rnd.uniform(-0.03, 0.03))
+            pts.append((c + r * math.cos(a), c + r * math.sin(a)))
+        d.polygon(pts, fill=wet)
+        d.polygon([(c + (x - c) * 0.9, c + (y - c) * 0.9 - 1) for x, y in pts], fill=soil)
+        for _ in range(5):                                      # drier, lighter spots
+            x, y, r = rnd.uniform(c * 0.5, c * 1.5), rnd.uniform(c * 0.5, c * 1.5), rnd.uniform(4, 9)
+            d.ellipse((x - r, y - r * 0.7, x + r, y + r * 0.7), fill=dry)
+        inside = [(x, y) for x in range(size) for y in range(size)
+                  if img.getpixel((x, y))[3] and img.getpixel((x, y))[:3] != wet]
+        for x, y in rnd.sample(inside, 90):                     # crumbs
+            img.putpixel((x, y), (*rnd.choice((wet, dry, tint(soil, 0.2))), 255))
+        for x, y in rnd.sample(inside, 6):                      # pebbles
+            d.ellipse((x - 2, y - 1, x + 2, y + 2), fill=(110, 110, 128))
+            d.point((x - 1, y), fill=(154, 154, 172))
+        for x, y in pts[::3]:                                   # grass reaching in over the edge
+            for _ in range(3):
+                gx, gy = x + rnd.uniform(-3, 3), y + rnd.uniform(-3, 3)
+                d.line((gx, gy, gx + rnd.choice((-1, 0, 1)), gy - 3), fill=(58, 107, 53))
+        sheet.paste(img.resize((size * 2, size * 2), Image.NEAREST), (v * size * 2, 0))
+    out(sheet, "Tiles/dirt.png")
 
 
 def path():
@@ -574,6 +613,7 @@ if __name__ == "__main__":
     grass()
     clover()
     path()
+    dirt()
     hedge()
     pumpkin()
     sunflower()

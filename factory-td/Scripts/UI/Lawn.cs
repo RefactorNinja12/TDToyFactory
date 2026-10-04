@@ -72,7 +72,7 @@ public static class Lawn
 	private static int Byte(int x, int y, int salt) => Hash(x, y, salt) >> 8;
 
 	/// <summary>A well-mixed number 0..65535 for a spot (and a purpose, so the uses don't line up).</summary>
-	private static int Hash(int x, int y, int salt)
+	internal static int Hash(int x, int y, int salt)
 	{
 		unchecked
 		{

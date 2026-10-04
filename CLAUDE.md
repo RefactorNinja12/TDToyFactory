@@ -18,7 +18,9 @@ Två kartor med samma spelbara form (`MapTheme`): Barnrummet (brädgolv, väggar
 ObstacleView ritar först, över fotavtrycket + en halv ruta runt). Formen
 är densamma så boten och alla regler passar båda; temat styr tileset (`RoomTiles`/`GardenTiles.tres`), hinder,
 minikartans färger. Klövern: `UI/Lawn.cs` (mjukt heltalsbrus → täthet 0–3 per gräsruta, klöverblad
-som får sticka över rutkanten, bara på gräs i rummen) ritas av `View/CloverView.cs` (barn till MapView). Väljs i startmenyn ("Karta", sparas); värden skickar den i Start (protokoll 2).
+som får sticka över rutkanten, bara på gräs i rummen) ritas av `View/CloverView.cs` (barn till MapView). Golvvariation: `UI/FloorDecor.cs` (jordfläckar på gräset, mattor i
+barnrummet: rund, randig, lekmatta; på rent golv i vänstra rummet, speglas) ritas av `View/FloorDecorView.cs`
+(barn till MapView, efter klövern); bilder från `tools/art/garden.py` (dirt) och `tools/art/rugs.py`. Väljs i startmenyn ("Karta", sparas); värden skickar den i Start (protokoll 2).
 Kompakt fabrik, max 3 nivåer i produktionskedjan, matcher 15–25 min.
 
 ## Teknik
