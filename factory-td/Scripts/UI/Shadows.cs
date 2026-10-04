@@ -24,14 +24,20 @@ public static class Shadows
 
 	public const float MaxAlpha = 0.6f;
 
+	/// <summary>The darkest any shadow gets (a big toy right by a lamp).</summary>
+	public const float MaxDark = 0.85f;
+
 	/// <summary>Below this summed light the shadow is too faint to draw.</summary>
 	public const float MinLight = 0.03f;
 
 	/// <summary>
 	/// The shadow of something of <paramref name="size"/> tiles standing at (x, y), or null when no light
 	/// reaches it. <paramref name="reaches"/> says whether light gets from a light's tile to the thing's tile.
+	/// <paramref name="tall"/>: how far the shadow reaches out for its size (1 = a unit or building, more for the
+	/// towering toys and plants); <paramref name="dark"/>: how much darker (up to <see cref="MaxDark"/>).
 	/// </summary>
-	public static Shadow? Cast(float x, float y, float size, IEnumerable<LightSource> lights, Func<int, int, int, int, bool> reaches)
+	public static Shadow? Cast(float x, float y, float size, IEnumerable<LightSource> lights, Func<int, int, int, int, bool> reaches,
+		float tall = 1, float dark = 1)
 	{
 		float sumX = 0, sumY = 0, light = 0;
 		foreach (var l in lights)
@@ -53,19 +59,21 @@ public static class Shadows
 			return null;
 		float pushX = sumX / light, pushY = sumY / light;      // average direction, scaled by the stretch
 		float push = MathF.Sqrt(pushX * pushX + pushY * pushY);
+		float reach = push * tall;
 		float width = size * 0.8f;
-		float length = width + size * push;
+		float length = width + size * reach;
 		float angle = push > 0.001f ? MathF.Atan2(pushY, pushX) : MathF.PI / 2;
 		// The far end reaches out from under the thing; the near end stays at its feet.
-		float centre = size * push * 0.5f;
-		float alpha = MaxAlpha * MathF.Min(1, light * 1.5f) * (1 - 0.4f * MathF.Min(1, push));
+		float centre = size * reach * 0.5f;
+		float alpha = MathF.Min(MaxDark, MaxAlpha * dark * MathF.Min(1, light * 1.5f) * (1 - 0.4f * MathF.Min(1, push)));
 		return new Shadow(x + MathF.Cos(angle) * centre, y + MathF.Sin(angle) * centre, angle, length, width, alpha);
 	}
 }
 
 /// <summary>
 /// The shadows of everything the player can see, eased over time so passing shots and walking units don't
-/// make them twitch. Units stand on their position; buildings on their footprint centre.
+/// make them twitch. Units stand on their position; buildings and the big toys and plants (obstacles) on their
+/// footprint centre. Obstacles are tall, so their shadows are big; the plants' soil beds lie flat and cast none.
 /// </summary>
 public sealed class ShadowCaster
 {
@@ -74,11 +82,21 @@ public sealed class ShadowCaster
 
 	public const float UnitSize = 0.55f;
 
+	/// <summary>An obstacle's shadow, per tile of its longest side (a building's is 0.9): they tower over the floor.</summary>
+	public const float ObstacleSize = 1.15f;
+
+	/// <summary>How much further an obstacle's shadow reaches out than a building's (Shadows.Cast tall).</summary>
+	public const float ObstacleTall = 2.5f;
+
+	/// <summary>How much darker an obstacle's shadow is than a building's: a deep shade, so it shows through the lamp's glow.</summary>
+	public const float ObstacleDark = 1.9f;
+
 	private readonly Dictionary<object, Shadow> _current = new();
 	private readonly HashSet<object> _seen = new();
 
 	public List<(Unit Unit, Shadow Shadow)> Units { get; } = new();
 	public List<(Building Building, Shadow Shadow)> Buildings { get; } = new();
+	public List<(Obstacle Obstacle, Shadow Shadow)> Obstacles { get; } = new();
 
 	public void Update(World world, int player, float delta)
 	{
@@ -87,6 +105,7 @@ public sealed class ShadowCaster
 		float k = Math.Clamp(delta / Ease, 0, 1);
 		Units.Clear();
 		Buildings.Clear();
+		Obstacles.Clear();
 		_seen.Clear();
 		foreach (var unit in world.Units)
 		{
@@ -104,6 +123,13 @@ public sealed class ShadowCaster
 			float x = building.X + w / 2f, y = building.Y + h / 2f;
 			if (Follow(building, Shadows.Cast(x, y, Math.Max(w, h) * 0.9f, Near(lights, x, y), Reaches), k) is { } shadow)
 				Buildings.Add((building, shadow));
+		}
+		foreach (var toy in world.Map.Obstacles)
+		{
+			float x = toy.X + toy.Width / 2f, y = toy.Y + toy.Height / 2f;
+			float size = Math.Max(toy.Width, toy.Height) * ObstacleSize;
+			if (Follow(toy, Shadows.Cast(x, y, size, Near(lights, x, y), Reaches, ObstacleTall, ObstacleDark), k) is { } shadow)
+				Obstacles.Add((toy, shadow));
 		}
 		if (_current.Count > _seen.Count)
 			foreach (var gone in new List<object>(_current.Keys))

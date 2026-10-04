@@ -128,7 +128,9 @@ Kompakt fabrik, max 3 nivåer i produktionskedjan, matcher 15–25 min.
   `View/BuildingAnimator.cs`).
 - Skuggor räknas ut, målas aldrig i sprites: ingen skugga utan ljus. Ljuskällorna = samma som dimmans
   (`UI/LightSources`); ljus inom radien och utan vägg emellan (`Vision.LightReaches`) skjuter en mjuk rund
-  skugga bort från sig, längre och svagare på avstånd; band/korsningar ligger platt (ingen skugga).
+  skugga bort från sig, längre och svagare på avstånd; band/korsningar ligger platt (ingen skugga). Hinder (leksaker,
+  jätteväxter) kastar stora skuggor (`ShadowCaster.ObstacleSize/Tall/Dark`: bredare, längre ut, mörkare, max
+  `Shadows.MaxDark`); trädgårdens jordbäddar ligger platt under skuggorna (`View/PlantBedView.cs`).
   `UI/Shadows.cs` (Cast, ShadowCaster), `View/ShadowView.cs`.
 - Grafik: `tools/art/restyle.py` gör om alla sprites från `tools/art/source/` (palett + svarta konturer)
   och genererar golvet (stora brädor, 16x8 rutor). Nya sprites läggs i source och skriptet körs
@@ -213,7 +215,7 @@ Kompakt fabrik, max 3 nivåer i produktionskedjan, matcher 15–25 min.
 - Godot bara för det visuella: `Scripts/_Test/VisualProbe.cs` + skärmdump (headless `--write-movie`);
   `PROBE_CAM="x,y,zoom"` tittar var som helst, `PROBE_SCENE=shadows` = lampa med byggnader och möss,
   `PROBE_GC=1` = tvingar en GC efter några bilder (texturer som ingen håller kvar blir vita rutor),
-  `PROBE_MAP=garden` = trädgårdskartan, `PROBE_SCENE=belts` = ett band ritat klick–klick (startklick + musen vid målet), `PROBE_SCENE=crane` = klokran
+  `PROBE_MAP=garden` = trädgårdskartan, `PROBE_SCENE=toys` = en lampa bredvid varje hinder i vänstra rummet (deras skuggor), `PROBE_SCENE=belts` = ett band ritat klick–klick (startklick + musen vid målet), `PROBE_SCENE=crane` = klokran
   över klossfältet som matar ett band genom en delare.
   `Scenes/_Probe*.tscn` är gitignorerade.
 

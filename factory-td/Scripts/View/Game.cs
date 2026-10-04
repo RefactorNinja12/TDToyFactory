@@ -108,6 +108,11 @@ public partial class Game : Node2D
 		AddChild(shadows);
 		MoveChild(shadows, Buildings.GetIndex());
 		shadows.Bind(World, LocalPlayer);
+		// The plants' soil beds lie on the ground, under the shadows.
+		var beds = new PlantBedView { Name = "PlantBeds" };
+		AddChild(beds);
+		MoveChild(beds, shadows.GetIndex());
+		beds.Bind(World.Map);
 		_cranes = new CraneView { Name = "Cranes" };
 		AddChild(_cranes);
 		_cranes.Bind(World, LocalPlayer);

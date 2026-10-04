@@ -83,6 +83,30 @@ public class ShadowsTests
 	}
 
 	[Fact]
+	public void BigToysAndPlants_CastBigShadows_ButOnlyInLight()
+	{
+		var s = Scenario.Match(obstacles: true).NoWorkers().Instant();
+		var toy = s.World.Map.Obstacles[0];
+		var caster = new ShadowCaster();
+		caster.Update(s.World, 0, 0.05f);
+		Assert.DoesNotContain(caster.Obstacles, o => o.Obstacle == toy);  // no light, no shadow
+		s.Place(BuildingType.Lamp, toy.X - 1, toy.Y + toy.Height / 2);    // just west of it
+		var assembler = s.Place(BuildingType.Assembler, toy.X - 3, toy.Y + toy.Height / 2 - 1);
+		for (int i = 0; i < 20; i++)
+			caster.Update(s.World, 0, 0.05f);
+		var shadow = caster.Obstacles.Single(o => o.Obstacle == toy).Shadow;
+		Assert.True(MathF.Cos(shadow.Angle) > 0.9f, "points east, away from the lamp");
+		var building = caster.Buildings.Single(b => b.Building == assembler).Shadow;
+		Assert.True(shadow.Width > building.Width * 1.5f && shadow.Length > building.Length * 1.5f,
+			$"big: {shadow.Width}x{shadow.Length}, a 2x2 building {building.Width}x{building.Length}");
+		float centre = toy.X + toy.Width / 2f;
+		Assert.True(shadow.X + shadow.Length / 2 > toy.X + toy.Width + 1, "it reaches well out from under the toy");
+		Assert.True(shadow.X > centre, "most of it on the far side");
+		Assert.True(shadow.Alpha > building.Alpha * 1.5f, $"darker: {shadow.Alpha}, a building's {building.Alpha}");
+		Assert.True(shadow.Alpha <= Shadows.MaxDark);
+	}
+
+	[Fact]
 	public void Caster_EasesTowardsTheShadow_AndFadesOutWhenTheLightGoes()
 	{
 		var s = Scenario.Match().NoWorkers().Instant();
