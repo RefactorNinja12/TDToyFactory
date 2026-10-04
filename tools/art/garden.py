@@ -327,6 +327,35 @@ def flower_patch(w, h, pixel=2):
     return pixel_art(small, pixel, 28)
 
 
+def cut_shadow(pic):
+    """
+    Cuts a painted shadow (grey or dark blue-grey) and light halos away from a picture, in place: only such
+    pixels reached from the outside, so dark grey-greens between the leaves inside stay. Then the specks left over.
+    """
+    px = pic.load()
+    w, h = pic.size
+
+    def shadowy(x, y):
+        r, g, b, a = px[x, y]
+        spread = max(r, g, b) - min(r, g, b)
+        grey = spread < 34 and max(r, g, b) > 70                       # the shadow, a halo
+        bluish = b >= r - 6 and spread < 44 and max(r, g, b) > 30       # the shadow's dark rim
+        return a < 128 or grey or bluish
+
+    todo = [(x, y) for x in range(w) for y in (0, h - 1)] + [(x, y) for y in range(h) for x in (0, w - 1)]
+    todo = [p for p in todo if shadowy(*p)]
+    outside = set(todo)
+    while todo:
+        x, y = todo.pop()
+        for n in ((x + 1, y), (x - 1, y), (x, y + 1), (x, y - 1)):
+            if 0 <= n[0] < w and 0 <= n[1] < h and n not in outside and shadowy(*n):
+                outside.add(n)
+                todo.append(n)
+    for x, y in outside:
+        px[x, y] = (0, 0, 0, 0)
+    drop_specks(pic)
+
+
 def drop_specks(pic, smallest=40):
     """Clears little islands of pixels (bits of a cut-away shadow or halo) from a picture, in place."""
     px = pic.load()
@@ -349,32 +378,25 @@ def drop_specks(pic, smallest=40):
                     px[x, y] = (0, 0, 0, 0)
 
 
-def painting(name, w, h, colours=32, greens=True, shadow=False):
+def painting(name, w, h, colours=32, greens=True, shadow=False, pixel=2):
     """
     A finished picture with a transparent background (the user's own sprite, tools/art/reference/<name>.png) made
     to fit the game without losing its detail: fitted on the footprint (standing on the bottom), half resolution
     with hard pixels and flat colours. Its greens (a stem) become the palette's greens, which otherwise turn brown
     or into outline black; the real black lines stay (greens=False: left as they are). shadow=True: the picture
     has a painted grey shadow (and light halos), cut away; the game casts its own shadows (no shadow without light).
+    pixel=1: full resolution (only fitted), for a picture whose small details matter.
     """
     pic = Image.open(os.path.join(REFERENCE, name + ".png")).convert("RGBA")
     if shadow:
-        px = pic.load()
-        for y in range(pic.height):
-            for x in range(pic.width):
-                r, g, b, a = px[x, y]
-                grey = max(r, g, b) - min(r, g, b) < 34 and max(r, g, b) > 70        # the shadow, a halo
-                bluish = b >= r - 6 and max(r, g, b) - min(r, g, b) < 44 and max(r, g, b) > 30  # the shadow's dark rim
-                if a and (grey or bluish):
-                    px[x, y] = (0, 0, 0, 0)
-        drop_specks(pic)
+        cut_shadow(pic)
     pic = pic.crop(pic.getchannel("A").point(lambda a: 255 if a >= 128 else 0).getbbox())
     scale = min(w / pic.width, h / pic.height)
     pic = pic.resize((round(pic.width * scale), round(pic.height * scale)), Image.LANCZOS)
     fitted, _ = canvas(w, h)
     fitted.alpha_composite(pic, ((w - pic.width) // 2, h - pic.height))
-    small = fitted.resize((w // 2, h // 2), Image.LANCZOS)
-    flat = pixel_art(small, 2, colours)
+    small = fitted.resize((w // pixel, h // pixel), Image.LANCZOS)
+    flat = pixel_art(small, pixel, colours)
     if not greens:
         return flat
     src, dst = small.load(), flat.load()
@@ -385,9 +407,9 @@ def painting(name, w, h, colours=32, greens=True, shadow=False):
             if a < 128 or lum < 30 or g < r * 0.9 or g < b:
                 continue
             green = (58, 107, 53) if lum < 80 else (95, 154, 69)
-            for dy in (0, 1):
-                for dx in (0, 1):
-                    dst[2 * x + dx, 2 * y + dy] = (*green, 255)
+            for dy in range(pixel):
+                for dx in range(pixel):
+                    dst[pixel * x + dx, pixel * y + dy] = (*green, 255)
     return flat
 
 
@@ -497,6 +519,10 @@ def carrot():
 
 
 def flowers():
+    if os.path.exists(os.path.join(REFERENCE, "flowers_top.png")):
+        # The user's own flower patch: its painted shadow cut away, fitted at full resolution (small flowers).
+        out(painting("flowers_top", 3 * T, 3 * T, colours=96, greens=False, shadow=True, pixel=1), "Obstacles/flowers.png")
+        return
     out(flower_patch(3 * T, 3 * T), "Obstacles/flowers.png")
 
 

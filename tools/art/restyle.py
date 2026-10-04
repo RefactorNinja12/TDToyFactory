@@ -63,12 +63,12 @@ _cache = {}
 
 # Pictures that stay bright: cheese is the game's warm yellow accent; the garden is painted in palette colours,
 # and the user's pumpkin keeps its orange (muted, it turns brown).
-VIVID = {"cheese.png", "melted_cheese.png", "cheese_melter.png", "flowers.png", "clover.png", "hedge.png", "pumpkin.png"}
+VIVID = {"cheese.png", "melted_cheese.png", "cheese_melter.png", "clover.png", "hedge.png", "pumpkin.png"}
 # Pictures muted only a little: their warm colours turn brown and their dark greens grey at the full muting
 # (none at the moment).
 SOFT = set()
 # Pictures kept as they are, only outlined: the user's own finished sprites (the palette has no sunflower yellow).
-KEEP = {"sunflower.png", "carrot.png", "cabbage.png"}
+KEEP = {"sunflower.png", "carrot.png", "cabbage.png", "flowers.png"}
 
 
 def muted(c, vivid=False):
