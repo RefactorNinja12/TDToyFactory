@@ -123,7 +123,52 @@ def flowerbed():
 
 # ---- giant plants: footprint (w x h tiles) plus one tile of height on top ----
 
+REFERENCE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "reference")
+
+
+def from_reference(name, w, h):
+    """
+    A picture made from a reference drawing (tools/art/reference/<name>.png, e.g. one the user supplied): the
+    light background and its grey drop shadow are cut away (filled from the edges, stopped by the dark
+    outline; the game works out shadows itself), then it is scaled to fit w x h and stands on the bottom.
+    """
+    from collections import deque
+    src = Image.open(os.path.join(REFERENCE, f"{name}.png")).convert("RGBA")
+    sw, sh = src.size
+    px = src.load()
+
+    def background(c):
+        r, g, b, _ = c
+        return min(r, g, b) > 196 and max(r, g, b) - min(r, g, b) < 34
+
+    seen = bytearray(sw * sh)
+    queue = deque((x, y) for x in range(sw) for y in (0, sh - 1))
+    queue.extend((x, y) for y in range(sh) for x in (0, sw - 1))
+    while queue:
+        x, y = queue.popleft()
+        if x < 0 or y < 0 or x >= sw or y >= sh or seen[y * sw + x] or not background(px[x, y]):
+            continue
+        seen[y * sw + x] = 1
+        px[x, y] = (0, 0, 0, 0)
+        queue.extend(((x + 1, y), (x - 1, y), (x, y + 1), (x, y - 1)))
+    # Holes of background shut in by the stem and leaves (top part only: the eyes further down are white too).
+    for y in range(int(sh * 0.35)):
+        for x in range(sw):
+            if px[x, y][3] and background(px[x, y]):
+                px[x, y] = (0, 0, 0, 0)
+    cut = src.crop(src.getbbox())
+    scale = min(w / cut.width, h / cut.height)
+    cut = cut.resize((max(1, round(cut.width * scale)), max(1, round(cut.height * scale))), Image.LANCZOS)
+    img, _ = canvas(w, h)
+    img.alpha_composite(cut, ((w - cut.width) // 2, h - cut.height))
+    return img
+
+
 def pumpkin():
+    if os.path.exists(os.path.join(REFERENCE, "pumpkin.png")):
+        # The user's pumpkin (smiling face, curly vine, leaf), fitted on its 4x4 footprint + one tile of height.
+        out(from_reference("pumpkin", 4 * T, 5 * T), "Obstacles/pumpkin.png")
+        return
     w, h = 4 * T, 5 * T
     img, d = canvas(w, h)
     body = (236, 132, 48)

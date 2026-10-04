@@ -59,8 +59,8 @@ PALETTE_LAB = [srgb_to_lab(c) for c in PALETTE]
 _cache = {}
 
 
-# Pictures that stay bright: cheese is the game's warm yellow accent.
-VIVID = {"cheese.png", "melted_cheese.png", "cheese_melter.png"}
+# Pictures that stay bright: cheese is the game's warm yellow accent, the pumpkin its bright orange.
+VIVID = {"cheese.png", "melted_cheese.png", "cheese_melter.png", "pumpkin.png"}
 
 
 def muted(c, vivid=False):
