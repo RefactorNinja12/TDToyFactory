@@ -67,6 +67,8 @@ VIVID = {"cheese.png", "melted_cheese.png", "cheese_melter.png", "flowers.png", 
 # Pictures muted only a little: their warm colours turn brown and their dark greens grey at the full muting
 # (none at the moment).
 SOFT = set()
+# Pictures kept as they are, only outlined: the user's own finished sprites (the palette has no sunflower yellow).
+KEEP = {"sunflower.png"}
 
 
 def muted(c, vivid=False):
@@ -98,7 +100,12 @@ def luminance(c):
 
 
 def restyle(path_in, path_out, outline=True, vivid=False):
+    """vivid: False (the night palette), True (barely muted), "soft" (a little) or "keep" (own colours, outline only)."""
     img = Image.open(path_in).convert("RGBA")
+    keep = vivid == "keep"
+
+    def colour(c):
+        return c if keep else nearest(c, vivid)
     w, h = img.size
     src = img.load()
     out = Image.new("RGBA", (w, h))
@@ -114,14 +121,14 @@ def restyle(path_in, path_out, outline=True, vivid=False):
                 continue
             if a < 200:
                 # soft shadows / halos: keep the alpha, tint towards the night
-                dst[x, y] = (8, 8, 24, a) if luminance((r, g, b)) < 0.3 else (*nearest((r, g, b), vivid), a)
+                dst[x, y] = (8, 8, 24, a) if luminance((r, g, b)) < 0.3 else (*colour((r, g, b)), a)
                 continue
             edge = outline and any(not solid(x + dx, y + dy) and 0 <= x + dx < w and 0 <= y + dy < h
                                    for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1)))
-            if edge or luminance((r, g, b)) < 0.2:
+            if edge or luminance((r, g, b)) < (0.08 if keep else 0.2):
                 dst[x, y] = (*OUTLINE, 255)  # clear black outlines (and the old dark ink lines)
             else:
-                dst[x, y] = (*nearest((r, g, b), vivid), 255)
+                dst[x, y] = (*colour((r, g, b)), 255)
     out.save(path_out)
 
 
@@ -233,7 +240,7 @@ def main(only=None):
                 continue
             # Floor tiles get no outline. Everything else does, but never along the picture's own border
             # (see `restyle`), so belts still join their neighbours without a seam.
-            restyle(src, dst, outline=rel != "Tiles", vivid="soft" if name in SOFT else name in VIVID)
+            restyle(src, dst, outline=rel != "Tiles", vivid="keep" if name in KEEP else "soft" if name in SOFT else name in VIVID)
     if wanted is not None:
         print("restyled", len(wanted), "files")
         return

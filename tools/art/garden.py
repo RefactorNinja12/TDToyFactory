@@ -327,12 +327,12 @@ def flower_patch(w, h, pixel=2):
     return pixel_art(small, pixel, 28)
 
 
-def painting(name, w, h, colours=32):
+def painting(name, w, h, colours=32, greens=True):
     """
     A finished picture with a transparent background (the user's own sprite, tools/art/reference/<name>.png) made
     to fit the game without losing its detail: fitted on the footprint (standing on the bottom), half resolution
     with hard pixels and flat colours. Its greens (a stem) become the palette's greens, which otherwise turn brown
-    or into outline black; the real black lines stay.
+    or into outline black; the real black lines stay (greens=False: left as they are).
     """
     pic = Image.open(os.path.join(REFERENCE, name + ".png")).convert("RGBA")
     pic = pic.crop(pic.getchannel("A").point(lambda a: 255 if a >= 128 else 0).getbbox())
@@ -342,6 +342,8 @@ def painting(name, w, h, colours=32):
     fitted.alpha_composite(pic, ((w - pic.width) // 2, h - pic.height))
     small = fitted.resize((w // 2, h // 2), Image.LANCZOS)
     flat = pixel_art(small, 2, colours)
+    if not greens:
+        return flat
     src, dst = small.load(), flat.load()
     for y in range(small.height):
         for x in range(small.width):
@@ -389,6 +391,10 @@ def pumpkin():
 
 
 def sunflower():
+    if os.path.exists(os.path.join(REFERENCE, "sunflower.png")):
+        # The user's own sunflower, on its 3x4 footprint + one tile; just fitted (its leaves are green enough).
+        out(painting("sunflower", 3 * T, 5 * T, colours=64, greens=False), "Obstacles/sunflower.png")
+        return
     w, h = 3 * T, 5 * T
     img, d = canvas(w, h)
     cx = w // 2
