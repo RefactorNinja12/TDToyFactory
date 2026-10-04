@@ -14,9 +14,10 @@ elektronik svag mot vatten, klossar svaga mot laser.
 Två rum (~60x60 rutor) förbundna med en hall (~30–40 rutor).
 Dörren är enda ingången i början. Rika resurser i hallen.
 Två kartor med samma spelbara form (`MapTheme`): Barnrummet (brädgolv, väggar, jätteleksaker) och Trädgården
-(gräsmatta, rabatter som kanter, grusgång i hallen, jätteväxter: pumpa, solros, kål, morot, blomsterplätt). Formen
+(gräsmatta med klöverfläckar, rabatter som kanter, grusgång i hallen, jätteväxter: pumpa, solros, kål, morot, blomsterplätt). Formen
 är densamma så boten och alla regler passar båda; temat styr tileset (`RoomTiles`/`GardenTiles.tres`), hinder,
-minikartans färger. Väljs i startmenyn ("Karta", sparas); värden skickar den i Start (protokoll 2).
+minikartans färger. Klövern: `UI/Lawn.cs` (mjukt heltalsbrus → täthet 0–3 per gräsruta, klöverblad
+som får sticka över rutkanten, bara på gräs i rummen) ritas av `View/CloverView.cs` (barn till MapView). Väljs i startmenyn ("Karta", sparas); värden skickar den i Start (protokoll 2).
 Kompakt fabrik, max 3 nivåer i produktionskedjan, matcher 15–25 min.
 
 ## Teknik

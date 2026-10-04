@@ -5,7 +5,8 @@ namespace FactoryTD.View;
 
 /// <summary>
 /// Paints a MapLayout onto this TileMapLayer, and its deposits onto ResourceLayer. The tile set follows the map's
-/// theme: the nursery's floorboards and walls, or the garden's lawn, flower beds and gravel path (in the hall).
+/// theme: the nursery's floorboards and walls, or the garden's lawn (with patches of clover), flower beds and gravel
+/// path (in the hall).
 /// </summary>
 public partial class MapView : TileMapLayer
 {
@@ -25,8 +26,13 @@ public partial class MapView : TileMapLayer
 	/// </summary>
 	private const int FloorTilesX = 16, FloorTilesY = 8;
 
+	private CloverView _clover;
+
 	public void Render(MapLayout map)
 	{
+		if (_clover == null)
+			AddChild(_clover = new CloverView { Name = "Clover" }); // a child: over the lawn, under the deposits
+		_clover.Bind(map);
 		bool garden = map.Theme == MapTheme.Garden;
 		TileSet = GD.Load<TileSet>(garden ? "res://Assets/TileSets/GardenTiles.tres" : "res://Assets/TileSets/RoomTiles.tres");
 		Clear();

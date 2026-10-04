@@ -4,6 +4,7 @@ borders and the giant plants lying about. Pictures go to tools/art/source; resty
 night palette (tiles without outlines, plants with).
 
   Tiles/grass.png        1024x512: the lawn, repeats every 16x8 tiles (like the floorboards)
+  Tiles/clover.png       192x24: six clovers and two clover flowers, laid in patches on the lawn by UI/Lawn
   Tiles/garden_path.png  256x256: gravel with stepping stones, repeats every 4x4 tiles (the hall)
   Tiles/flowerbed.png    64x64: a raised wooden planter with soil and flowers (the walls)
   Obstacles/pumpkin.png, sunflower.png, cabbage.png, carrot.png, flowers.png: footprint + one tile on top
@@ -74,6 +75,54 @@ def grass():
             d.point((x + round(2 * math.cos(ang)), y + round(2 * math.sin(ang))), fill=WHITE)
         d.point((x, y), fill=YELLOW)
     out(img, "Tiles/grass.png")
+
+
+# Clover colours from the restyle palette (clover.png keeps them: VIVID), so the leaves don't turn teal.
+CLOVER = ((95, 154, 69), (156, 196, 102), (35, 64, 42))   # leaf, light vein and glint, dark rim and notches
+
+
+def clover_leaf(d, cx, cy, r, rnd):
+    """A clover seen from above, like the user's picture: three or four round leaflets with notches between them."""
+    leaves = 4 if rnd.random() < 0.3 else 3
+    turn = rnd.uniform(0, math.tau)
+    leaf, light, dark = CLOVER
+    for grow, fill in ((1.5, dark), (0, leaf)):
+        for k in range(leaves):
+            a = turn + k * math.tau / leaves
+            lx, ly = cx + r * 0.5 * math.cos(a), cy + r * 0.5 * math.sin(a)
+            lr = r * 0.5 + grow
+            d.ellipse((lx - lr, ly - lr, lx + lr, ly + lr), fill=fill)
+    for k in range(leaves):
+        a = turn + (k + 0.5) * math.tau / leaves                    # the notch between two leaflets
+        d.line((cx, cy, cx + r * math.cos(a), cy + r * math.sin(a)), fill=dark)
+        a = turn + k * math.tau / leaves                            # the fold down the middle of each leaflet
+        d.line((cx + 1.5 * math.cos(a), cy + 1.5 * math.sin(a), cx + r * 0.7 * math.cos(a), cy + r * 0.7 * math.sin(a)), fill=light)
+
+
+def clover_flower(d, cx, cy):
+    """A little white clover flower: five petals round a yellow eye (palette colours, like the leaves)."""
+    for k in range(5):
+        a = k * math.tau / 5
+        px, py = cx + 2.5 * math.cos(a), cy + 2.5 * math.sin(a)
+        d.ellipse((px - 2.5, py - 2.5, px + 2.5, py + 2.5), fill=(196, 198, 212))
+        d.ellipse((px - 2, py - 2, px + 2, py + 2), fill=(255, 243, 196))
+    d.ellipse((cx - 1.5, cy - 1.5, cx + 1.5, cy + 1.5), fill=(242, 182, 74))
+
+
+def clover():
+    """
+    Clover lying on the lawn (UI/Lawn spreads it in patches over the tiles): six clovers of different sizes, three
+    or four leaflets, then two white clover flowers, each in a 24x24 cell (Lawn.SpriteSize) of a strip.
+    """
+    cell = 24
+    img, d = canvas(8 * cell, cell)
+    rnd = random.Random(23)
+    for k, r in enumerate((6, 7, 8, 9, 10, 10)):
+        clover_leaf(d, k * cell + cell / 2, cell / 2, r, rnd)
+    clover_flower(d, 6 * cell + cell / 2, cell / 2)
+    clover_leaf(d, 7 * cell + cell / 2 - 3, cell / 2 + 3, 6, rnd)        # a flower peeking out of a clover
+    clover_flower(d, 7 * cell + cell / 2 + 3, cell / 2 - 3)
+    out(img, "Tiles/clover.png")
 
 
 def path():
@@ -374,6 +423,7 @@ def flowers():
 
 if __name__ == "__main__":
     grass()
+    clover()
     path()
     flowerbed()
     pumpkin()
