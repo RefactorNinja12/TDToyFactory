@@ -327,7 +327,40 @@ def flower_patch(w, h, pixel=2):
     return pixel_art(small, pixel, 28)
 
 
+def painting(name, w, h, colours=32):
+    """
+    A finished picture with a transparent background (the user's own sprite, tools/art/reference/<name>.png) made
+    to fit the game without losing its detail: fitted on the footprint (standing on the bottom), half resolution
+    with hard pixels and flat colours. Its greens (a stem) become the palette's greens, which otherwise turn brown
+    or into outline black; the real black lines stay.
+    """
+    pic = Image.open(os.path.join(REFERENCE, name + ".png")).convert("RGBA")
+    pic = pic.crop(pic.getchannel("A").point(lambda a: 255 if a >= 128 else 0).getbbox())
+    scale = min(w / pic.width, h / pic.height)
+    pic = pic.resize((round(pic.width * scale), round(pic.height * scale)), Image.LANCZOS)
+    fitted, _ = canvas(w, h)
+    fitted.alpha_composite(pic, ((w - pic.width) // 2, h - pic.height))
+    small = fitted.resize((w // 2, h // 2), Image.LANCZOS)
+    flat = pixel_art(small, 2, colours)
+    src, dst = small.load(), flat.load()
+    for y in range(small.height):
+        for x in range(small.width):
+            r, g, b, a = src[x, y]
+            lum = 0.299 * r + 0.587 * g + 0.114 * b
+            if a < 128 or lum < 30 or g < r * 0.9 or g < b:
+                continue
+            green = (58, 107, 53) if lum < 80 else (95, 154, 69)
+            for dy in (0, 1):
+                for dx in (0, 1):
+                    dst[2 * x + dx, 2 * y + dy] = (*green, 255)
+    return flat
+
+
 def pumpkin():
+    if os.path.exists(os.path.join(REFERENCE, "pumpkin_top.png")):
+        # The user's own pumpkin seen from above (ribs, speckles, twisted stem), on its 4x4 footprint + one tile.
+        out(painting("pumpkin_top", 4 * T, 5 * T), "Obstacles/pumpkin.png")
+        return
     if os.path.exists(os.path.join(REFERENCE, "pumpkin.png")):
         # The user's pumpkin (smiling face, curly vine, leaf), fitted on its 4x4 footprint + one tile of height.
         out(from_reference("pumpkin", 4 * T, 5 * T), "Obstacles/pumpkin.png")
