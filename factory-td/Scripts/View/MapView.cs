@@ -5,8 +5,8 @@ namespace FactoryTD.View;
 
 /// <summary>
 /// Paints a MapLayout onto this TileMapLayer, and its deposits onto ResourceLayer. The tile set follows the map's
-/// theme: the nursery's floorboards and walls, or the garden's lawn (with patches of clover), flower beds and gravel
-/// path (in the hall).
+/// theme: the nursery's floorboards and walls, or the garden's lawn (with patches of clover), hedges (the walls) and
+/// gravel path (in the hall).
 /// </summary>
 public partial class MapView : TileMapLayer
 {
@@ -14,7 +14,7 @@ public partial class MapView : TileMapLayer
 	private const int FloorSource = 0;
 	private const int WallSource = 1;
 	private const int PathSource = 2;
-	private const int PathTiles = 4; // the gravel path picture repeats every 4x4 tiles
+	private const int PathTiles = 4; // the gravel path and hedge pictures repeat every 4x4 tiles
 
 	/// <summary>Layer drawn above the floor. Uses Assets/TileSets/ResourceTiles.tres,
 	/// whose source ids are ResourceType - 1 (Brick = 0, Plastic = 1, Battery = 2).</summary>
@@ -50,6 +50,8 @@ public partial class MapView : TileMapLayer
 				};
 				if (garden && source == FloorSource && map.GetZone(x, y) == Zone.Hall)
 					SetCell(cell, PathSource, new Vector2I(x % PathTiles, y % PathTiles));
+				else if (garden && source == WallSource)
+					SetCell(cell, WallSource, new Vector2I(x % PathTiles, y % PathTiles));
 				else if (source >= 0)
 					SetCell(cell, source, source == FloorSource ? new Vector2I(x % FloorTilesX, y % FloorTilesY) : Vector2I.Zero);
 

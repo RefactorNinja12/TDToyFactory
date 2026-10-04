@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://ddw3q2am3t3t"
-path="res://.godot/imported/flowerbed.png-1bef80cf5a3ca9ce9f405c9c6999d133.ctex"
+uid="uid://bwv6jdhs0xjb4"
+path="res://.godot/imported/hedge.png-e498d6765748319b4d47c1bf1c5e4cc7.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://Assets/Sprites/Tiles/flowerbed.png"
-dest_files=["res://.godot/imported/flowerbed.png-1bef80cf5a3ca9ce9f405c9c6999d133.ctex"]
+source_file="res://Assets/Sprites/Tiles/hedge.png"
+dest_files=["res://.godot/imported/hedge.png-e498d6765748319b4d47c1bf1c5e4cc7.ctex"]
 
 [params]
 
