@@ -40,7 +40,7 @@ online; the client gets the host's choice).
 ## Steps
 - [x] 1. Sim: MapTheme, garden obstacle kinds and sizes, CreateDefault/CreateMatch take the theme; tests
       (same shape as the room, garden obstacles only, reachable, mirrored, a bot builds on it).
-- [ ] 2. Net + settings: MatchSettings(Seed, Theme) for world creation, Start carries the theme (protocol 2),
+- [x] 2. Net + settings: MatchSettings(Seed, Theme) for world creation, Start carries the theme (protocol 2),
       MenuModel map list, MenuSettings.Map, LaunchArgs --map; tests.
 - [ ] 3. Art: grass, path, flower bed wall, and the five obstacles (tools/art/garden.py), restyled; sheet.
 - [ ] 4. View: GardenTiles.tres, MapView by theme (path in the hall), ObstacleView kinds; VisualProbe
@@ -51,3 +51,4 @@ online; the client gets the host's choice).
 
 ## Log
 - Step 1: MapTheme (Nursery, Garden) in MapLayout.cs, MapLayout.Theme, CreateDefault/CreateMatch take it (default Nursery: golden unchanged). ObstacleKind + Pumpkin 4x4, Sunflower 3x4, Cabbage 3x3, Carrot 5x3, Tulips 3x2 (GardenPlants), placed by the same seeded rules. GardenTests: same walls/deposits/zones as the room, only plants, mirrored, all floor reachable, a bot builds at least 80% as much in 90 s.
+- Step 2: Net: MatchSettings(Seed, Theme) (Protocol.cs); sessions create worlds from it; HostSession.Start(seed, theme); Start carries the theme byte (client accepts only known themes); Protocol.Version 2; DesyncReport names the map. MenuModel.Maps (Barnrummet, Trädgården) + MapIndex; MenuSettings.Map (saved as map=Garden, unknown -> Nursery); LaunchArgs --map. Tests: the host's garden is the client's (same checksums), maps list, --map, settings.

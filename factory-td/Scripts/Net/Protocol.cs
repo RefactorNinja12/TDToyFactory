@@ -14,7 +14,7 @@ public enum MessageType : byte
 	Proof,      // client → host: HMAC-SHA256(password, challenge + client nonce)
 	Welcome,    // host → client: you are player N, host name
 	Reject,     // host → client: why not (then the host disconnects)
-	Start,      // host → client: map seed, input delay
+	Start,      // host → client: map seed, input delay, which map
 	Input,      // client → host: the client's commands for one step
 	Turn,       // host → client: every player's commands for one step
 	Hash,       // both: the checksum after a step
@@ -32,11 +32,14 @@ public enum RejectReason : byte
 	Full,
 }
 
+/// <summary>What a match is played on, chosen by the host: the seed (where the obstacles lie) and the map.</summary>
+public readonly record struct MatchSettings(int Seed, MapTheme Theme = MapTheme.Nursery);
+
 /// <summary>Message layouts, the build id and the password proof. All numbers little-endian.</summary>
 public static class Protocol
 {
-	/// <summary>Bump when a message layout changes.</summary>
-	public const int Version = 1;
+	/// <summary>Bump when a message layout changes (2: Start carries the map).</summary>
+	public const int Version = 2;
 
 	public const int DefaultPort = 7777;
 	public const int NonceSize = 16, ChallengeSize = 32, ProofSize = 32;

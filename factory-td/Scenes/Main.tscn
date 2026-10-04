@@ -3,7 +3,7 @@
 [ext_resource type="TileSet" uid="uid://csbdo88jcath" path="res://Assets/TileSets/RoomTiles.tres" id="1_tiles"]
 [ext_resource type="Script" uid="uid://blmnymeha1ypl" path="res://Scripts/View/MapView.cs" id="2_map"]
 [ext_resource type="Script" uid="uid://bm1s7kqkdlqpj" path="res://Scripts/View/CameraController.cs" id="3_cam"]
-[ext_resource type="TileSet" path="res://Assets/TileSets/ResourceTiles.tres" id="4_res"]
+[ext_resource type="TileSet" uid="uid://dff0nmhlbwat7" path="res://Assets/TileSets/ResourceTiles.tres" id="4_res"]
 [ext_resource type="Script" uid="uid://b604ikhusrdx6" path="res://Scripts/View/Game.cs" id="5_game"]
 [ext_resource type="Script" uid="uid://bq6qtj4bdn16f" path="res://Scripts/View/BuildingView.cs" id="6_buildings"]
 [ext_resource type="Script" uid="uid://dqoclaa3vkji4" path="res://Scripts/View/BuildController.cs" id="7_builder"]

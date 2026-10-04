@@ -48,7 +48,7 @@ public class NetTests
 {
 	private const string Password = "hemligt";
 
-	private static World NewWorld(int seed) => World.CreateMatch(obstacles: true, seed);
+	private static World NewWorld(MatchSettings settings) => World.CreateMatch(obstacles: true, settings.Seed, settings.Theme);
 
 	private static HostSession Host(FakeNetwork net, string password = Password) =>
 		new(net.Host, password, "Värd", NewWorld);
@@ -208,6 +208,18 @@ public class NetTests
 		Assert.Contains(world.Buildings, b => b.Owner == 0 && b.Type != BuildingType.Core);
 		Assert.Contains(world.Buildings, b => b.Owner == 1 && b.Type != BuildingType.Core); // the client's commands arrived
 		Assert.Equal(SessionState.Playing, client.Session.State);
+	}
+
+	[Fact]
+	public void TheHostsMap_IsTheMapTheClientPlays()
+	{
+		var net = new FakeNetwork(latencyMs: 40);
+		var (host, client) = Joined(net);
+		((HostSession)host.Session).Start(seed: 5, MapTheme.Garden);
+		Run(net, () => client.Sums.Count >= 40, 5000, host, client);
+		Assert.Equal(MapTheme.Garden, client.Session.World.Map.Theme);
+		Assert.Equal(new MatchSettings(5, MapTheme.Garden), client.Session.Settings);
+		Assert.Equal(host.Sums.Take(40), client.Sums.Take(40));
 	}
 
 	[Fact]

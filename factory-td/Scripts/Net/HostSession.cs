@@ -24,7 +24,7 @@ public sealed class HostSession : MatchSession
 	private readonly Dictionary<long, List<PlayerCommand>>[] _inputs = { new(), new() };
 	private int _opponent = -1;
 
-	public HostSession(ITransport transport, string password, string name, Func<int, World> createWorld,
+	public HostSession(ITransport transport, string password, string name, Func<MatchSettings, World> createWorld,
 		string buildId = null)
 		: base(transport, name, createWorld)
 	{
@@ -42,13 +42,13 @@ public sealed class HostSession : MatchSession
 	/// <summary>Input delay for a measured round trip: the turn must be back before the step that needs it.</summary>
 	public static int DelayFor(int rttMs) => Math.Clamp((rttMs + 40 + 49) / 50 + 1, 3, 12);
 
-	public void Start(int seed)
+	public void Start(int seed, MapTheme theme = MapTheme.Nursery)
 	{
 		if (!CanStart)
 			return;
 		int delay = DelayFor(RttMs);
-		Transport.Send(_opponent, new PacketWriter(MessageType.Start).Int(seed).Byte((byte)delay).ToArray());
-		BeginMatch(seed, delay);
+		Transport.Send(_opponent, new PacketWriter(MessageType.Start).Int(seed).Byte((byte)delay).Byte((byte)theme).ToArray());
+		BeginMatch(new MatchSettings(seed, theme), delay);
 	}
 
 	protected override void SendToOpponent(byte[] packet)

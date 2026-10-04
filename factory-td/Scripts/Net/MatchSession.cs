@@ -41,7 +41,7 @@ public abstract class MatchSession
 	private const int ReportCommands = 200;
 
 	protected readonly ITransport Transport;
-	private readonly Func<int, World> _createWorld;
+	private readonly Func<MatchSettings, World> _createWorld;
 	private readonly List<PlayerCommand> _pending = new();
 	private readonly Dictionary<long, List<PlayerCommand>> _turns = new();
 	private readonly Dictionary<long, ulong> _localHashes = new(), _remoteHashes = new();
@@ -49,7 +49,7 @@ public abstract class MatchSession
 	private long _lastPing, _stalledSince = -1;
 	private bool _updated;
 
-	protected MatchSession(ITransport transport, string name, Func<int, World> createWorld)
+	protected MatchSession(ITransport transport, string name, Func<MatchSettings, World> createWorld)
 	{
 		Transport = transport;
 		Name = name ?? "";
@@ -65,7 +65,10 @@ public abstract class MatchSession
 	public string OpponentName { get; protected set; } = "";
 	public int LocalPlayer { get; protected set; }
 	public int InputDelay { get; private set; }
-	public int Seed { get; private set; }
+	public int Seed => Settings.Seed;
+
+	/// <summary>What the host chose: the map seed and which map.</summary>
+	public MatchSettings Settings { get; private set; }
 	public int RttMs { get; private set; }
 	public World World { get; private set; }
 
@@ -161,7 +164,7 @@ public abstract class MatchSession
 	public string DesyncReport()
 	{
 		var text = new StringBuilder();
-		text.AppendLine($"Desync at tick {DesyncStep}, build {Protocol.BuildId}, local player {LocalPlayer}, seed {Seed}, delay {InputDelay}");
+		text.AppendLine($"Desync at tick {DesyncStep}, build {Protocol.BuildId}, local player {LocalPlayer}, seed {Seed}, map {Settings.Theme}, delay {InputDelay}");
 		text.AppendLine($"local checksum {Hash(_localHashes, DesyncStep)}, remote {Hash(_remoteHashes, DesyncStep)}");
 		foreach (var (step, command) in _recent)
 			text.AppendLine($"{step}: {command}");
@@ -188,11 +191,11 @@ public abstract class MatchSession
 		CompareHashes(step);
 	}
 
-	protected void BeginMatch(int seed, int inputDelay)
+	protected void BeginMatch(MatchSettings settings, int inputDelay)
 	{
-		Seed = seed;
+		Settings = settings;
 		InputDelay = inputDelay;
-		World = _createWorld(seed);
+		World = _createWorld(settings);
 		State = SessionState.Playing;
 	}
 

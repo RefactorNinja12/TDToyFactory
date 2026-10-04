@@ -231,7 +231,7 @@ public partial class MainMenu : Control
 		_session = new ClientSession(_transport, password, name, NewWorld);
 	}
 
-	private static World NewWorld(int seed) => World.CreateMatch(obstacles: true, seed);
+	private static World NewWorld(MatchSettings settings) => World.CreateMatch(obstacles: true, settings.Seed, settings.Theme);
 
 	private void Back()
 	{
