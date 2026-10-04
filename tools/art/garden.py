@@ -6,7 +6,7 @@ night palette (tiles without outlines, plants with).
   Tiles/grass.png        1024x512: the lawn, repeats every 16x8 tiles (like the floorboards)
   Tiles/clover.png       192x24: six clovers and two clover flowers, laid in patches on the lawn by UI/Lawn
   Tiles/garden_path.png  256x256: gravel with stepping stones, repeats every 4x4 tiles (the hall)
-  Tiles/flowerbed.png    64x64: a raised wooden planter with soil and flowers (the walls)
+  Tiles/hedge.png        256x256: a trimmed hedge from above, repeats every 4x4 tiles (the walls)
   Obstacles/pumpkin.png, sunflower.png, cabbage.png, carrot.png, flowers.png: footprint + one tile on top
   (seen slanted from above, like the toys: ObstacleView draws one tile of overhang)
 
@@ -147,32 +147,31 @@ def path():
     out(img, "Tiles/garden_path.png")
 
 
-def flowerbed():
-    img, d = canvas(T, T)
-    rnd = random.Random(3)
-    plank = (150, 104, 64)
-    soil = (96, 66, 50)
-    d.rectangle((0, 0, T - 1, T - 1), fill=plank)            # the planter's wooden edge all round
-    for y in (0, T - 7):
-        d.line((0, y, T - 1, y), fill=tint(plank, 0.3))
-    d.rectangle((6, 6, T - 7, T - 7), fill=soil)
-    for _ in range(60):
-        d.point((rnd.randrange(7, T - 7), rnd.randrange(7, T - 7)), fill=tint(soil, rnd.choice((-0.25, 0.2))))
-    # flowers in the bed: leaves, then a little five-petal flower each
-    colors = [RED, YELLOW, (240, 140, 200), (140, 120, 230), WHITE, ORANGE]
-    for i, (fx, fy) in enumerate(((16, 16), (34, 14), (50, 22), (22, 34), (42, 38), (14, 50), (32, 50), (50, 48))):
-        d.ellipse((fx - 5, fy - 2, fx + 1, fy + 3), fill=LEAF)
-        d.ellipse((fx - 1, fy - 1, fx + 5, fy + 4), fill=tint(LEAF, -0.15))
-        c = colors[i % len(colors)]
-        for a in range(5):
-            ang = a * 2 * math.pi / 5
-            px, py = fx + 3 * math.cos(ang), fy - 2 + 3 * math.sin(ang)
-            d.ellipse((px - 2, py - 2, px + 2, py + 2), fill=c)
-        d.point((fx, fy - 2), fill=YELLOW if c != YELLOW else ORANGE)
-    out(img, "Tiles/flowerbed.png")
+# Hedge colours from the restyle palette (hedge.png keeps them: VIVID): darker than the lawn, so the walls stand out.
+HEDGE = ((35, 64, 42), (58, 107, 53), (95, 154, 69), (156, 196, 102))   # deep shade, leaves, lit leaves, glints
 
 
-# ---- giant plants: footprint (w x h tiles) plus one tile of height on top ----
+def hedge():
+    """
+    A trimmed hedge seen from above (the garden's walls): a mat of round leafy clumps, each shaded from the top
+    left, dark gaps between them, a few glinting leaves. Repeats every 4x4 tiles without a seam.
+    """
+    w = h = 4 * T
+    rnd = random.Random(17)
+    shade, leaf, lit, glint = HEDGE
+    img = Image.new("RGBA", (w, h), (*shade, 255))
+    d = ImageDraw.Draw(img)
+    clumps = [(rnd.uniform(0, w), rnd.uniform(0, h), rnd.uniform(6, 10)) for _ in range(520)]
+    for x, y, r in sorted(clumps, key=lambda c: c[1]):
+        wrap_ellipse(d, w, h, (x - r + 1, y - r + 2, x + r + 1, y + r + 2), shade)                 # its shadow
+        wrap_ellipse(d, w, h, (x - r, y - r, x + r, y + r), leaf)
+        wrap_ellipse(d, w, h, (x - r * 0.75, y - r * 0.8, x + r * 0.25, y + r * 0.1), lit)        # lit top left
+    for _ in range(700):                                                                          # single leaves
+        x, y = rnd.randrange(w), rnd.randrange(h)
+        c = rnd.choice((lit, lit, glint, shade))
+        wrap_ellipse(d, w, h, (x - 1, y - 1, x + 1, y + 1), c)
+    out(img, "Tiles/hedge.png")
+
 
 REFERENCE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "reference")
 
@@ -425,7 +424,7 @@ if __name__ == "__main__":
     grass()
     clover()
     path()
-    flowerbed()
+    hedge()
     pumpkin()
     sunflower()
     cabbage()

@@ -62,7 +62,7 @@ _cache = {}
 
 
 # Pictures that stay bright: cheese is the game's warm yellow accent; the flower patch is painted in palette colours.
-VIVID = {"cheese.png", "melted_cheese.png", "cheese_melter.png", "flowers.png", "clover.png"}
+VIVID = {"cheese.png", "melted_cheese.png", "cheese_melter.png", "flowers.png", "clover.png", "hedge.png"}
 # Pictures muted only a little: their warm colours turn brown and their dark greens grey at the full muting
 # (the pumpkin made from the user's drawing).
 SOFT = {"pumpkin.png"}

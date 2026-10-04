@@ -30,7 +30,7 @@ public partial class MinimapView : CanvasLayer
 	};
 
 	/// <summary>The garden map's own ground colours (the rest as above): flower beds, lawn, giant plants, path.</summary>
-	private static readonly Color GardenWall = new(0.42f, 0.27f, 0.25f), GardenFloor = new(0.22f, 0.40f, 0.20f),
+	private static readonly Color GardenWall = new(0.12f, 0.24f, 0.15f), GardenFloor = new(0.22f, 0.40f, 0.20f),
 		GardenPlant = new(0.55f, 0.70f, 0.28f), GardenPath = new(0.48f, 0.44f, 0.38f);
 
 	private Color ColourOf(byte kind, int x, int y)
