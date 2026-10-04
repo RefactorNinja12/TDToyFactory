@@ -8,6 +8,7 @@ night palette (tiles without outlines, plants with).
   Tiles/garden_path.png  256x256: gravel with stepping stones, repeats every 4x4 tiles (the hall)
   Tiles/hedge.png        256x256: a trimmed hedge from above, repeats every 4x4 tiles (the walls)
   Obstacles/pumpkin.png, sunflower.png, cabbage.png, carrot.png, flowers.png: footprint + one tile on top
+  Obstacles/plantbed.png 320x320: dug soil with stones, drawn under each plant (footprint + half a tile round)
   (seen slanted from above, like the toys: ObstacleView draws one tile of overhang)
 
     python tools/art/garden.py && python tools/art/restyle.py <the files it lists>
@@ -518,6 +519,16 @@ def carrot():
     out(img, "Obstacles/carrot.png")
 
 
+def plantbed():
+    """
+    The user's bed of dug soil with stones (tools/art/reference/plantbed.png, on white): drawn under every giant
+    plant by ObstacleView, stretched over its footprint and a little round it, so the plants look planted. The white
+    background and the soft grey shadow are cut away, as are the loose crumbs round the edge.
+    """
+    if os.path.exists(os.path.join(REFERENCE, "plantbed.png")):
+        out(painting("plantbed", 5 * T, 5 * T, colours=48, greens=False, shadow=True), "Obstacles/plantbed.png")
+
+
 def flowers():
     if os.path.exists(os.path.join(REFERENCE, "flowers_top.png")):
         # The user's own flower patch: its painted shadow cut away, fitted at full resolution (small flowers).
@@ -536,4 +547,5 @@ if __name__ == "__main__":
     cabbage()
     carrot()
     flowers()
+    plantbed()
     print(" ".join(WRITTEN))

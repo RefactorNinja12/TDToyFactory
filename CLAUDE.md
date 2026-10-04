@@ -14,7 +14,8 @@ elektronik svag mot vatten, klossar svaga mot laser.
 Två rum (~60x60 rutor) förbundna med en hall (~30–40 rutor).
 Dörren är enda ingången i början. Rika resurser i hallen.
 Två kartor med samma spelbara form (`MapTheme`): Barnrummet (brädgolv, väggar, jätteleksaker) och Trädgården
-(gräsmatta med klöverfläckar, häckar som väggar, grusgång i hallen, jätteväxter: pumpa, solros, kål, morot, blomsterplätt). Formen
+(gräsmatta med klöverfläckar, häckar som väggar, grusgång i hallen, jätteväxter: pumpa, solros, kål, morot, blomsterplätt; var och en i en jordbädd med stenar, `plantbed.png`, som
+ObstacleView ritar först, över fotavtrycket + en halv ruta runt). Formen
 är densamma så boten och alla regler passar båda; temat styr tileset (`RoomTiles`/`GardenTiles.tres`), hinder,
 minikartans färger. Klövern: `UI/Lawn.cs` (mjukt heltalsbrus → täthet 0–3 per gräsruta, klöverblad
 som får sticka över rutkanten, bara på gräs i rummen) ritas av `View/CloverView.cs` (barn till MapView). Väljs i startmenyn ("Karta", sparas); värden skickar den i Start (protokoll 2).
