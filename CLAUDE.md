@@ -131,7 +131,7 @@ Kompakt fabrik, max 3 nivåer i produktionskedjan, matcher 15–25 min.
 - Grafik: `tools/art/restyle.py` gör om alla sprites från `tools/art/source/` (palett + svarta konturer)
   och genererar golvet (stora brädor, 16x8 rutor). Nya sprites läggs i source och skriptet körs
   (`restyle.py <filer>` = bara de). Byggnader och enheter ritas av kod: `tools/art/kit.py` (plastformer, mus på
-  två ben, ark), `tools/art/buildings/*.py`, `tools/art/units/*.py`, `tools/art/logistics/*.py`, `tools/art/garden.py` (gräs, grus, rabatt, växter; en bild i `tools/art/reference/<namn>.png`, t.ex. användarens pumpa, används i stället: bakgrund och skugga klipps bort, skalas, restylas); granska med `tools/art/sheet.py`. Under
+  två ben, ark), `tools/art/buildings/*.py`, `tools/art/units/*.py`, `tools/art/logistics/*.py`, `tools/art/garden.py` (gräs, grus, rabatt, växter; en bild i `tools/art/reference/<namn>.png`, t.ex. användarens pumpa och kål, används i stället: bakgrund och skugga klipps bort, halv upplösning med hårda pixlar, 16 platta färger (octree, behåller små ytors färg), restylas; `SOFT` i restyle = lätt dämpad, för det som annars blir brunt); granska med `tools/art/sheet.py`. Under
   luminans 0,2 blir kontursvart, 2 px-linjer blir helt kontur, ljusa pasteller blir grå (välj mättat); paletten har två rosa för mössens öron, tassar och svansar.
 
 ## Kodstruktur

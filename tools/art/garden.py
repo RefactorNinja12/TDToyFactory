@@ -126,11 +126,13 @@ def flowerbed():
 REFERENCE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "reference")
 
 
-def from_reference(name, w, h):
+def from_reference(name, w, h, pixel=2, colours=16):
     """
-    A picture made from a reference drawing (tools/art/reference/<name>.png, e.g. one the user supplied): the
-    light background and its grey drop shadow are cut away (filled from the edges, stopped by the dark
-    outline; the game works out shadows itself), then it is scaled to fit w x h and stands on the bottom.
+    A picture made from a reference drawing (tools/art/reference/<name>.png, e.g. one the user supplied), made
+    to fit the game's look: the light background and its grey drop shadow are cut away (filled from the edges,
+    stopped by the dark outline; the game works out shadows itself); it is scaled to fit w x h standing on the
+    bottom, at 1/<pixel> size and blown up again with hard edges (pixels as chunky as the other sprites), with
+    a few flat colours and solid edges. restyle.py then puts it in the night palette with black outlines.
     """
     from collections import deque
     src = Image.open(os.path.join(REFERENCE, f"{name}.png")).convert("RGBA")
@@ -157,11 +159,17 @@ def from_reference(name, w, h):
             if px[x, y][3] and background(px[x, y]):
                 px[x, y] = (0, 0, 0, 0)
     cut = src.crop(src.getbbox())
-    scale = min(w / cut.width, h / cut.height)
+    sw, sh = w // pixel, h // pixel
+    scale = min(sw / cut.width, sh / cut.height)
     cut = cut.resize((max(1, round(cut.width * scale)), max(1, round(cut.height * scale))), Image.LANCZOS)
-    img, _ = canvas(w, h)
-    img.alpha_composite(cut, ((w - cut.width) // 2, h - cut.height))
-    return img
+    # flat colours, solid edges
+    alpha = cut.getchannel("A").point(lambda a: 255 if a >= 128 else 0)
+    # octree keeps small areas' hues (a median cut gave the pumpkin's green stem away to its orange)
+    flat = cut.convert("RGB").quantize(colours, method=Image.Quantize.FASTOCTREE).convert("RGB")
+    flat.putalpha(alpha)
+    small, _ = canvas(sw, sh)
+    small.alpha_composite(flat, ((sw - flat.width) // 2, sh - flat.height))
+    return small.resize((w, h), Image.NEAREST)
 
 
 def pumpkin():
@@ -213,6 +221,9 @@ def sunflower():
 
 
 def cabbage():
+    if os.path.exists(os.path.join(REFERENCE, "cabbage.png")):
+        out(from_reference("cabbage", 3 * T, 4 * T), "Obstacles/cabbage.png")
+        return
     w, h = 3 * T, 4 * T
     img, d = canvas(w, h)
     cx, cy = w // 2, h // 2 + 30

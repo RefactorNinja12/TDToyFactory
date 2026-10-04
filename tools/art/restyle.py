@@ -59,19 +59,25 @@ PALETTE_LAB = [srgb_to_lab(c) for c in PALETTE]
 _cache = {}
 
 
-# Pictures that stay bright: cheese is the game's warm yellow accent, the pumpkin its bright orange.
-VIVID = {"cheese.png", "melted_cheese.png", "cheese_melter.png", "pumpkin.png"}
+# Pictures that stay bright: cheese is the game's warm yellow accent.
+VIVID = {"cheese.png", "melted_cheese.png", "cheese_melter.png"}
+# Pictures muted only a little: their warm colours turn brown and their dark greens grey at the full muting
+# (the pumpkin made from the user's drawing).
+SOFT = {"pumpkin.png"}
 
 
 def muted(c, vivid=False):
     """A little less saturated and a little darker: less cartoon, more night (vivid: barely)."""
     r, g, b = c
     grey = 0.299 * r + 0.587 * g + 0.114 * b
-    if vivid:
+    if vivid == "soft":
+        k, dark = 0.85, 0.92
+    elif vivid:
         return tuple(max(0, min(255, int(grey + (v - grey) * 0.95))) for v in (r, g, b))
-    k = 0.62  # keep 62% of the saturation
+    else:
+        k, dark = 0.62, 0.86  # keep 62% of the saturation, a little darker
     r, g, b = (grey + (v - grey) * k for v in (r, g, b))
-    return tuple(max(0, min(255, int(v * 0.86))) for v in (r, g, b))
+    return tuple(max(0, min(255, int(v * dark))) for v in (r, g, b))
 
 
 def nearest(c, vivid=False):
@@ -222,7 +228,7 @@ def main(only=None):
                 continue
             # Floor tiles get no outline. Everything else does, but never along the picture's own border
             # (see `restyle`), so belts still join their neighbours without a seam.
-            restyle(src, dst, outline=rel != "Tiles", vivid=name in VIVID)
+            restyle(src, dst, outline=rel != "Tiles", vivid="soft" if name in SOFT else name in VIVID)
     if wanted is not None:
         print("restyled", len(wanted), "files")
         return
