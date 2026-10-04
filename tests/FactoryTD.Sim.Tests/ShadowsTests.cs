@@ -102,7 +102,7 @@ public class ShadowsTests
 		float centre = toy.X + toy.Width / 2f;
 		Assert.True(shadow.X + shadow.Length / 2 > toy.X + toy.Width + 1, "it reaches well out from under the toy");
 		Assert.True(shadow.X > centre, "most of it on the far side");
-		Assert.True(shadow.Alpha > building.Alpha * 1.5f, $"darker: {shadow.Alpha}, a building's {building.Alpha}");
+		Assert.True(shadow.Alpha > building.Alpha * 1.3f, $"darker: {shadow.Alpha}, a building's {building.Alpha}");
 		Assert.True(shadow.Alpha <= Shadows.MaxDark);
 	}
 

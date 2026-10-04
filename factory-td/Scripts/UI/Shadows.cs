@@ -25,7 +25,7 @@ public static class Shadows
 	public const float MaxAlpha = 0.6f;
 
 	/// <summary>The darkest any shadow gets (a big toy right by a lamp).</summary>
-	public const float MaxDark = 0.85f;
+	public const float MaxDark = 0.7f;
 
 	/// <summary>Below this summed light the shadow is too faint to draw.</summary>
 	public const float MinLight = 0.03f;
@@ -89,7 +89,7 @@ public sealed class ShadowCaster
 	public const float ObstacleTall = 2.5f;
 
 	/// <summary>How much darker an obstacle's shadow is than a building's: a deep shade, so it shows through the lamp's glow.</summary>
-	public const float ObstacleDark = 1.9f;
+	public const float ObstacleDark = 1.5f;
 
 	private readonly Dictionary<object, Shadow> _current = new();
 	private readonly HashSet<object> _seen = new();
