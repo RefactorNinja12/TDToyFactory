@@ -14,7 +14,8 @@ elektronik svag mot vatten, klossar svaga mot laser.
 Två rum (~60x60 rutor) förbundna med en hall (~30–40 rutor).
 Dörren är enda ingången i början. Rika resurser i hallen.
 Två kartor med samma spelbara form (`MapTheme`): Barnrummet (brädgolv, väggar, jätteleksaker) och Trädgården
-(gräsmatta med klöverfläckar, häckar som väggar, grusgång i hallen, jätteväxter: pumpa, solros, kål, morot, blomsterplätt). Formen
+(gräsmatta med klöverfläckar, häckar som väggar, grusgång i hallen, jätteväxter: pumpa, solros, kål, morot, blomsterplätt; var och en i en jordbädd med stenar, `plantbed.png`, som
+ObstacleView ritar först, över fotavtrycket + en halv ruta runt). Formen
 är densamma så boten och alla regler passar båda; temat styr tileset (`RoomTiles`/`GardenTiles.tres`), hinder,
 minikartans färger. Klövern: `UI/Lawn.cs` (mjukt heltalsbrus → täthet 0–3 per gräsruta, klöverblad
 som får sticka över rutkanten, bara på gräs i rummen) ritas av `View/CloverView.cs` (barn till MapView). Väljs i startmenyn ("Karta", sparas); värden skickar den i Start (protokoll 2).
@@ -132,7 +133,7 @@ Kompakt fabrik, max 3 nivåer i produktionskedjan, matcher 15–25 min.
 - Grafik: `tools/art/restyle.py` gör om alla sprites från `tools/art/source/` (palett + svarta konturer)
   och genererar golvet (stora brädor, 16x8 rutor). Nya sprites läggs i source och skriptet körs
   (`restyle.py <filer>` = bara de). Byggnader och enheter ritas av kod: `tools/art/kit.py` (plastformer, mus på
-  två ben, ark), `tools/art/buildings/*.py`, `tools/art/units/*.py`, `tools/art/logistics/*.py`, `tools/art/garden.py` (gräs, klöver, grus, häck, växter; en bild i `tools/art/reference/<namn>.png`, t.ex. användarens pumpa och kål, används i stället: bakgrund och skugga klipps bort, halv upplösning med hårda pixlar, 16 platta färger (octree, behåller små ytors färg), restylas; `painting()` = användarens färdiga sprite med genomskinlig bakgrund (pumpan uppifrån, `pumpkin_top.png`): passas på fotavtrycket, halv upplösning, 32 platta färger, gröna delar → palettens gröna, svarta linjer kvar; `KEEP` i restyle = egna färger, bara kontur (solrosen, moroten: paletten saknar deras färger); `painting(shadow=True)` klipper bort en målad grå skugga + lösa prickar; `SOFT` i restyle = lätt dämpad; `HAND_EDITED` i `kit.py` = sprites användaren gjort klart för hand, skripten skriver aldrig över dem); granska med `tools/art/sheet.py`. Under
+  två ben, ark), `tools/art/buildings/*.py`, `tools/art/units/*.py`, `tools/art/logistics/*.py`, `tools/art/garden.py` (gräs, klöver, grus, häck, växter; en bild i `tools/art/reference/<namn>.png`, t.ex. användarens pumpa och kål, används i stället: bakgrund och skugga klipps bort, halv upplösning med hårda pixlar, 16 platta färger (octree, behåller små ytors färg), restylas; `painting()` = användarens färdiga sprite med genomskinlig bakgrund (pumpan uppifrån, `pumpkin_top.png`): passas på fotavtrycket, halv upplösning, 32 platta färger, gröna delar → palettens gröna, svarta linjer kvar; `KEEP` i restyle = egna färger, bara kontur (solrosen, moroten, kålen, blomsterplätten: användarens färdiga bilder, paletten saknar deras färger); `painting(shadow=True)` klipper bort en målad grå skugga + lösa prickar, `pixel=1` = full upplösning (blomsterplätten); `SOFT` i restyle = lätt dämpad; `HAND_EDITED` i `kit.py` = sprites användaren gjort klart för hand, skripten skriver aldrig över dem); granska med `tools/art/sheet.py`. Under
   luminans 0,2 blir kontursvart, 2 px-linjer blir helt kontur, ljusa pasteller blir grå (välj mättat); paletten har två rosa för mössens öron, tassar och svansar.
 
 ## Kodstruktur

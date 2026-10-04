@@ -124,6 +124,9 @@ public static class BuildingVisuals
 
 	public static Texture2D GetObstacleTexture(ObstacleKind kind) => Load($"res://Assets/Sprites/Obstacles/{ObstaclePictures[kind]}.png");
 
+	/// <summary>Dug soil with stones under each giant plant in the garden (ObstacleView).</summary>
+	public static Texture2D PlantBedTexture => Load("res://Assets/Sprites/Obstacles/plantbed.png");
+
 	/// <summary>A moving part drawn over a building (UI/BuildingParts), from Assets/Sprites/Parts.</summary>
 	public static Texture2D GetPartTexture(string name) => Load($"res://Assets/Sprites/Parts/{name}.png");
 
