@@ -107,6 +107,23 @@ public static class BuildingVisuals
 		};
 	}
 
+	/// <summary>The picture of each obstacle kind, in Assets/Sprites/Obstacles.</summary>
+	private static readonly Dictionary<ObstacleKind, string> ObstaclePictures = new()
+	{
+		[ObstacleKind.TeddyBear] = "teddy",
+		[ObstacleKind.AbcBlocks] = "blocks",
+		[ObstacleKind.RagDoll] = "doll",
+		[ObstacleKind.Lollipop] = "lollipop",
+		[ObstacleKind.MouseTrap] = "mousetrap",
+		[ObstacleKind.Pumpkin] = "pumpkin",
+		[ObstacleKind.Sunflower] = "sunflower",
+		[ObstacleKind.Cabbage] = "cabbage",
+		[ObstacleKind.Carrot] = "carrot",
+		[ObstacleKind.Tulips] = "tulips",
+	};
+
+	public static Texture2D GetObstacleTexture(ObstacleKind kind) => Load($"res://Assets/Sprites/Obstacles/{ObstaclePictures[kind]}.png");
+
 	/// <summary>A moving part drawn over a building (UI/BuildingParts), from Assets/Sprites/Parts.</summary>
 	public static Texture2D GetPartTexture(string name) => Load($"res://Assets/Sprites/Parts/{name}.png");
 

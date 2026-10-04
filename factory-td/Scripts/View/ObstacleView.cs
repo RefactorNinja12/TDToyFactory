@@ -12,21 +12,6 @@ public partial class ObstacleView : Node2D
 {
 	private const float T = BuildingVisuals.TileSize;
 
-	/// <summary>The picture of each kind, in Assets/Sprites/Obstacles.</summary>
-	private static readonly System.Collections.Generic.Dictionary<ObstacleKind, string> Pictures = new()
-	{
-		[ObstacleKind.TeddyBear] = "teddy",
-		[ObstacleKind.AbcBlocks] = "blocks",
-		[ObstacleKind.RagDoll] = "doll",
-		[ObstacleKind.Lollipop] = "lollipop",
-		[ObstacleKind.MouseTrap] = "mousetrap",
-		[ObstacleKind.Pumpkin] = "pumpkin",
-		[ObstacleKind.Sunflower] = "sunflower",
-		[ObstacleKind.Cabbage] = "cabbage",
-		[ObstacleKind.Carrot] = "carrot",
-		[ObstacleKind.Tulips] = "tulips",
-	};
-
 	private World _world;
 
 	public void Bind(World world)
@@ -43,7 +28,9 @@ public partial class ObstacleView : Node2D
 			return;
 		foreach (var toy in _world.Map.Obstacles)
 		{
-			var texture = GD.Load<Texture2D>($"res://Assets/Sprites/Obstacles/{Pictures[toy.Kind]}.png");
+			// From BuildingVisuals' cache, which holds on to it: a texture only loaded here would be freed by the
+			// garbage collector after drawing, and the toy would turn into a white box.
+			var texture = BuildingVisuals.GetObstacleTexture(toy.Kind);
 			// Footprint plus one tile of the toy's front/top showing above it.
 			var rect = new Rect2(toy.X * T, (toy.Y - 1) * T, toy.Width * T, (toy.Height + 1) * T);
 			// Mirrored toys (right room) are flipped, so both rooms look the same way round.

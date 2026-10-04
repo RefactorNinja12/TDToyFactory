@@ -197,6 +197,8 @@ Kompakt fabrik, max 3 nivåer i produktionskedjan, matcher 15–25 min.
   gemensam hjälpare/basklass (t.ex. `StoreBuilding`, `OneItemRouter`, `GridSearch.Flood`), höj inte gränsen.
 - Buggfix: skriv först ett test som fallerar, sedan fixen. Ny funktion: tester i samma ändring.
 - Ny logik hamnar i `Scripts/Sim` eller `Scripts/UI` (testbart), inte i View.
+- View: en textur som ritas med Draw* måste hållas kvar (fält, nod eller `BuildingVisuals`-cachen). Laddas den
+  bara lokalt i `_Draw` frigör .NET:s GC den efter ritningen och Godot ritar en vit ruta (hindren, garden-map).
 - Balansändring: kör `task test:report` och uppdatera trösklarna medvetet om designen ändrats.
 - Lint FAIL med ENDOFLINE/WHITESPACE → `task fmt`, sedan `task lint`. Analyzer-varningar (t.ex.
   xUnit2013) fixas för hand. `task build` bara för View-ändringar (testerna bygger inte View).
@@ -208,6 +210,7 @@ Kompakt fabrik, max 3 nivåer i produktionskedjan, matcher 15–25 min.
   behåller körrättigheter, `docs/LAS-MIG.txt` följer med). Båda spelarna måste köra samma zip.
 - Godot bara för det visuella: `Scripts/_Test/VisualProbe.cs` + skärmdump (headless `--write-movie`);
   `PROBE_CAM="x,y,zoom"` tittar var som helst, `PROBE_SCENE=shadows` = lampa med byggnader och möss,
+  `PROBE_GC=1` = tvingar en GC efter några bilder (texturer som ingen håller kvar blir vita rutor),
   `PROBE_MAP=garden` = trädgårdskartan, `PROBE_SCENE=belts` = ett band ritat klick–klick (startklick + musen vid målet), `PROBE_SCENE=crane` = klokran
   över klossfältet som matar ett band genom en delare.
   `Scenes/_Probe*.tscn` är gitignorerade.
