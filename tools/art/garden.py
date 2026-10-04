@@ -26,6 +26,8 @@ LEAF = (78, 150, 70)
 
 
 def out(img, rel):
+    if rel in HAND_EDITED:
+        return
     save(img, rel)
     WRITTEN.append(rel)
 

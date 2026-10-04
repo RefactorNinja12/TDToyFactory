@@ -14,6 +14,8 @@ import random
 import shutil
 from PIL import Image
 
+from kit import HAND_EDITED
+
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 SPRITES = os.path.join(ROOT, "factory-td", "Assets", "Sprites")
 SOURCE = os.path.join(ROOT, "tools", "art", "source")
@@ -218,6 +220,8 @@ def main(only=None):
                 continue
             if wanted is not None and os.path.normpath(os.path.join(rel, name)) not in wanted:
                 continue
+            if os.path.join(rel, name).replace(os.sep, "/") in HAND_EDITED:
+                continue  # finished by hand
             src = os.path.join(folder, name)
             dst = os.path.join(SPRITES, rel, name)
             os.makedirs(os.path.dirname(dst), exist_ok=True)
