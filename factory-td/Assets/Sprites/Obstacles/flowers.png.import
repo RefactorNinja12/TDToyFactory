@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://bsmtfvmbo24xd"
-path="res://.godot/imported/tulips.png-b02a92dec5d8847f4e5b1c0e9f43b361.ctex"
+uid="uid://cosaje73pmo2u"
+path="res://.godot/imported/flowers.png-ae1ba4d31855f810714dbff1bcd4a6a1.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://Assets/Sprites/Obstacles/tulips.png"
-dest_files=["res://.godot/imported/tulips.png-b02a92dec5d8847f4e5b1c0e9f43b361.ctex"]
+source_file="res://Assets/Sprites/Obstacles/flowers.png"
+dest_files=["res://.godot/imported/flowers.png-ae1ba4d31855f810714dbff1bcd4a6a1.ctex"]
 
 [params]
 

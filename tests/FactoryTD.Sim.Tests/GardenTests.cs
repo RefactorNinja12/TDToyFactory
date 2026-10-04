@@ -7,7 +7,7 @@ namespace FactoryTD.Sim.Tests;
 public class GardenTests
 {
 	private static readonly ObstacleKind[] Plants =
-		{ ObstacleKind.Pumpkin, ObstacleKind.Sunflower, ObstacleKind.Cabbage, ObstacleKind.Carrot, ObstacleKind.Tulips };
+		{ ObstacleKind.Pumpkin, ObstacleKind.Sunflower, ObstacleKind.Cabbage, ObstacleKind.Carrot, ObstacleKind.FlowerPatch };
 
 	[Fact]
 	public void TheGarden_HasTheRoomsShape_WallsDepositsZones()

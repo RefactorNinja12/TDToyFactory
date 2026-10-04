@@ -6,7 +6,7 @@ night palette (tiles without outlines, plants with).
   Tiles/grass.png        1024x512: the lawn, repeats every 16x8 tiles (like the floorboards)
   Tiles/garden_path.png  256x256: gravel with stepping stones, repeats every 4x4 tiles (the hall)
   Tiles/flowerbed.png    64x64: a raised wooden planter with soil and flowers (the walls)
-  Obstacles/pumpkin.png, sunflower.png, cabbage.png, carrot.png, tulips.png: footprint + one tile on top
+  Obstacles/pumpkin.png, sunflower.png, cabbage.png, carrot.png, flowers.png: footprint + one tile on top
   (seen slanted from above, like the toys: ObstacleView draws one tile of overhang)
 
     python tools/art/garden.py && python tools/art/restyle.py <the files it lists>
@@ -162,14 +162,119 @@ def from_reference(name, w, h, pixel=2, colours=16):
     sw, sh = w // pixel, h // pixel
     scale = min(sw / cut.width, sh / cut.height)
     cut = cut.resize((max(1, round(cut.width * scale)), max(1, round(cut.height * scale))), Image.LANCZOS)
-    # flat colours, solid edges
-    alpha = cut.getchannel("A").point(lambda a: 255 if a >= 128 else 0)
-    # octree keeps small areas' hues (a median cut gave the pumpkin's green stem away to its orange)
-    flat = cut.convert("RGB").quantize(colours, method=Image.Quantize.FASTOCTREE).convert("RGB")
-    flat.putalpha(alpha)
     small, _ = canvas(sw, sh)
-    small.alpha_composite(flat, ((sw - flat.width) // 2, sh - flat.height))
-    return small.resize((w, h), Image.NEAREST)
+    small.alpha_composite(cut, ((sw - cut.width) // 2, sh - cut.height))
+    return pixel_art(small, pixel, colours)
+
+
+def pixel_art(small, pixel, colours):
+    """A small picture made to look like the other sprites: flat colours, solid edges, blown up with hard pixels."""
+    alpha = small.getchannel("A").point(lambda a: 255 if a >= 128 else 0)
+    # octree keeps small areas' hues (a median cut gave the pumpkin's green stem away to its orange)
+    flat = small.convert("RGB").quantize(colours, method=Image.Quantize.FASTOCTREE).convert("RGB")
+    flat.putalpha(alpha)
+    return flat.resize((small.width * pixel, small.height * pixel), Image.NEAREST)
+
+
+def petal(d, cx, cy, ang, inner, outer, width, fill):
+    """One petal: a pointed oval from inner to outer along the angle."""
+    pts = []
+    for k in range(13):
+        t = k / 12
+        r = inner + (outer - inner) * t
+        half = width * math.sin(math.pi * t) ** 0.7
+        pts.append((t, r, half))
+    left = [(cx + r * math.cos(ang) - h * math.sin(ang), cy + r * math.sin(ang) + h * math.cos(ang)) for _, r, h in pts]
+    right = [(cx + r * math.cos(ang) + h * math.sin(ang), cy + r * math.sin(ang) - h * math.cos(ang)) for _, r, h in pts]
+    d.polygon(left + right[::-1], fill=fill)
+
+
+# Flower colours picked from the restyle palette, so the night muting can't turn the white grey or the leaves into lawn.
+PETALS = {
+    "daisy": ((255, 243, 196), (196, 198, 212)),
+    "orange": ((227, 139, 53), (242, 182, 74)),
+    "red": ((184, 56, 74), (224, 100, 106)),
+    "pink": ((201, 140, 150), (224, 100, 106)),
+    "yellow": ((242, 182, 74), (247, 221, 122)),
+}
+EYE = ((242, 182, 74), (196, 96, 42))
+
+
+def bloom(d, cx, cy, r, kind, rng):
+    """
+    One flower seen from above, like the user's meadow picture: a daisy (many narrow petals round a yellow eye)
+    or a round bloom (broad petals, a darker heart). Each petal has a darker rim, so the petals stay apart.
+    """
+    turn = rng.uniform(0, math.tau)
+    colour, other = PETALS[kind]
+    if kind == "daisy":
+        for k in range(10):
+            a = turn + k * math.tau / 10
+            petal(d, cx, cy, a, r * 0.2, r + 1, r * 0.3, other)                     # the rim between petals
+            petal(d, cx, cy, a, r * 0.2, r - 1, r * 0.13, colour)
+    else:
+        petals = 10 if kind in ("orange", "yellow") else 6
+        width = 0.36 if petals == 10 else 0.6
+        for k in range(petals):
+            a = turn + k * math.tau / petals
+            petal(d, cx, cy, a, 0, r + 1, r * (width + 0.08), tint(colour, -0.35))
+            petal(d, cx, cy, a, 0, r - 1, r * width, colour)
+        for k in range(petals):                                   # the inner half of each petal lighter
+            a = turn + k * math.tau / petals
+            petal(d, cx, cy, a, 0, r * 0.55, r * width * 0.55, other)
+    eye, ring = EYE if kind != "yellow" else ((196, 96, 42), (138, 59, 31))
+    d.ellipse((cx - r * 0.32, cy - r * 0.32, cx + r * 0.32, cy + r * 0.32), fill=ring)
+    d.ellipse((cx - r * 0.26, cy - r * 0.28, cx + r * 0.22, cy + r * 0.2), fill=eye)
+
+
+def flower_patch(w, h, pixel=2):
+    """
+    A patch of flowers on the lawn, painted after the user's meadow picture (tools/art/reference/flowers.png):
+    a wavy mound of pointed leaves in several greens, with a big white daisy among smaller daisies and orange,
+    red, pink and yellow blooms. Painted at full size, then made into chunky pixels like the other plants.
+    """
+    rng = random.Random(7)
+    img, d = canvas(w, h)
+    cx, cy, rx, ry = w / 2, h * 0.56, w * 0.47, h * 0.41
+
+    def inside(x, y, shrink=1.0):
+        return ((x - cx) / (rx * shrink)) ** 2 + ((y - cy) / (ry * shrink)) ** 2 <= 1
+
+    # the leafy mound: a dark ground, then layers of leaves, darker underneath and lighter on top
+    pts = []
+    for k in range(48):
+        a = k * math.tau / 48
+        wobble = 1 + 0.05 * math.sin(a * 7) + 0.04 * math.sin(a * 11 + 1)
+        pts.append((cx + rx * wobble * math.cos(a), cy + ry * wobble * math.sin(a)))
+    d.polygon(pts, fill=(35, 64, 42))
+    greens = [(58, 107, 53), (58, 107, 53), (95, 154, 69), (156, 196, 102)]
+    for layer, green in enumerate(greens):
+        for _ in range(70 - layer * 10):
+            x, y = rng.uniform(cx - rx, cx + rx), rng.uniform(cy - ry, cy + ry)
+            if not inside(x, y, 0.98 - layer * 0.04):
+                continue
+            a = rng.uniform(0, math.tau)
+            length = rng.uniform(16, 26)
+            petal(d, x, y, a, 0, length + 2, length * 0.3 + 1, (35, 64, 42))   # dark rim
+            petal(d, x, y, a, 0, length, length * 0.28, green)
+            # the leaf's middle vein
+            d.line((x, y, x + length * 0.8 * math.cos(a), y + length * 0.8 * math.sin(a)), fill=(35, 64, 42), width=1)
+
+    # the flowers: the big daisy a little off centre, then the others spread round it without piling up
+    placed = [(cx + 6, cy - 4, 30, "daisy")]
+    kinds = ["daisy", "orange", "red", "pink", "daisy", "orange", "red", "yellow", "daisy", "pink", "red", "orange"]
+    tries = 0
+    while len(placed) < 16 and tries < 4000:
+        tries += 1
+        r = rng.choice((10, 12, 14, 16))
+        x, y = rng.uniform(cx - rx, cx + rx), rng.uniform(cy - ry, cy + ry)
+        if not inside(x, y, 0.86) or any(math.hypot(x - px, y - py) < (r + pr) * 0.85 for px, py, pr, _ in placed):
+            continue
+        placed.append((x, y, r, kinds[len(placed) % len(kinds)]))
+    for x, y, r, kind in sorted(placed, key=lambda f: f[1]):          # back to front
+        bloom(d, x, y, r, kind, rng)
+    small = img.resize((w // pixel, h // pixel), Image.LANCZOS)
+    return pixel_art(small, pixel, 28)
 
 
 def pumpkin():
@@ -261,18 +366,8 @@ def carrot():
     out(img, "Obstacles/carrot.png")
 
 
-def tulips():
-    w, h = 3 * T, 3 * T
-    img, d = canvas(w, h)
-    base = h - 24
-    for x, top, color in ((50, 52, RED), (96, 34, YELLOW), (142, 58, (236, 120, 190))):
-        d.line((x, top + 24, x, base), fill=(84, 140, 60), width=6)                  # stem
-        d.ellipse((x - 26, base - 50, x + 2, base - 4), fill=LEAF)                    # leaves
-        d.ellipse((x - 2, base - 40, x + 24, base - 4), fill=tint(LEAF, -0.15))
-        d.polygon([(x - 20, top + 6), (x - 12, top - 10), (x, top + 2), (x + 12, top - 10), (x + 20, top + 6),
-                   (x + 16, top + 30), (x - 16, top + 30)], fill=color)              # the cup
-        d.line((x, top + 4, x, top + 28), fill=tint(color, -0.25), width=2)
-    out(img, "Obstacles/tulips.png")
+def flowers():
+    out(flower_patch(3 * T, 3 * T), "Obstacles/flowers.png")
 
 
 if __name__ == "__main__":
@@ -283,5 +378,5 @@ if __name__ == "__main__":
     sunflower()
     cabbage()
     carrot()
-    tulips()
+    flowers()
     print(" ".join(WRITTEN))

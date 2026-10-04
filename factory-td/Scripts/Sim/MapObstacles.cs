@@ -15,7 +15,7 @@ public enum ObstacleKind : byte
 	Sunflower,
 	Cabbage,
 	Carrot,
-	Tulips,
+	FlowerPatch,
 }
 
 /// <summary>A big toy on the map: its footprint in tiles (TileType.Obstacle).</summary>
@@ -61,7 +61,7 @@ public sealed partial class MapLayout
 		(ObstacleKind.Sunflower, 3, 4),
 		(ObstacleKind.Cabbage, 3, 3),
 		(ObstacleKind.Carrot, 5, 3),
-		(ObstacleKind.Tulips, 3, 2),
+		(ObstacleKind.FlowerPatch, 3, 2),
 	};
 
 	private void AddObstacles(int seed)

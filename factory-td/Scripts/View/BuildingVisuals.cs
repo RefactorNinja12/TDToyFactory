@@ -119,7 +119,7 @@ public static class BuildingVisuals
 		[ObstacleKind.Sunflower] = "sunflower",
 		[ObstacleKind.Cabbage] = "cabbage",
 		[ObstacleKind.Carrot] = "carrot",
-		[ObstacleKind.Tulips] = "tulips",
+		[ObstacleKind.FlowerPatch] = "flowers",
 	};
 
 	public static Texture2D GetObstacleTexture(ObstacleKind kind) => Load($"res://Assets/Sprites/Obstacles/{ObstaclePictures[kind]}.png");
