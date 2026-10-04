@@ -261,7 +261,7 @@ public partial class Game : Node2D
 	private bool ReachedQuitStep() => MatchSetup.QuitAfterSteps > 0 && World.TickCount >= MatchSetup.QuitAfterSteps;
 
 	/// <summary>
-	/// Smoke test (--steps N): at step N write "tick checksum" (or why the match ended) and quit a few seconds
+	/// Smoke test (--steps N): at step N write "tick checksum map" (or why the match ended) and quit a few seconds
 	/// later, so the other side also gets its last turns before this one hangs up.
 	/// </summary>
 	private bool QuitWhenDone(double delta)
@@ -270,7 +270,7 @@ public partial class Game : Node2D
 			return false;
 		if (_quitIn < 0 && (ReachedQuitStep() || _session is { State: SessionState.Ended }))
 		{
-			string line = ReachedQuitStep() ? $"{World.TickCount} {World.Checksum():X16}" : $"ended {_session.EndReason} {_session.DesyncStep}";
+			string line = ReachedQuitStep() ? $"{World.TickCount} {World.Checksum():X16} {World.Map.Theme}" : $"ended {_session.EndReason} {_session.DesyncStep}";
 			using (var file = FileAccess.Open(MatchSetup.ChecksumFile, FileAccess.ModeFlags.Write))
 				file?.StoreString(line + "\n");
 			_quitIn = 3;

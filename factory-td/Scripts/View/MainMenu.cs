@@ -24,11 +24,14 @@ public partial class MainMenu : Control
 	private MatchSession _session;
 	private ENetTransport _transport;
 	private bool _autoStart;
+	private Sim.MapTheme _map;
+	private Control _preview;
 	private int _seed;
 
 	public override void _Ready()
 	{
 		_settings = LoadSettings();
+		_map = MatchSetup.Theme = _settings.Map;
 		var theme = UiTheme.Create();
 		GetWindow().Theme = theme;
 		Theme = theme;
@@ -72,7 +75,7 @@ public partial class MainMenu : Control
 		if (_autoStart && _session is HostSession { CanStart: true } host)
 		{
 			_autoStart = false;
-			host.Start(_seed);
+			host.Start(_seed, _map);
 		}
 		if (_session.State == SessionState.Playing)
 		{
@@ -105,6 +108,7 @@ public partial class MainMenu : Control
 	{
 		if (DisplayServer.GetName() == "headless" || LaunchArgs.Parse(OS.GetCmdlineUserArgs()).Online)
 			return;
+		_preview?.QueueFree();
 		var container = new SubViewportContainer { Stretch = true, StretchShrink = 2, MouseFilter = MouseFilterEnum.Ignore };
 		container.SetAnchorsAndOffsetsPreset(LayoutPreset.FullRect);
 		container.SetProcessInput(false);
@@ -114,6 +118,26 @@ public partial class MainMenu : Control
 		game.Preview = true;
 		viewport.AddChild(game);
 		AddChild(container);
+		MoveChild(container, 0); // behind the veil and the menu
+		_preview = container;
+	}
+
+	/// <summary>The map choice ("Karta"), shown on the local and host pages; remembered, and the background follows it.</summary>
+	private void AddMapChoice()
+	{
+		_page.AddChild(new Label { Text = "Karta", Modulate = UiTheme.TextDim });
+		var maps = new OptionButton();
+		foreach (var (name, _) in MenuModel.Maps)
+			maps.AddItem(name);
+		maps.Selected = MenuModel.MapIndex(_map);
+		maps.ItemSelected += index =>
+		{
+			_map = MatchSetup.Theme = MenuModel.Maps[index].Theme;
+			_settings = _settings with { Map = _map };
+			SaveSettings();
+			AddPreview(); // the background plays on the chosen map
+		};
+		_page.AddChild(maps);
 	}
 
 	// ---- pages ----
@@ -130,6 +154,7 @@ public partial class MainMenu : Control
 	private void ShowLocal()
 	{
 		Clear();
+		AddMapChoice();
 		AddLabel("Mot datorn. Svårighet:");
 		var difficulty = new OptionButton();
 		foreach (var (name, _) in MenuModel.Difficulties)
@@ -151,6 +176,7 @@ public partial class MainMenu : Control
 		var name = AddField("Ditt namn", _settings.Name);
 		var port = AddField("Port", _settings.Port.ToString());
 		var password = AddPassword();
+		AddMapChoice();
 		_status = AddLabel("Välj ett lösenord och berätta det för din kompis.");
 		var addresses = AddLabel("");
 		var internet = AddLabel("");
@@ -174,7 +200,7 @@ public partial class MainMenu : Control
 			addresses.Text = lan.Count == 0 ? $"Port {p}." : $"Din kompis ansluter till:\n{string.Join("\n", lan.ConvertAll(a => MenuModel.AddressLine(a, p)))}";
 			_startMatch.Visible = true;
 		});
-		_startMatch = AddButton("Starta matchen", () => (_session as HostSession)?.Start(_seed));
+		_startMatch = AddButton("Starta matchen", () => (_session as HostSession)?.Start(_seed, _map));
 		_startMatch.Visible = false;
 		_startMatch.Disabled = true;
 		AddButton("Tillbaka", Back);
@@ -255,6 +281,7 @@ public partial class MainMenu : Control
 		_status = AddLabel("");
 		if (args.Host)
 		{
+			_map = MatchSetup.Theme = args.Map;
 			if (Host(args.Port, args.Password, args.Name))
 				_seed = args.Seed;
 			_autoStart = true;

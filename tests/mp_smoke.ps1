@@ -2,13 +2,13 @@
   Multiplayer smoke test: two headless games on this machine, a host and a client over localhost (real ENet,
   real menu code path, password), a bot playing each side. Each writes "tick checksum" at the last step.
 
-    tests/mp_smoke.ps1 [-Steps 600] [-Port 7790]
+    tests/mp_smoke.ps1 [-Steps 600] [-Port 7790] [-Map nursery|garden]   (the host picks the map; the client gets it)
 
-  One line:  MP OK 600 ticks, checksums equal (2E1F...) in 36s
+  One line:  MP OK 600 ticks on Nursery, checksums equal (2E1F...) in 36s
          /   MP FAIL host: ended Desync 340 / client: 1200 9A3B...
   Godot: $env:GODOT, else the newest Godot*mono*console.exe under ~/Downloads.
 #>
-param([int]$Steps = 600, [int]$Port = 7790)
+param([int]$Steps = 600, [int]$Port = 7790, [string]$Map = "nursery")
 
 $ErrorActionPreference = "Continue"
 $root = Split-Path $PSScriptRoot
@@ -36,7 +36,7 @@ function Start-Game($name, $userArgs) {
 		-RedirectStandardOutput (Join-Path $out "$name.log") -RedirectStandardError (Join-Path $out "$name.err")
 }
 $common = @("--password", "smoke-test", "--bot", "--steps", $Steps)
-$hostGame = Start-Game "host" (@("--host", "--port", $Port, "--seed", 42, "--out", "`"$hostFile`"") + $common)
+$hostGame = Start-Game "host" (@("--host", "--port", $Port, "--seed", 42, "--map", $Map, "--out", "`"$hostFile`"") + $common)
 Start-Sleep -Milliseconds 1500
 $clientGame = Start-Game "client" (@("--join", "127.0.0.1:$Port", "--out", "`"$clientFile`"") + $common)
 
@@ -48,8 +48,8 @@ $seconds = [math]::Round($watch.Elapsed.TotalSeconds)
 
 $h = if (Test-Path $hostFile) { (Get-Content $hostFile -Raw).Trim() } else { "no result" }
 $c = if (Test-Path $clientFile) { (Get-Content $clientFile -Raw).Trim() } else { "no result" }
-if ($h -eq $c -and $h -match "^$Steps ([0-9A-F]{16})$") {
-	Write-Output "MP OK $Steps ticks, checksums equal ($($Matches[1])) in ${seconds}s"
+if ($h -eq $c -and $h -match "^$Steps ([0-9A-F]{16}) (\w+)$") {
+	Write-Output "MP OK $Steps ticks on $($Matches[2]), checksums equal ($($Matches[1])) in ${seconds}s"
 	exit 0
 }
 foreach ($name in "host", "client") {
