@@ -19,6 +19,16 @@ public enum ResourceType : byte
 }
 
 /// <summary>Who may build where. Each player builds in their own room and in the shared hall.</summary>
+/// <summary>
+/// The maps: the nursery (floorboards, walls, giant toys) and the garden (grass, flower beds, a path in the
+/// middle, giant flowers and vegetables). Both have the same playable shape, so every rule and the bot fit both.
+/// </summary>
+public enum MapTheme : byte
+{
+	Nursery,
+	Garden,
+}
+
 public enum Zone : byte
 {
 	None,
@@ -76,12 +86,16 @@ public sealed partial class MapLayout
 	/// <summary>The room a player builds in: player 0 has the left room, player 1 the right.</summary>
 	public static Zone HomeZone(int player) => player == 0 ? Zone.LeftRoom : Zone.RightRoom;
 
+	/// <summary>How the map looks and what lies around (the playable shape is the same for every theme).</summary>
+	public MapTheme Theme { get; private set; }
+
 	/// <param name="obstacles">Big toys in the rooms (off in most tests, so they can't get in the way).</param>
 	/// <param name="seed">Where the toys lie; the same seed gives the same map everywhere.</param>
-	public static MapLayout CreateDefault(bool obstacles = true, int seed = DefaultSeed)
+	/// <param name="theme">The nursery (toys) or the garden (giant plants); same rooms, doors, deposits, base.</param>
+	public static MapLayout CreateDefault(bool obstacles = true, int seed = DefaultSeed, MapTheme theme = MapTheme.Nursery)
 	{
 		const int roomOuter = RoomSize + 2; // including walls
-		var map = new MapLayout(roomOuter * 2 + HallLength, roomOuter);
+		var map = new MapLayout(roomOuter * 2 + HallLength, roomOuter) { Theme = theme };
 
 		int roomBX = roomOuter + HallLength;
 		map.AddRoom(0, 0);

@@ -4,7 +4,7 @@ using Godot;
 namespace FactoryTD.View;
 
 /// <summary>
-/// Draws the big toys lying on the map (MapLayout.Obstacles). Seen slightly from the front, so each picture
+/// Draws the big toys (nursery) or giant plants (garden) lying on the map (MapLayout.Obstacles). Seen slightly from the front, so each picture
 /// covers its footprint plus one tile above it; drawn over units (a unit walking behind a toy is partly
 /// hidden) and under the fog.
 /// </summary>
@@ -13,16 +13,10 @@ public partial class ObstacleView : Node2D
 	private const float T = BuildingVisuals.TileSize;
 
 	private World _world;
-	private Texture2D _teddy, _blocks, _doll, _lollipop, _trap;
 
 	public void Bind(World world)
 	{
 		_world = world;
-		_teddy = GD.Load<Texture2D>("res://Assets/Sprites/Obstacles/teddy.png");
-		_blocks = GD.Load<Texture2D>("res://Assets/Sprites/Obstacles/blocks.png");
-		_doll = GD.Load<Texture2D>("res://Assets/Sprites/Obstacles/doll.png");
-		_lollipop = GD.Load<Texture2D>("res://Assets/Sprites/Obstacles/lollipop.png");
-		_trap = GD.Load<Texture2D>("res://Assets/Sprites/Obstacles/mousetrap.png");
 		ZIndex = 1;
 		TextureFilter = TextureFilterEnum.Nearest;
 		QueueRedraw();
@@ -34,14 +28,9 @@ public partial class ObstacleView : Node2D
 			return;
 		foreach (var toy in _world.Map.Obstacles)
 		{
-			var texture = toy.Kind switch
-			{
-				ObstacleKind.TeddyBear => _teddy,
-				ObstacleKind.AbcBlocks => _blocks,
-				ObstacleKind.Lollipop => _lollipop,
-				ObstacleKind.MouseTrap => _trap,
-				_ => _doll,
-			};
+			// From BuildingVisuals' cache, which holds on to it: a texture only loaded here would be freed by the
+			// garbage collector after drawing, and the toy would turn into a white box.
+			var texture = BuildingVisuals.GetObstacleTexture(toy.Kind);
 			// Footprint plus one tile of the toy's front/top showing above it.
 			var rect = new Rect2(toy.X * T, (toy.Y - 1) * T, toy.Width * T, (toy.Height + 1) * T);
 			// Mirrored toys (right room) are flipped, so both rooms look the same way round.

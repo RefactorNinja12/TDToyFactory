@@ -15,6 +15,8 @@ from PIL import Image, ImageDraw
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 SOURCE = os.path.join(HERE, "source")
+# Sprites the user has finished by hand: no script may write over them (source or game sprite).
+HAND_EDITED = {"Obstacles/pumpkin.png"}
 
 # Rough toy colours (restyle picks the nearest palette colour after muting them).
 RED = (214, 64, 70)

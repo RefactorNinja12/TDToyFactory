@@ -143,9 +143,9 @@ public sealed partial class World
 
 	/// <summary>A new 1v1 match: the default map with each player's core at the back of their room.</summary>
 	/// <param name="obstacles">Big toys lying in the rooms (MapLayout.Obstacles).</param>
-	public static World CreateMatch(bool obstacles = true, int seed = MapLayout.DefaultSeed)
+	public static World CreateMatch(bool obstacles = true, int seed = MapLayout.DefaultSeed, MapTheme theme = MapTheme.Nursery)
 	{
-		var world = new World(MapLayout.CreateDefault(obstacles, seed), 2);
+		var world = new World(MapLayout.CreateDefault(obstacles, seed, theme), 2);
 		var (w, h) = BuildingRules.Size(BuildingType.Core);
 
 		// Player 0 in the left room, player 1 mirrored in the right room, both centred on the door.

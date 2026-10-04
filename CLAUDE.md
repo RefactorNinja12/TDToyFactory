@@ -13,6 +13,11 @@ elektronik svag mot vatten, klossar svaga mot laser.
 ## Karta
 Två rum (~60x60 rutor) förbundna med en hall (~30–40 rutor).
 Dörren är enda ingången i början. Rika resurser i hallen.
+Två kartor med samma spelbara form (`MapTheme`): Barnrummet (brädgolv, väggar, jätteleksaker) och Trädgården
+(gräsmatta med klöverfläckar, rabatter som kanter, grusgång i hallen, jätteväxter: pumpa, solros, kål, morot, blomsterplätt). Formen
+är densamma så boten och alla regler passar båda; temat styr tileset (`RoomTiles`/`GardenTiles.tres`), hinder,
+minikartans färger. Klövern: `UI/Lawn.cs` (mjukt heltalsbrus → täthet 0–3 per gräsruta, klöverblad
+som får sticka över rutkanten, bara på gräs i rummen) ritas av `View/CloverView.cs` (barn till MapView). Väljs i startmenyn ("Karta", sparas); värden skickar den i Start (protokoll 2).
 Kompakt fabrik, max 3 nivåer i produktionskedjan, matcher 15–25 min.
 
 ## Teknik
@@ -127,7 +132,7 @@ Kompakt fabrik, max 3 nivåer i produktionskedjan, matcher 15–25 min.
 - Grafik: `tools/art/restyle.py` gör om alla sprites från `tools/art/source/` (palett + svarta konturer)
   och genererar golvet (stora brädor, 16x8 rutor). Nya sprites läggs i source och skriptet körs
   (`restyle.py <filer>` = bara de). Byggnader och enheter ritas av kod: `tools/art/kit.py` (plastformer, mus på
-  två ben, ark), `tools/art/buildings/*.py`, `tools/art/units/*.py`, `tools/art/logistics/*.py`; granska med `tools/art/sheet.py`. Under
+  två ben, ark), `tools/art/buildings/*.py`, `tools/art/units/*.py`, `tools/art/logistics/*.py`, `tools/art/garden.py` (gräs, grus, rabatt, växter; en bild i `tools/art/reference/<namn>.png`, t.ex. användarens pumpa och kål, används i stället: bakgrund och skugga klipps bort, halv upplösning med hårda pixlar, 16 platta färger (octree, behåller små ytors färg), restylas; `SOFT` i restyle = lätt dämpad, för det som annars blir brunt; `HAND_EDITED` i `kit.py` = sprites användaren gjort klart för hand (pumpan), skripten skriver aldrig över dem); granska med `tools/art/sheet.py`. Under
   luminans 0,2 blir kontursvart, 2 px-linjer blir helt kontur, ljusa pasteller blir grå (välj mättat); paletten har två rosa för mössens öron, tassar och svansar.
 
 ## Kodstruktur
@@ -167,7 +172,7 @@ Kompakt fabrik, max 3 nivåer i produktionskedjan, matcher 15–25 min.
   `docs/plans/multiplayer.md` (online-lockstep, lösenord, startmeny, export).
   `docs/plans/refactor.md` (GridSearch, smutsflaggor för fält, rumslig målsökning, test:changed).
   `docs/plans/animations.md` (fabriker ritade av kod, rörliga delar), `docs/plans/units.md` (upprätta enheter,
-  piratmus, uträknade skuggor), `docs/plans/belts-crane.md` (animerade band, klokran).
+  piratmus, uträknade skuggor), `docs/plans/belts-crane.md` (animerade band, klokran), `docs/plans/garden.md` (trädgårdskartan, kartval).
 
 ## Arbetsflöde (tester är feedbackloopen)
 - `Taskfile.yaml` (go-task) samlar kommandona; `task` listar dem.
@@ -193,18 +198,21 @@ Kompakt fabrik, max 3 nivåer i produktionskedjan, matcher 15–25 min.
   gemensam hjälpare/basklass (t.ex. `StoreBuilding`, `OneItemRouter`, `GridSearch.Flood`), höj inte gränsen.
 - Buggfix: skriv först ett test som fallerar, sedan fixen. Ny funktion: tester i samma ändring.
 - Ny logik hamnar i `Scripts/Sim` eller `Scripts/UI` (testbart), inte i View.
+- View: en textur som ritas med Draw* måste hållas kvar (fält, nod eller `BuildingVisuals`-cachen). Laddas den
+  bara lokalt i `_Draw` frigör .NET:s GC den efter ritningen och Godot ritar en vit ruta (hindren, garden-map).
 - Balansändring: kör `task test:report` och uppdatera trösklarna medvetet om designen ändrats.
 - Lint FAIL med ENDOFLINE/WHITESPACE → `task fmt`, sedan `task lint`. Analyzer-varningar (t.ex.
   xUnit2013) fixas för hand. `task build` bara för View-ändringar (testerna bygger inte View).
 - Nätverk: `task test -- Net` (falskt nät med latens/jitter i `Support/FakeNetwork.cs`, `NetPlayer` kör en maskin).
   `task mp:smoke` (~40 s) = två headless spel via localhost (riktig meny, ENet, lösenord, botar) ska sluta med
   samma kontrollsumma; kör före commits som rör nät/lockstep. Startargument: `-- --host --port N --password X
-  --bot --steps N --out FIL` / `-- --join ip:port ...`.
+  --bot --steps N --out FIL --map garden` / `-- --join ip:port ...`. `mp_smoke.ps1 -Map garden` spelar trädgården.
 - `task export` = zip per plattform i `builds/` (Godot .NET export templates krävs, `tools/build/zip_build.py`
   behåller körrättigheter, `docs/LAS-MIG.txt` följer med). Båda spelarna måste köra samma zip.
 - Godot bara för det visuella: `Scripts/_Test/VisualProbe.cs` + skärmdump (headless `--write-movie`);
   `PROBE_CAM="x,y,zoom"` tittar var som helst, `PROBE_SCENE=shadows` = lampa med byggnader och möss,
-  `PROBE_SCENE=belts` = ett band ritat klick–klick (startklick + musen vid målet), `PROBE_SCENE=crane` = klokran
+  `PROBE_GC=1` = tvingar en GC efter några bilder (texturer som ingen håller kvar blir vita rutor),
+  `PROBE_MAP=garden` = trädgårdskartan, `PROBE_SCENE=belts` = ett band ritat klick–klick (startklick + musen vid målet), `PROBE_SCENE=crane` = klokran
   över klossfältet som matar ett band genom en delare.
   `Scenes/_Probe*.tscn` är gitignorerade.
 

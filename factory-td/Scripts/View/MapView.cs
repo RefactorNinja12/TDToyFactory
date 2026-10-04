@@ -3,12 +3,18 @@ using Godot;
 
 namespace FactoryTD.View;
 
-/// <summary>Paints a MapLayout onto this TileMapLayer, and its deposits onto ResourceLayer.</summary>
+/// <summary>
+/// Paints a MapLayout onto this TileMapLayer, and its deposits onto ResourceLayer. The tile set follows the map's
+/// theme: the nursery's floorboards and walls, or the garden's lawn (with patches of clover), flower beds and gravel
+/// path (in the hall).
+/// </summary>
 public partial class MapView : TileMapLayer
 {
-	// Source ids in Assets/TileSets/RoomTiles.tres
+	// Source ids in Assets/TileSets/RoomTiles.tres and GardenTiles.tres (the garden adds the path).
 	private const int FloorSource = 0;
 	private const int WallSource = 1;
+	private const int PathSource = 2;
+	private const int PathTiles = 4; // the gravel path picture repeats every 4x4 tiles
 
 	/// <summary>Layer drawn above the floor. Uses Assets/TileSets/ResourceTiles.tres,
 	/// whose source ids are ResourceType - 1 (Brick = 0, Plastic = 1, Battery = 2).</summary>
@@ -20,8 +26,15 @@ public partial class MapView : TileMapLayer
 	/// </summary>
 	private const int FloorTilesX = 16, FloorTilesY = 8;
 
+	private CloverView _clover;
+
 	public void Render(MapLayout map)
 	{
+		if (_clover == null)
+			AddChild(_clover = new CloverView { Name = "Clover" }); // a child: over the lawn, under the deposits
+		_clover.Bind(map);
+		bool garden = map.Theme == MapTheme.Garden;
+		TileSet = GD.Load<TileSet>(garden ? "res://Assets/TileSets/GardenTiles.tres" : "res://Assets/TileSets/RoomTiles.tres");
 		Clear();
 		ResourceLayer?.Clear();
 		for (int y = 0; y < map.Height; y++)
@@ -35,7 +48,9 @@ public partial class MapView : TileMapLayer
 					TileType.Wall => WallSource,
 					_ => -1,
 				};
-				if (source >= 0)
+				if (garden && source == FloorSource && map.GetZone(x, y) == Zone.Hall)
+					SetCell(cell, PathSource, new Vector2I(x % PathTiles, y % PathTiles));
+				else if (source >= 0)
 					SetCell(cell, source, source == FloorSource ? new Vector2I(x % FloorTilesX, y % FloorTilesY) : Vector2I.Zero);
 
 				var resource = map.GetResource(x, y);

@@ -1,5 +1,6 @@
 using System.Linq;
 using FactoryTD.Net;
+using FactoryTD.Sim;
 using FactoryTD.UI;
 using Xunit;
 
@@ -54,7 +55,7 @@ public class MenuModelTests
 	[Fact]
 	public void Settings_RoundTrip_AndNeverHoldThePassword()
 	{
-		var settings = new MenuSettings("Ricky", "192.168.1.20:7790", 7790);
+		var settings = new MenuSettings("Ricky", "192.168.1.20:7790", 7790, MapTheme.Garden);
 		Assert.Equal(settings, MenuSettings.FromText(settings.ToText()));
 		Assert.DoesNotContain("password", settings.ToText());
 		Assert.DoesNotContain(typeof(MenuSettings).GetProperties(), p => p.Name.Contains("Password"));
@@ -81,8 +82,8 @@ public class MenuModelTests
 		Assert.Contains(texts, t => t.Contains("tick 120"));
 		Assert.Contains(texts, t => t.StartsWith("Kompis lämnade"));
 		var net = new Support.FakeNetwork();
-		Assert.Equal("Väntar på motståndare…", MenuModel.Status(new HostSession(net.Host, "pass", "v", seed => null), isHost: true));
-		Assert.Equal("Ansluter…", MenuModel.Status(new ClientSession(net.Connect("x"), "pass", "x", seed => null), isHost: false));
+		Assert.Equal("Väntar på motståndare…", MenuModel.Status(new HostSession(net.Host, "pass", "v", _ => null), isHost: true));
+		Assert.Equal("Ansluter…", MenuModel.Status(new ClientSession(net.Connect("x"), "pass", "x", _ => null), isHost: false));
 	}
 
 	[Fact]
@@ -105,5 +106,15 @@ public class MenuModelTests
 		var join = LaunchArgs.Parse("--join 127.0.0.1:7790 --password test".Split(' '));
 		Assert.Equal("127.0.0.1:7790", join.Join);
 		Assert.False(join.Host || LaunchArgs.Parse(new string[0]).Online);
+	}
+
+	[Fact]
+	public void Maps_ToChooseFrom_AndTheCommandLineCanPickOne()
+	{
+		Assert.Equal(new[] { MapTheme.Nursery, MapTheme.Garden }, MenuModel.Maps.Select(m => m.Theme));
+		Assert.Equal(1, MenuModel.MapIndex(MapTheme.Garden));
+		Assert.Equal(MapTheme.Garden, LaunchArgs.Parse("--host --map garden".Split(' ')).Map);
+		Assert.Equal(MapTheme.Nursery, LaunchArgs.Parse("--host --map moon".Split(' ')).Map);
+		Assert.Equal(MapTheme.Nursery, MenuSettings.FromText("map=99\n").Map);
 	}
 }
