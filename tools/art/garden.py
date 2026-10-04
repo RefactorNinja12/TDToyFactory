@@ -448,6 +448,10 @@ def sunflower():
 
 
 def cabbage():
+    if os.path.exists(os.path.join(REFERENCE, "cabbage_top.png")):
+        # The user's own finished cabbage, on its 3x3 footprint + one tile; just fitted.
+        out(painting("cabbage_top", 3 * T, 4 * T, colours=64, greens=False), "Obstacles/cabbage.png")
+        return
     if os.path.exists(os.path.join(REFERENCE, "cabbage.png")):
         out(from_reference("cabbage", 3 * T, 4 * T), "Obstacles/cabbage.png")
         return

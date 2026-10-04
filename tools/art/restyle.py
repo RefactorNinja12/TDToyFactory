@@ -68,7 +68,7 @@ VIVID = {"cheese.png", "melted_cheese.png", "cheese_melter.png", "flowers.png", 
 # (none at the moment).
 SOFT = set()
 # Pictures kept as they are, only outlined: the user's own finished sprites (the palette has no sunflower yellow).
-KEEP = {"sunflower.png", "carrot.png"}
+KEEP = {"sunflower.png", "carrot.png", "cabbage.png"}
 
 
 def muted(c, vivid=False):
