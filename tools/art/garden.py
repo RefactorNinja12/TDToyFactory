@@ -5,7 +5,7 @@ night palette (tiles without outlines, plants with).
 
   Tiles/grass.png        1024x512: the lawn, repeats every 16x8 tiles (like the floorboards)
   Tiles/clover.png       192x24: six clovers and two clover flowers, laid in patches on the lawn by UI/Lawn
-  Tiles/garden_path.png  256x256: gravel with stepping stones, repeats every 4x4 tiles (the hall)
+  Tiles/garden_path.png  256x256: cobbles in dark soil, repeats every 4x4 tiles (the hall)
   Tiles/hedge.png        256x256: a trimmed hedge from above, repeats every 4x4 tiles (the walls)
   Obstacles/pumpkin.png, sunflower.png, cabbage.png, carrot.png, flowers.png: footprint + one tile on top
   Obstacles/plantbed.png 320x320: dug soil with stones, drawn under each plant (footprint + half a tile round)
@@ -127,24 +127,57 @@ def clover():
 
 
 def path():
-    w = h = 4 * T
+    """
+    The hall's path: cobbles like the user's picture, rounded pale stones of different sizes set close in dark
+    soil, lit from the top left, with little pebbles in the gaps. Drawn at half size and blown up with hard pixels;
+    the stones wrap round the edges, so the picture repeats every 4x4 tiles without a seam.
+    """
+    w = h = 4 * T // 2
     rnd = random.Random(5)
-    gravel = (150, 134, 110)
-    img = Image.new("RGBA", (w, h), (*gravel, 255))
-    d = ImageDraw.Draw(img)
-    for _ in range(2600):
-        x, y = rnd.randrange(w), rnd.randrange(h)
-        d.point((x, y), fill=tint(gravel, rnd.choice((-0.3, -0.18, 0.15))))
-    # stepping stones, two per tile row, offset
-    stone = (150, 150, 162)
-    for row in range(4):
-        for col in range(2):
-            cx = col * 2 * T + T + (T // 2 if row % 2 else 0)
-            cy = row * T + T // 2
-            r = 22 + rnd.randrange(5)
-            wrap_ellipse(d, w, h, (cx - r, cy - r + 4, cx + r, cy + r - 2), tint(stone, -0.3))
-            wrap_ellipse(d, w, h, (cx - r + 1, cy - r + 3, cx + r - 2, cy + r - 4), stone)
-            wrap_ellipse(d, w, h, (cx - r // 2, cy - r // 2, cx, cy - r // 4), tint(stone, 0.25))
+    # a little darker and softer than the picture, so deposits, belts and units still stand out on it
+    soil, stone, light, shade, rim = (66, 52, 42), (172, 162, 142), (192, 184, 162), (146, 137, 119), (108, 98, 84)
+    # stone centres on a jittered grid, each with its own size and tint
+    cell = 11
+    stones = []
+    for gy in range(h // cell):
+        for gx in range(w // cell):
+            stones.append((gx * cell + rnd.uniform(1, cell - 1), gy * cell + rnd.uniform(1, cell - 1),
+                           rnd.uniform(5.5, 8.5), rnd.choice((-0.06, 0, 0, 0.05))))
+
+    def near(px, py):
+        """The nearest two stones (wrapping round the picture): (distance, stone), then the second distance."""
+        best = second = (1e9, None)
+        for st in stones:
+            dx = (px - st[0] + w / 2) % w - w / 2
+            dy = (py - st[1] + h / 2) % h - h / 2
+            d = math.hypot(dx, dy)
+            if d < best[0]:
+                best, second = (d, (st, dx, dy)), best
+            elif d < second[0]:
+                second = (d, None)
+        return best, second[0]
+
+    img = Image.new("RGBA", (w, h), (*soil, 255))
+    px = img.load()
+    for y in range(h):
+        for x in range(w):
+            (d, (st, dx, dy)), d2 = near(x + 0.5, y + 0.5)
+            r = st[2]
+            if d2 - d < 1.6 or d > r:                    # the gap between stones: soil, now and then a pebble
+                if rnd.random() < 0.05:
+                    px[x, y] = (*tint(shade, -0.15), 255)
+                continue
+            lit = (-dx - dy) / (r * 1.41)                # +1 at the top left edge, -1 at the bottom right
+            edge = d2 - d < 2.6 or d > r - 1.2
+            c = tint(stone, st[3])
+            if edge and lit < -0.1:
+                c = rim                                  # the shaded lower rim
+            elif lit > 0.45:
+                c = tint(light, st[3])
+            elif lit < -0.35:
+                c = tint(shade, st[3])
+            px[x, y] = (*c, 255)
+    img = img.resize((w * 2, h * 2), Image.NEAREST)
     out(img, "Tiles/garden_path.png")
 
 
