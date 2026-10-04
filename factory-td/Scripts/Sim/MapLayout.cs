@@ -148,6 +148,34 @@ public sealed partial class MapLayout
 		AddMirroredDeposit(77, 28, 79, 33, ResourceType.Battery);
 		// A little cheese in the hall too.
 		AddMirroredDeposit(72, 34, 73, 35, ResourceType.Cheese);
+
+		// Small clusters (4 to 6 tiles) spread over the room, from the base out towards the middle and the door, so
+		// a player can grow outwards step by step. Clear of the bot's base (x 2..24, y 20..41) and the battery field.
+		AddMirroredCluster(30, 16, ResourceType.Brick, Plus);
+		AddMirroredCluster(28, 45, ResourceType.Plastic, Square);
+		AddMirroredCluster(43, 23, ResourceType.Brick, Wide);
+		AddMirroredCluster(43, 36, ResourceType.Plastic, Ell);
+		AddMirroredCluster(33, 29, ResourceType.Battery, Square);
+		AddMirroredCluster(50, 11, ResourceType.Cheese, Square);
+		AddMirroredCluster(51, 51, ResourceType.Brick, Winding);
+		AddMirroredCluster(53, 17, ResourceType.Plastic, Plus);
+		AddMirroredCluster(25, 54, ResourceType.Battery, Winding);
+	}
+
+	// Cluster shapes, as tiles from the top-left corner.
+	private static readonly (int X, int Y)[] Square = { (0, 0), (1, 0), (0, 1), (1, 1) };
+	private static readonly (int X, int Y)[] Plus = { (1, 0), (0, 1), (1, 1), (2, 1), (1, 2) };
+	private static readonly (int X, int Y)[] Wide = { (0, 0), (1, 0), (2, 0), (0, 1), (1, 1), (2, 1) };
+	private static readonly (int X, int Y)[] Ell = { (0, 0), (0, 1), (0, 2), (1, 2), (2, 2) };
+	private static readonly (int X, int Y)[] Winding = { (0, 0), (1, 0), (1, 1), (2, 1), (2, 2), (3, 2) };
+
+	private void AddMirroredCluster(int x, int y, ResourceType type, (int X, int Y)[] shape)
+	{
+		foreach (var (dx, dy) in shape)
+		{
+			_resources[(y + dy) * Width + x + dx] = type;
+			_resources[(y + dy) * Width + Width - 1 - (x + dx)] = type;
+		}
 	}
 
 	private void AddMirroredDeposit(int x0, int y0, int x1, int y1, ResourceType type)
