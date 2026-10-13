@@ -29,6 +29,13 @@ public enum MapTheme : byte
 	Garden,
 }
 
+/// <summary>The playable shape between the two home rooms (the home rooms themselves are the same in every layout).</summary>
+public enum MapLayoutKind : byte
+{
+	TwoRooms,   // a straight hall between the doors
+	ManyRooms,  // small rooms: the way goes up or down and the two sides meet in a centre room
+}
+
 public enum Zone : byte
 {
 	None,
@@ -89,17 +96,34 @@ public sealed partial class MapLayout
 	/// <summary>How the map looks and what lies around (the playable shape is the same for every theme).</summary>
 	public MapTheme Theme { get; private set; }
 
+	/// <summary>What lies between the home rooms: a hall, or many small rooms.</summary>
+	public MapLayoutKind Layout { get; private set; }
+
 	/// <param name="obstacles">Big toys in the rooms (off in most tests, so they can't get in the way).</param>
 	/// <param name="seed">Where the toys lie; the same seed gives the same map everywhere.</param>
 	/// <param name="theme">The nursery (toys) or the garden (giant plants); same rooms, doors, deposits, base.</param>
-	public static MapLayout CreateDefault(bool obstacles = true, int seed = DefaultSeed, MapTheme theme = MapTheme.Nursery)
+	/// <param name="layout">A hall between the doors, or many small rooms (same home rooms, doors and size).</param>
+	public static MapLayout CreateDefault(bool obstacles = true, int seed = DefaultSeed, MapTheme theme = MapTheme.Nursery,
+		MapLayoutKind layout = MapLayoutKind.TwoRooms)
 	{
 		const int roomOuter = RoomSize + 2; // including walls
-		var map = new MapLayout(roomOuter * 2 + HallLength, roomOuter) { Theme = theme };
+		var map = new MapLayout(roomOuter * 2 + HallLength, roomOuter) { Theme = theme, Layout = layout };
 
 		int roomBX = roomOuter + HallLength;
 		map.AddRoom(0, 0);
 		map.AddRoom(roomBX, 0);
+		if (layout == MapLayoutKind.ManyRooms)
+		{
+			map.AddSmallRooms();
+			map.SetZone(Zone.LeftRoom, 0, 0, roomOuter - 1, roomOuter - 1);
+			map.SetZone(Zone.RightRoom, roomBX, 0, map.Width - 1, roomOuter - 1);
+			map.SetZone(Zone.Hall, roomOuter, 0, roomBX - 1, roomOuter - 1);
+			map.AddDeposits();
+			map.AddSmallRoomDeposits();
+			if (obstacles)
+				map.AddObstacles(seed);
+			return map;
+		}
 
 		// Hall between the rooms, vertically centered on them.
 		int hallTop = (roomOuter - HallWidth) / 2;
@@ -119,6 +143,7 @@ public sealed partial class MapLayout
 		map.SetZone(Zone.Hall, roomOuter, hallTop - 1, roomBX - 1, hallBottom + 1);
 
 		map.AddDeposits();
+		map.AddHallDeposits();
 		if (obstacles)
 			map.AddObstacles(seed);
 		return map;
@@ -140,15 +165,6 @@ public sealed partial class MapLayout
 		// Cheese, a starting resource: just north of the core, in its light from the start.
 		AddMirroredDeposit(5, 22, 7, 23, ResourceType.Cheese);
 
-		// Hall (interior is x 62..97, y 25..36, doors at y 29..32).
-		// Side deposits stay clear of the door rows so the path through stays open.
-		AddMirroredDeposit(66, 26, 69, 27, ResourceType.Brick);
-		AddMirroredDeposit(66, 34, 69, 35, ResourceType.Plastic);
-		// The big battery field in the middle, the one worth fighting over.
-		AddMirroredDeposit(77, 28, 79, 33, ResourceType.Battery);
-		// A little cheese in the hall too.
-		AddMirroredDeposit(72, 34, 73, 35, ResourceType.Cheese);
-
 		// Small clusters (4 to 6 tiles) spread over the room, from the base out towards the middle and the door, so
 		// a player can grow outwards step by step. Clear of the bot's base (x 2..24, y 20..41) and the battery field.
 		AddMirroredCluster(30, 16, ResourceType.Brick, Plus);
@@ -168,6 +184,18 @@ public sealed partial class MapLayout
 	private static readonly (int X, int Y)[] Wide = { (0, 0), (1, 0), (2, 0), (0, 1), (1, 1), (2, 1) };
 	private static readonly (int X, int Y)[] Ell = { (0, 0), (0, 1), (0, 2), (1, 2), (2, 2) };
 	private static readonly (int X, int Y)[] Winding = { (0, 0), (1, 0), (1, 1), (2, 1), (2, 2), (3, 2) };
+
+	private void AddHallDeposits()
+	{
+		// Hall (interior is x 62..97, y 25..36, doors at y 29..32).
+		// Side deposits stay clear of the door rows so the path through stays open.
+		AddMirroredDeposit(66, 26, 69, 27, ResourceType.Brick);
+		AddMirroredDeposit(66, 34, 69, 35, ResourceType.Plastic);
+		// The big battery field in the middle, the one worth fighting over.
+		AddMirroredDeposit(77, 28, 79, 33, ResourceType.Battery);
+		// A little cheese in the hall too.
+		AddMirroredDeposit(72, 34, 73, 35, ResourceType.Cheese);
+	}
 
 	private void AddMirroredCluster(int x, int y, ResourceType type, (int X, int Y)[] shape)
 	{

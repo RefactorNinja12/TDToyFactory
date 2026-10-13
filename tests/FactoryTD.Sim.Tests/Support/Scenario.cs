@@ -27,7 +27,8 @@ public sealed class Scenario
 	/// and there is no fog of war unless it calls <see cref="RealFog"/>. No big toys on the map unless
 	/// <paramref name="obstacles"/> (bot matches use them).
 	/// </summary>
-	public static Scenario Match(bool obstacles = false) => new(World.CreateMatch(obstacles)) { World = { FreePower = true, FullVision = true } };
+	public static Scenario Match(bool obstacles = false, MapLayoutKind layout = MapLayoutKind.TwoRooms) =>
+		new(World.CreateMatch(obstacles, layout: layout)) { World = { FreePower = true, FullVision = true } };
 
 	/// <summary>Use the real fog of war: players only know what their light has explored.</summary>
 	public Scenario RealFog()
