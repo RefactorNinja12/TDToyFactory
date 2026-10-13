@@ -52,7 +52,7 @@ public class ScenarioTests
 			towers[minute] = Count(b => b is Tower);
 			armies[minute] = Count(b => b is UnitFactory f && !UnitStats.IsWorker(f.Produces));
 			walls = Count(b => b is Wall);
-			log.Append($" | min {minute}: buildings {buildings[minute]}, towers {towers[minute]}, army factories {armies[minute]}, walls {walls}, " +
+			log.Append($" | min {minute}: buildings {buildings[minute]}, towers {towers[minute]}, army factories {armies[minute]}, walls {walls}, dojos {s.World.CountBuildings(1, BuildingType.Dojo)}, " +
 				$"army {s.World.Units.Count(u => u.Owner == 1 && !UnitStats.IsWorker(u.Type))}, bricks {p.GetCount(ItemType.Brick)}, " +
 				$"plastic {p.GetCount(ItemType.Plastic)}, batteries {p.GetCount(ItemType.Battery)}, food {p.GetCount(ItemType.Food)}");
 		}
@@ -62,6 +62,7 @@ public class ScenarioTests
 		Assert.True(towers[25] >= towers[10] + 3, $"towers {towers[10]} -> {towers[25]}");
 		Assert.True(armies[25] >= armies[10] + 2, $"army factories {armies[10]} -> {armies[25]}");
 		Assert.True(walls >= 10, $"walls {walls}");
+		Assert.True(s.World.CountBuildings(1, BuildingType.Dojo) >= 1, $"no dojo{log} | {string.Join(",", bot.ModulesBuilt)}");
 	}
 
 	[Theory]

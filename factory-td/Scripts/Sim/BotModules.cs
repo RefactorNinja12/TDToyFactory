@@ -192,6 +192,17 @@ public sealed partial class BotPlayer
 			Route(w, plastic, gears);
 		}));
 
+		// Samurai against crowds of soldiers: a searched spot (BotGrowth), early when many soldiers come in.
+		// Searched spots aren't reserved up front.
+		_pending.Add(new Module("samurajer",
+			w => Built("soldater") && !FoodCrisis(w) && w.TickCount >= _armyDelayTicks + 6 * Minute,
+			w =>
+			{
+				if (!_reserving)
+					GrowArmy(w, only: SamuraiOutpost);
+			},
+			Emergency: w => Built("soldater") && !FoodCrisis(w) && SoldiersSeen >= 8));
+
 		// Batteries into lasers once golems show up (or anyway, a bit later).
 		_pending.Add(new Module("lasertorn",
 			w => Built("batterier") && w.TickCount >= _armyDelayTicks + 4 * Minute,

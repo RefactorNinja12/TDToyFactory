@@ -50,6 +50,9 @@ Hinder (stora leksaker/växter) = `TileType.Obstacle`: stoppar gång och bygge, 
   Modeller i `Scripts/UI` (`Hud.cs`, `InfoRows`, `Texts`); vyerna ritar bara dem.
 - Skuggor räknas ut från ljuskällorna (`UI/Shadows.cs`), målas aldrig i sprites.
 - Byggnader rör sig när de arbetar (`UI/Activity.cs`, `UI/BuildingParts.cs`, `View/BuildingAnimator.cs`).
+- Samurajmus (`UnitType.Samurai`, `SamuraiStats` i Unit.cs): närkämpe vars svärd sveper bågen framför sig och träffar
+  alla fiender där (max 5, `DamageKind.Slash`: halv mot golems). Byggs i dojon (`BuildingType.Dojo`, en animerad pagod:
+  senseimusen vid dörren vrider sig och ropar då och då med `Motion.Pop`). Boten: modulen "samurajer" + armérotationen.
 - Enheter: möss ovanifrån som vrids, nosen österut i spriten; golemen står upprätt och vrids aldrig
   (`UI/UnitSheets.cs`, `UI/UnitAnimation.cs`).
 
@@ -89,7 +92,7 @@ Hinder (stora leksaker/växter) = `TileType.Obstacle`: stoppar gång och bygge, 
   `Scenes/_ProbeVisual.tscn` (instans av `Main.tscn` + en nod med VisualProbe-skriptet; gitignorerad) och kör
   `Godot*mono*console.exe --path factory-td --write-movie OUT.png --fixed-fps 20 --quit-after 40
   res://Scenes/_ProbeVisual.tscn` (Godot ligger under ~/Downloads). Miljövariabler: `PROBE_SCENE=` belts, crane,
-  shadows, toys, walls; `PROBE_CAM="x,y,zoom"`, `PROBE_MAP=garden`, `PROBE_GC=1`.
+  shadows, toys, walls, samurai; `PROBE_CAM="x,y,zoom"`, `PROBE_MAP=garden`, `PROBE_GC=1`.
 
 ## Grafik
 - `tools/art/restyle.py` gör om sprites från `tools/art/source/` (palett + svarta konturer); `restyle.py <filer>` =

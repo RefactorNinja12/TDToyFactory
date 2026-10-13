@@ -19,6 +19,8 @@ public sealed partial class BotPlayer
 	private long _nextGrowth;
 	private int _growthIndex;
 	private int _armyOutposts;
+	private int _armyTurn;
+	private readonly HashSet<(int X, int Y)> _badSpots = new(); // spots a piece couldn't be belted to: not tried again
 	private int _towersAdded;
 	private int _wallLayers;
 
@@ -71,30 +73,77 @@ public sealed partial class BotPlayer
 	// ---------------------------------------------------------------------------------------------
 	// Growth kinds. Each plans a whole piece or nothing (Undo when a belt can't be routed).
 
-	/// <summary>Another extractor of whatever is scarcest (under half full), belted to the toybox.</summary>
+	/// <summary>
+	/// Another extractor belted to the toybox: batteries when nearly out, otherwise bricks or plastic, whichever has
+	/// fewer belts to tap (towers and outposts feed off them once the deposits are gone), the scarcer on a tie.
+	/// </summary>
 	private bool GrowEconomy(World world)
 	{
-		var player = world.Players[_player];
-		var scarce = ItemType.None;
-		foreach (var item in new[] { ItemType.Brick, ItemType.Plastic, ItemType.Battery })
-			if (player.GetCount(item) * 2 < player.Capacity(item) && (scarce == ItemType.None || player.GetCount(item) < player.GetCount(scarce)))
-				scarce = item;
-		// Nothing short: a line anyway (rotating), while deposits are free: later towers and outposts tap it.
-		if (scarce == ItemType.None)
-			scarce = _growthIndex % 2 == 0 ? ItemType.Brick : ItemType.Plastic;
-		return Feed(world, ResourceOf(scarce), _core, tap: false);
+		var resource = ResourceType.Battery;
+		if (Stock(world, ItemType.Battery) >= BatteryReserve)
+		{
+			int bricks = TapCandidates(ResourceType.Brick).Count, plastic = TapCandidates(ResourceType.Plastic).Count;
+			resource = bricks < plastic || (bricks == plastic && Stock(world, ItemType.Brick) <= Stock(world, ItemType.Plastic))
+				? ResourceType.Brick
+				: ResourceType.Plastic;
+		}
+		return Feed(world, resource, _core, tap: false);
 	}
 
-	/// <summary>A soldier or golem outpost: assembler into a factory, extractors belted in, on the grid.</summary>
-	private bool GrowArmy(World world)
+	private const int SamuraiOutpost = 2;
+
+	/// <summary>
+	/// Soldier, golem and samurai outposts in turn (<paramref name="only"/>: just that kind), on one searched spot;
+	/// a spot none of them can be belted to is not tried again.
+	/// </summary>
+	private bool GrowArmy(World world, int only = -1)
 	{
-		bool golems = _armyOutposts % 2 == 1;
 		var (ax, ay) = Absolute(30, 30);
 		var spot = FindSpot(world, 3, 2, ax, ay);
 		if (spot == null)
 			return false;
-		var (sx, sy) = spot.Value;
-		int mark = _plan.Count;
+		for (int i = 0; i < 3; i++)
+		{
+			int kind = only >= 0 ? only : (_armyTurn + i) % 3;
+			int mark = _plan.Count;
+			var powered = kind == SamuraiOutpost ? PlanSamurai(world, spot.Value) : PlanFactory(world, spot.Value, golems: kind == 1);
+			if (powered != null)
+			{
+				foreach (var step in powered)
+					EnsurePower(world, step);
+				_armyOutposts++;
+				_armyTurn = kind + 1;
+				return true;
+			}
+			Undo(mark);
+			if (only >= 0)
+				break;
+		}
+		_badSpots.Add(spot.Value);
+		return false;
+	}
+
+	/// <summary>
+	/// A dojo with two assemblers along its home side (springs above, gears below, both facing into it); plastic belted
+	/// to all three, bricks to the gear assembler. The steps to power, or null if a belt can't be routed.
+	/// </summary>
+	private Step[] PlanSamurai(World world, (int X, int Y) spot)
+	{
+		var (sx, sy) = spot;
+		int assemblerX = _mirror ? sx + 2 : sx;
+		var into = _mirror ? Direction.West : Direction.East;
+		var springs = AddStep(new Step(BuildingType.Assembler, assemblerX, sy, into, ItemType.Spring));
+		var gears = AddStep(new Step(BuildingType.Assembler, assemblerX, sy + 1, into, ItemType.Gear));
+		var dojo = AddStep(new Step(BuildingType.Dojo, _mirror ? sx : sx + 1, sy, Direction.East, ItemType.None));
+		bool ok = Feed(world, ResourceType.Plastic, springs) && Feed(world, ResourceType.Plastic, gears) &&
+			Feed(world, ResourceType.Brick, gears) && Feed(world, ResourceType.Plastic, dojo);
+		return ok ? new[] { springs, dojo } : null;
+	}
+
+	/// <summary>A soldier or golem outpost: assembler into a factory, extractors belted in. Steps to power, or null.</summary>
+	private Step[] PlanFactory(World world, (int X, int Y) spot, bool golems)
+	{
+		var (sx, sy) = spot;
 		var factoryType = golems ? BuildingType.GolemWorkshop : BuildingType.SoldierFactory;
 		// The assembler on the home side, facing the factory; the factory's units spawn towards the enemy.
 		var assembler = _mirror
@@ -105,15 +154,7 @@ public sealed partial class BotPlayer
 		bool ok = Feed(world, ResourceType.Plastic, assembler) &&
 			Feed(world, golems ? ResourceType.Brick : ResourceType.Plastic, golems ? assembler : factory) &&
 			(!golems || Feed(world, ResourceType.Brick, factory));
-		if (!ok)
-		{
-			Undo(mark);
-			return false;
-		}
-		EnsurePower(world, assembler);
-		EnsurePower(world, factory);
-		_armyOutposts++;
-		return true;
+		return ok ? new[] { assembler, factory } : null;
 	}
 
 	/// <summary>A tower just inside the door, fed by a belt from its own extractor.</summary>
@@ -138,6 +179,7 @@ public sealed partial class BotPlayer
 		var ammo = Tower.StatsFor(type).Ammo;
 		if (!Feed(world, ResourceOf(ammo), tower))
 		{
+			_badSpots.Add(spot.Value);
 			Undo(mark);
 			return false;
 		}
@@ -264,15 +306,11 @@ public sealed partial class BotPlayer
 	/// </summary>
 	private bool Tap(World world, ResourceType resource, Step target)
 	{
-		var candidates = new List<(int Index, long D)>();
-		for (int i = 0; i < _plan.Count; i++)
+		var candidates = TapCandidates(resource).ConvertAll(i =>
 		{
-			var c = _plan[i];
-			if (c.Type != BuildingType.Conveyor || !Straight(c) || LineResource(c) != resource || !ReachesCore(c))
-				continue;
-			long dx = c.X - target.X, dy = c.Y - target.Y;
-			candidates.Add((i, dx * dx + dy * dy));
-		}
+			long dx = _plan[i].X - target.X, dy = _plan[i].Y - target.Y;
+			return (Index: i, D: dx * dx + dy * dy);
+		});
 		candidates.Sort((a, b) => a.D != b.D ? a.D.CompareTo(b.D) : a.Index.CompareTo(b.Index));
 		int tries = 0;
 		foreach (var (index, _) in candidates)
@@ -283,7 +321,7 @@ public sealed partial class BotPlayer
 			foreach (var side in new[] { belt.Facing.RotatedClockwise(), belt.Facing.RotatedCounterClockwise() })
 			{
 				var other = side.Opposite();
-				if (!IsFree(world, belt.X + other.DX(), belt.Y + other.DY()))
+				if (!TakesNothing(world, belt.X + other.DX(), belt.Y + other.DY()))
 					continue; // the splitter would push into whatever is there
 				var splitter = new Step(BuildingType.Splitter, belt.X, belt.Y, belt.Facing, ItemType.None);
 				_plan[index] = splitter;
@@ -297,13 +335,44 @@ public sealed partial class BotPlayer
 		return false;
 	}
 
-	/// <summary>Whether the belt before it and the one after it both run the same way (a splitter fits there).</summary>
+	/// <summary>Plan indices of straight belts carrying only this resource to the toybox (where a tap fits).</summary>
+	private List<int> TapCandidates(ResourceType resource)
+	{
+		var found = new List<int>();
+		for (int i = 0; i < _plan.Count; i++)
+		{
+			var c = _plan[i];
+			if (c.Type == BuildingType.Conveyor && Straight(c) && LineResource(c) == resource && ReachesCore(c))
+				found.Add(i);
+		}
+		return found;
+	}
+
+	/// <summary>
+	/// Whether items come in from straight behind (a belt running the same way, or the extractor it starts at) and go
+	/// on straight ahead: a splitter fits there.
+	/// </summary>
 	private bool Straight(Step belt)
 	{
 		var behind = (belt.X - belt.Facing.DX(), belt.Y - belt.Facing.DY());
 		var ahead = (belt.X + belt.Facing.DX(), belt.Y + belt.Facing.DY());
-		return _planned.TryGetValue(behind, out var b) && b.Type == BuildingType.Conveyor && b.Facing == belt.Facing &&
+		return _planned.TryGetValue(behind, out var b) && (b.Type == BuildingType.Conveyor && b.Facing == belt.Facing || IsExtractor(b.Type)) &&
 			_planned.TryGetValue(ahead, out var a) && a.Type == BuildingType.Conveyor && a.Facing == belt.Facing;
+	}
+
+	private static bool IsExtractor(BuildingType type) =>
+		type is BuildingType.BrickExtractor or BuildingType.PlasticExtractor or BuildingType.BatteryExtractor;
+
+	/// <summary>A tile a splitter can't hand anything to: free floor, a wall, or a building that never takes items.</summary>
+	private bool TakesNothing(World world, int x, int y)
+	{
+		if (!world.Map.InBounds(x, y) || world.Map[x, y] != TileType.Floor)
+			return true;
+		if (_reserved.ContainsKey((x, y)))
+			return false;
+		var type = _planned.TryGetValue((x, y), out var step) ? step.Type : world.GetBuilding(x, y)?.Type;
+		return type is null or BuildingType.Pylon or BuildingType.Lamp or BuildingType.BrickWall or BuildingType.Gate
+			or BuildingType.ElectricFence or BuildingType.CropField;
 	}
 
 	/// <summary>
@@ -440,7 +509,7 @@ public sealed partial class BotPlayer
 					continue;
 				long dx = 2 * x + w - 2 * nearX, dy = 2 * y + h - 2 * nearY;
 				long distance = dx * dx + dy * dy;
-				if (distance >= bestDistance || !SpotFits(world, x, y, w, h))
+				if (distance >= bestDistance || _badSpots.Contains((x, y)) || !SpotFits(world, x, y, w, h))
 					continue;
 				best = (x, y);
 				bestDistance = distance;
