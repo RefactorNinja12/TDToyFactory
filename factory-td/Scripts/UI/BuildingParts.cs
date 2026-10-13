@@ -14,6 +14,7 @@ public enum Motion
 	Blink,  // on for the first half of each beat, dim for the rest
 	Puff,   // rises by (DX, DY), growing and fading (steam, bubbles)
 	Float,  // bobs DY up and down and rocks by Amount radians, a quarter beat apart (a ship on the water)
+	Pop,    // shown for the first Amount (0..1) of each beat: pops up quickly, then fades; hidden the rest (a shout)
 }
 
 /// <summary>
@@ -34,6 +35,19 @@ public static class BuildingParts
 	// Drawn by tools/art/buildings/*.py; anchors are sprite pixels from the centre, east = the output side.
 	private static readonly Dictionary<BuildingType, Part[]> Table = new()
 	{
+		// The pagoda: the sensei at the door turns right and left and shouts now and then (always); a trainee practises
+		// with a wooden sword and the paper door slides while it trains a samurai; lanterns glow at the roof corners.
+		[BuildingType.Dojo] = new[]
+		{
+			new Part("sensei", 34, -18, Motion.Swing, Speed: 0.25f, Amount: 0.35f, Always: true),
+			new Part("sensei_shout", 46, -36, Motion.Pop, Speed: 0.25f, Amount: 0.15f, DY: -4, Always: true),
+			new Part("dojo_trainee", 32, 22, Motion.Bob, Speed: 0.7f, DX: 16),
+			new Part("dojo_door", 23, 0, Motion.Bob, Speed: 0.3f, DY: -12),
+			new Part("dojo_lantern", -58, -54, Motion.Blink, Speed: 0.4f, Always: true),
+			new Part("dojo_lantern", 22, -54, Motion.Blink, Speed: 0.4f, Phase: 0.25f, Always: true),
+			new Part("dojo_lantern", -58, 54, Motion.Blink, Speed: 0.4f, Phase: 0.5f, Always: true),
+			new Part("dojo_lantern", 22, 54, Motion.Blink, Speed: 0.4f, Phase: 0.75f, Always: true),
+		},
 		[BuildingType.BrickExtractor] = new[]
 		{
 			new Part("brick_ride", 5, 0, Motion.Slide, Speed: 0.8f, DX: 17),
@@ -154,6 +168,12 @@ public static class BuildingParts
 				y += part.DY * f;
 				scale = 0.6f + 0.6f * f;
 				alpha = 1 - f;
+				break;
+			case Motion.Pop:
+				float shown = part.Amount > 0 ? f / part.Amount : 1; // 0..1 while shown
+				scale = shown < 1 ? 0.5f + 0.5f * MathF.Min(1, shown * 4) : 1;
+				alpha = shown < 1 ? MathF.Min(1, 2 - 2 * shown) : 0;
+				y += part.DY * MathF.Min(1, shown);
 				break;
 		}
 		return new Pose(x, y, angle, scale, alpha);

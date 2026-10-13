@@ -3,6 +3,8 @@ Army factories (2x2 = 128 px, output east):
   soldier - a toy pirate ship seen from the side, sails full of wind, bobbing on the water; cannons puff while it builds
   golem   - a toy crane stacking ABC blocks: the hook lowers a block, a mouse swings a mallet
   car     - a slot-car track round a paint booth: two cars lap it, a mouse waves the chequered flag
+  dojo    - a pagoda (three red roof tiers from above) with a tatami yard and a red gate on the east; parts: the sensei
+            mouse at the door (turns, shouts now and then), a trainee with a wooden sword, lanterns, the sliding door
 
     python tools/art/buildings/army.py && python tools/art/restyle.py <the files it lists>
 """
@@ -170,8 +172,82 @@ def car_factory():
     out(flag, "Parts/race_flag.png")
 
 
+LACQUER = (196, 52, 52)
+TATAMI = (206, 198, 120)
+ROBE = (90, 70, 120)
+
+
+def roof_tier(d, x0, y0, x1, y1):
+    """One pagoda roof seen from above: a square pyramid (hip lines to the middle) with gold upturned corner tips."""
+    cx, cy = (x0 + x1) // 2, (y0 + y1) // 2
+    d.rectangle((x0, y0, x1, y1), fill=tint(LACQUER, -0.35))
+    d.rectangle((x0 + 2, y0 + 2, x1 - 2, y1 - 2), fill=LACQUER)
+    d.polygon([(x0 + 2, y0 + 2), (x1 - 2, y0 + 2), (cx, cy)], fill=tint(LACQUER, 0.15))   # the lit north face
+    d.polygon([(x0 + 2, y0 + 2), (x0 + 2, y1 - 2), (cx, cy)], fill=tint(LACQUER, 0.05))
+    for corner in ((x0, y0), (x1, y0), (x0, y1), (x1, y1)):
+        d.line((corner, (cx, cy)), fill=tint(LACQUER, -0.3), width=3)
+        disc(d, corner[0], corner[1], 4, YELLOW)
+
+
+def small_mouse(robe, held=None, hat=None, extra=None, size=32):
+    from kit import topdown_mouse
+    cell = topdown_mouse("idle", 0, hat=hat, shirt=robe, held=held, extra=extra)
+    return cell.resize((size, size), Image.NEAREST)
+
+
+def dojo():
+    img, d = canvas(128, 128)
+    box(d, (0, 0, 127, 127), WOOD, radius=4, bevel=2)                        # the wooden platform
+    for y in (30, 64, 98):                                                   # tatami mats in the yard
+        box(d, (90, y - 16, 124, y + 15), TATAMI, radius=1, bevel=1)
+    roof_tier(d, 6, 10, 86, 118)
+    roof_tier(d, 18, 22, 74, 106)
+    roof_tier(d, 30, 34, 62, 94)
+    disc(d, 46, 64, 6, YELLOW)                                               # the finial
+    d.rectangle((84, 52, 90, 76), fill=DARK)                                 # the doorway
+    d.line((118, 32, 118, 96), fill=tint(LACQUER, -0.2), width=6)            # the gate's beam
+    for y in (40, 88):
+        disc(d, 118, y, 4, LACQUER)                                          # its posts
+    out(img, "Buildings/dojo.png")
+
+    def beard(d2, info):
+        hx, hy = info["head"]
+        d2.polygon([(hx + 9, hy - 3), (hx + 18, hy), (hx + 9, hy + 3)], fill=WHITE)
+
+    def stick(d2, x, y, pose, step):
+        d2.line((x - 4, y + 2, x + 10, y - 2), fill=WOOD, width=3)
+
+    out(small_mouse(ROBE, held=stick, extra=beard), "Parts/sensei.png")
+
+    def wooden_sword(d2, x, y, pose, step):
+        d2.line((x, y, x + 13, y + 3), fill=tint(WOOD, 0.2), width=3)
+
+    def band(d2, hx, hy):
+        d2.ellipse((hx - 7, hy - 7, hx + 6, hy + 6), outline=WHITE, width=2)
+
+    out(small_mouse(WHITE, held=wooden_sword, hat=band, size=28), "Parts/dojo_trainee.png")
+
+    bubble, bd = canvas(20, 18)
+    bd.rounded_rectangle((1, 1, 18, 13), radius=4, fill=WHITE)
+    bd.polygon([(4, 12), (8, 12), (3, 17)], fill=WHITE)
+    bd.rectangle((8, 3, 11, 8), fill=RED)                                    # "!"
+    bd.rectangle((8, 10, 11, 11), fill=RED)
+    out(bubble, "Parts/sensei_shout.png")
+
+    lantern, ld = canvas(12, 12)
+    disc(ld, 6, 6, 5, (246, 140, 60))
+    out(lantern, "Parts/dojo_lantern.png")
+
+    door, dd = canvas(8, 26)
+    box(dd, (0, 0, 7, 25), WHITE, radius=1, bevel=1)                          # a paper sliding door
+    for y in (6, 12, 18):
+        dd.line((1, y, 6, y), fill=WOOD)
+    out(door, "Parts/dojo_door.png")
+
+
 if __name__ == "__main__":
     soldier_factory()
     golem_workshop()
     car_factory()
+    dojo()
     print(" ".join(WRITTEN))

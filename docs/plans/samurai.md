@@ -72,11 +72,11 @@ to crowds of small units. It is weak to area damage (plastic armour) and loses t
 - [x] 2. Balance: slow tests 1 vs 4 soldiers / 1 vs 1 golem; tune numbers; `task test:report`.
 - [x] 3. UI: InfoRows, BuildMenu (Armé), UnitSheets/UnitLayout, UnitAnimation act frames on a swing, slash-arc helper
       + tests.
-- [ ] 4. Art: samurai sheet + icon (mice.py); pagoda dojo (army.py): still picture + part sprites (sensei, speech
+- [x] 4. Art: samurai sheet + icon (mice.py); pagoda dojo (army.py): still picture + part sprites (sensei, speech
       bubble, trainee, door, lanterns); slash crescent; restyle, sheet review. `Motion.Pop` + tests; BuildingParts
       entries for the dojo (+ tests: every part sprite exists; only the sensei, its bubble and the lanterns move while
       idle).
-- [ ] 5. View: slash effect; dojo parts through BuildingAnimator (door pulse on a new samurai);
+- [x] 5. View: slash effect; dojo parts through BuildingAnimator (door pulse on a new samurai);
       `PROBE_SCENE=samurai` (a dojo working + a samurai in a crowd of pirates), frames a few ticks apart.
 - [ ] 6. Bot: "samurajer" module + growth rotation; golden updated on purpose; `task test:report` (bot vs bot still
       ends in time, healthy economy); `task mp:smoke`.
@@ -108,3 +108,13 @@ to crowds of small units. It is weak to area damage (plastic armour) and loses t
   top-down layout come from the defaults; UnitAnimation already shows the act frames from AttackCooldown. Menu Armé
   (after the radio car factory), texture path Buildings/dojo.png (drawn in step 4). UI/SlashLook (arc round the samurai
   through the unit hit, ±0.45 rad, fade) + test; CombatView draws Slash shots as that arc (glow + bright line).
+- Step 4: army.py dojo(): wooden platform, three red roof tiers from above (hip lines, gold corner tips, gold finial),
+  doorway east, tatami yard, red gate beam; parts sensei (old mouse, white beard, purple robe, stick), sensei_shout
+  (speech bubble with a red "!"), dojo_trainee (white gi, headband, wooden sword), dojo_lantern, dojo_door (paper panel).
+  `Motion.Pop` (shown the first Amount of each beat, pops in, fades, hidden after) + tests. Parts: sensei Swing ±0.35 rad
+  0.25/s Always, shout Pop every 4 s for 0.6 s Always, trainee Bob, door Bob, four lanterns Blink out of step Always.
+  Deviation: the door opens and closes while the dojo trains instead of a pulse per finished samurai (the part system
+  has no events; not worth one for a door).
+- Step 5: BuildingAnimator draws the dojo's parts from the table, no view code needed. VisualProbe PROBE_SCENE=samurai:
+  a working dojo and a samurai against four pirates: the sensei turns, the trainee steps, the door slides; the samurai
+  faces the enemy, raises the sword and sweeps with the white arc.
