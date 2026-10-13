@@ -43,7 +43,7 @@ Hinder (stora leksaker/växter) = `TileType.Obstacle`: stoppar gång och bygge, 
   `SealedWallPenalty` (går alltid runt, slår sig bara igenom inmurad bas), golems eget fält med låg straffkostnad.
   Murar väljs aldrig som mål; enheter slår på muren bara när vägen går igenom. Stängslet ger stöt mot den som slår.
   Fallucka/pendel: fienden ser dem inte (inget mål, golvkostnad), de slits per fångst. Pendeln är 4x1 och vrids:
-  storlek beror på riktning (`BuildingRules.Size(type, facing)`). Boten bygger inga murar/fällor.
+  storlek beror på riktning (`BuildingRules.Size(type, facing)`). Boten bygger murlager (inga fällor).
 - Kortkommandon bara siffror (`UI/BuildHotkeys.cs`): siffra = kategori, sedan siffra = kort; mellanslag eller samma
   siffra avslutar; Esc = paus. Bokstäver tas aldrig (utom R vrid, V nät).
 - UI: `View/UiTheme.cs` sätts på varje UI-rot med `UiTheme.ApplyTo`. Lite text, förklaringar i verktygstips.
@@ -57,7 +57,12 @@ Hinder (stora leksaker/växter) = `TileType.Obstacle`: stoppar gång och bygge, 
 - `Scripts/Sim/`: `World` (20 tick/s) i partials: `World.cs` (placering, tick-ordning, kontrollsumma), `WorldPower`,
   `WorldVision`, `Workers`, `Fighting`, `Upkeep`, `Scouting`, `Separation`. Läs bara den del som berörs.
   Boten: `BotPlayer.cs` (tänkandet), `BotModules.cs` (moduler med fasta platser i vänster rum, speglas),
-  `BotRouting.cs` (band). Svårighet: `armyDelayTicks`.
+  `BotRouting.cs` (band), `BotGrowth.cs` (när modulerna är klara växer den för evigt: var 20:e s ett steg i
+  turordning ekonomi/armé/torn/murlager, mat först vid brist; platser söks (`FindSpot`, `FreeDeposits`, även hallen
+  fram till murlinjen x 70), band kan sluta i sidan av ett band till lådan (`RouteToCore`) och tappa av ett rent
+  råvaruband med en delare (`Tap`) när fyndigheterna är slut; `EnsurePower` drar master). Ett steg den väntat
+  färdigt på hindrar aldrig planen igen (`_gaveUpOn`). Svårighet: `armyDelayTicks`.
+  Test: `Bot_KeepsGrowing_TwentyFiveMinutes` (`World.CoresInvulnerable`, armén dör varje minut).
 - `Scripts/UI/`: ren C# utan Godot-typer (testbar). `Scripts/View/`: Godot-noder som läser World och ritar;
   `Game.cs` kör tick-loopen. `Scripts/Net/`: ren C# (lockstep, protokoll); `View/Net/ENetTransport.cs`.
 - `tests/FactoryTD.Sim.Tests/`: xUnit, kompilerar Sim + UI direkt. `Support/Scenario.cs`
@@ -66,7 +71,7 @@ Hinder (stora leksaker/växter) = `TileType.Obstacle`: stoppar gång och bygge, 
 
 ## Arbetsflöde
 - `task` listar kommandona. `task test -- <Område>` (namnfilter, `"A|B"` för flera) före och efter en ändring;
-  `task test:changed` = bara det som berörs. `task test` ~9 s, `task test:slow` ~20 s, `task test:report` vid balans.
+  `task test:changed` = bara det som berörs. `task test` ~9 s, `task test:slow` ~40 s, `task test:report` vid balans.
 - `task check` (lint + dubbletter + alla tester) före varje commit. Lint FAIL (WHITESPACE/ENDOFLINE) → `task fmt`.
   Läs aldrig råutdata från `dotnet test/format/build`.
 - Läs billigt: Grep `^\t(public|internal|private|protected)` för översikt, sedan Read med offset/limit.

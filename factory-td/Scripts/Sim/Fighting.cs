@@ -3,6 +3,9 @@ namespace FactoryTD.Sim;
 // World partial: army units (targeting, shooting, walking towards the enemy core) and projectiles.
 public sealed partial class World
 {
+	/// <summary>Tests: toyboxes take no damage, so a bot can be watched for a whole match.</summary>
+	internal bool CoresInvulnerable { get; set; }
+
 	private void TickUnit(Unit unit)
 	{
 		unit.PrevX = unit.X;
@@ -260,7 +263,8 @@ public sealed partial class World
 			}
 			else if (building != null)
 			{
-				building.TakeDamage(shot.Damage);
+				if (!(CoresInvulnerable && building is Core))
+					building.TakeDamage(shot.Damage);
 				if (building.Health == 0 && building.Type != BuildingType.Core)
 					Destroy(building);
 			}

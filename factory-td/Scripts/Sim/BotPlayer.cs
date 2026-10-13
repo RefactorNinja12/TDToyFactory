@@ -40,6 +40,7 @@ public sealed partial class BotPlayer
 	private Step _core;
 	private Step _blockedStep;     // the step we're saving up for
 	private long _blockedSince;
+	private readonly HashSet<Step> _gaveUpOn = new(); // waited the full time once: never holds the plan up again
 
 	// Every module's fixed spots are reserved up front, so belts routed early never take a spot a later
 	// module needs (or run past a future extractor that would push the wrong items onto them).
@@ -152,6 +153,10 @@ public sealed partial class BotPlayer
 			_cooldown = ThinkTicks;
 			return;
 		}
+
+		// Nothing left on the list: keep growing until the match ends.
+		if (Grow(world))
+			_cooldown = ThinkTicks;
 	}
 
 	private const string EconomyModule = "ekonomi";
@@ -232,7 +237,7 @@ public sealed partial class BotPlayer
 			}
 
 			// A belt that is being turned into a junction: take the old conveyor up first.
-			if (step.Type == BuildingType.Junction && existing is Conveyor && existing.Owner == _player)
+			if (step.Type is BuildingType.Junction or BuildingType.Splitter && existing is Conveyor && existing.Owner == _player)
 			{
 				Send(PlayerCommand.Remove(_player, step.X, step.Y), world);
 				return Maintenance.Acted;
@@ -242,7 +247,10 @@ public sealed partial class BotPlayer
 			if (error == PlaceError.NotEnoughResources)
 			{
 				// The plan order is the priority order, so save up for this step... unless we've
-				// waited so long that it's probably waiting on something later in the plan.
+				// waited so long that it's probably waiting on something later in the plan. Two steps
+				// short of the same thing would otherwise take turns holding everything up for ever.
+				if (_gaveUpOn.Contains(step))
+					continue;
 				if (_blockedStep != step)
 				{
 					_blockedStep = step;
@@ -250,6 +258,7 @@ public sealed partial class BotPlayer
 				}
 				if (world.TickCount - _blockedSince < MaxWaitTicks)
 					return Maintenance.Waiting;
+				_gaveUpOn.Add(step);
 				continue;
 			}
 			if (error != PlaceError.None)
