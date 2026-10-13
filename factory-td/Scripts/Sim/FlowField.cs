@@ -88,7 +88,7 @@ public sealed class FlowField
 					if (wall.Owner != owner)
 						step += wallPenalty;
 				}
-				else if (building != null && building.Owner != owner)
+				else if (building != null && building.Owner != owner && building is not Trap)
 				{
 					step += BuildingPenalty;
 				}

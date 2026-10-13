@@ -173,7 +173,7 @@ Goal:
       (balance: how many fences per golem, written as a measurement).
 - [x] 4. **Facing-dependent size:** `BuildingRules.Size(type, facing)` + every call site (Sim, UI, View, bot);
       tests that every building except the pendulum is unchanged and that 4x1 ↔ 1x4 with R. Golden unchanged.
-- [ ] 5. **Traps sim** (`Sim/Traps.cs`): TrapStats, Trapdoor (cycle, enemies fall, own units safe),
+- [x] 5. **Traps sim** (`Sim/Traps.cs`): TrapStats, Trapdoor (cycle, enemies fall, own units safe),
       Pendulum (BobX/BobY, push via Unit.PushX/Y/Ticks through TryStep, golems half as far, small damage);
       SelectTarget skips traps, the flow field charges traps as floor; decide trap health/wear;
       checksum (Phase, push). Tests:
@@ -225,3 +225,11 @@ Goal:
   Building ctor, CheckLocation/CheckPlace/CanPlace (facing, default East), TryPlace, bot steps, BuildController
   ghost/sent previews use it; BeltPlanner and Shadows read the building's own Width/Height. Golden unchanged.
   The 4x1 ↔ 1x4 test comes with the pendulum in step 5 (every building so far is square).
+- Step 5: Sim/Traps.cs: Trap base (Phase from completion, hashed; OutputsToward none), Trapdoor (2x2, period 160:
+  warning 30 then open 20; enemies whose tile is on it fall = Health 0), Pendulum (4x1 / 1x4: Swing 0..1000 over 30
+  ticks, pause 10, back; Bob in sub-tiles; enemies within 0.6 tile get Unit.PushX/Y/Ticks = 3 tiles over 8 ticks,
+  golems 4 ticks, 3 damage). World: TickPush instead of acting (TryStep, so walls/obstacles stop it; keeps facing);
+  push state only hashed while pushed (golden unchanged); traps wear (trapdoor 10 per catch = 12, pendulum 5 per hit
+  = 20) via `WearTrap`, broken traps destroyed after the building loop. SelectTarget skips traps, FlowField
+  charges them as floor. Costs: trapdoor 10 bricks + 4 gears + 2 springs, pendulum 10 bricks + 3 gears + 4 springs.
+  Scenario.Rich now also gives gears and springs (one storage test empties gears first). TrapTests 8.

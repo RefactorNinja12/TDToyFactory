@@ -59,6 +59,19 @@ public sealed partial class World
 		TryStep(unit, nextX * UnitStats.SubTile + half, nextY * UnitStats.SubTile + half);
 	}
 
+	/// <summary>Shoved by a pendulum: slides along until the push is spent or something solid stops it.</summary>
+	private void TickPush(Unit unit)
+	{
+		unit.PrevX = unit.X;
+		unit.PrevY = unit.Y;
+		int moveX = unit.MoveX, moveY = unit.MoveY;
+		int speed = System.Math.Abs(unit.PushX) + System.Math.Abs(unit.PushY);
+		bool moved = TryStep(unit, unit.X + unit.PushX, unit.Y + unit.PushY, speed);
+		(unit.MoveX, unit.MoveY) = (moveX, moveY); // keeps facing where it was going
+		unit.PushTicks = moved ? unit.PushTicks - 1 : 0;
+		unit.Path = null;
+	}
+
 	/// <summary>Fires at the target if the unit is ready; false while it reloads.</summary>
 	private bool Attack(Unit unit, Unit targetUnit, Building targetBuilding, DamageKind kind)
 	{
@@ -173,7 +186,7 @@ public sealed partial class World
 			{
 				var building = GetBuilding(tx, ty);
 				// Walls are only attacked when the way leads through them (see TickUnit).
-				if (building == null || building.Owner == unit.Owner || building.ScanMark == mark || building is Wall)
+				if (building == null || building.Owner == unit.Owner || building.ScanMark == mark || building is Wall or Trap)
 					continue;
 				building.ScanMark = mark;
 				long distance = DistanceSquaredTo(building, unit.X, unit.Y);

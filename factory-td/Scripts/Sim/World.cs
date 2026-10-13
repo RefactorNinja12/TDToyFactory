@@ -258,9 +258,15 @@ public sealed partial class World
 		foreach (var building in _buildings)
 			if (building.IsBuilt)
 				building.Tick(this);
+		foreach (var trap in _wornOut)
+			if (IsStanding(trap))
+				Destroy(trap);
+		_wornOut.Clear();
 		foreach (var unit in _units)
 		{
-			if (unit.Type == UnitType.Builder)
+			if (unit.PushTicks > 0)
+				TickPush(unit);
+			else if (unit.Type == UnitType.Builder)
 				TickBuilder(unit);
 			else if (unit.Type == UnitType.Farmer)
 				TickFarmer(unit);
@@ -311,6 +317,10 @@ public sealed partial class World
 			hash.Add((int)unit.Carrying); hash.Add(unit.CarryAmount); hash.Add(unit.WorkTimer);
 			hash.Add(unit.Charge); hash.Add((int)unit.PowerState); hash.Add(unit.LightDirection);
 			hash.Add(unit.ScoutTargetX); hash.Add(unit.ScoutTargetY); hash.Add(unit.FleeTicks); hash.Add(unit.FleeX); hash.Add(unit.FleeY);
+			if (unit.PushTicks > 0)
+			{
+				hash.Add(unit.PushX); hash.Add(unit.PushY); hash.Add(unit.PushTicks);
+			}
 		}
 		hash.Add(_projectiles.Count);
 		foreach (var shot in _projectiles)
@@ -342,6 +352,16 @@ public sealed partial class World
 			if (unit.Owner == owner && unit.Type == type && unit.Health > 0)
 				count++;
 		return count;
+	}
+
+	private readonly System.Collections.Generic.List<Trap> _wornOut = new();
+
+	/// <summary>A trap caught something and wore down; it breaks (after the building ticks) at 0 health.</summary>
+	internal void WearTrap(Trap trap, int amount)
+	{
+		trap.TakeDamage(amount);
+		if (trap.Health == 0 && !_wornOut.Contains(trap))
+			_wornOut.Add(trap);
 	}
 
 	private bool IsStanding(Building building) => GetBuilding(building.X, building.Y) == building;
