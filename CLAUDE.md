@@ -141,10 +141,12 @@ Kompakt fabrik, max 3 nivåer i produktionskedjan, matcher 15–25 min.
   luminans 0,2 blir kontursvart, 2 px-linjer blir helt kontur, ljusa pasteller blir grå (välj mättat); paletten har två rosa för mössens öron, tassar och svansar.
 
 ## Kodstruktur
-- `Scripts/Sim/` ren C#, deterministisk: `World` (tick 20/s, byggare/bönder/strid/underhåll), byggnader,
+- `Scripts/Sim/` ren C#, deterministisk: `World` (tick 20/s) delad i partials per delsystem: `World.cs` (kärna:
+  placering, tick-ordning, kontrollsumma), `WorldPower`, `WorldVision`, `Workers` (byggare/bönder), `Fighting`
+  (armé, mål, projektiler), `Upkeep` (mat, lagertak), `Scouting`, `Separation`. Läs bara den del som berörs. Byggnader,
   `PlayerState` (förråd, tak, matmätare), `Farming.cs` (odlingslåda, kök), `Warehouse.cs`.
 - `Scripts/View/` Godot-noder som läser World och ritar; `Game.cs` kör tick-loopen.
-- `Scripts/Sim/BotPlayer.cs` AI-motståndaren: moduler (ekonomi, försvar, arméer) med fasta platser
+- `Scripts/Sim/BotPlayer.cs` AI-motståndaren (tänkandet; modulerna i `BotModules.cs`, bandrutter i `BotRouting.cs`): moduler (ekonomi, försvar, arméer) med fasta platser
   i vänster rum (speglas), band dras automatiskt (BFS, korsningar vid behov). Bygger upp det som
   förstörs, lägger till laser/vattenpistol när den ser golems/radiobilar, odlar mer när den äter mer
   än den producerar. Svårighet: `armyDelayTicks` (0 = normal, högre = lättare).
@@ -194,6 +196,11 @@ Kompakt fabrik, max 3 nivåer i produktionskedjan, matcher 15–25 min.
   `.gitattributes` håller `.cs` i LF trots `core.autocrlf=true`.
 - Snabbast: `task test:changed` kör bara testerna för ändrade .cs-filer sedan senaste commit
   (tabell i `tests/changed.ps1`; kärnfiler som World → alla snabba; View → build). Flera områden: `task test -- "A|B"`.
+- Hitta kod billigt (graphify, lokal graf i `graphify-out/`, gitignorerad, byggs om av post-commit-kroken eller `task graph`):
+  `graphify explain Namn` (eller `fil.cs::Namn` om flera) = typens/metodens fil:rad, medlemmar och anropare för
+  ~1/3 av tokens jämfört med att läsa filen; läs sedan bara raderna som behövs. `graphify path A B` = hur två delar
+  hänger ihop. Grafen missar användningar (t.ex. `is Typ`, lokala variabler): "vem använder X" = Grep, inte grafen.
+  `graphify query` ger brus, undvik. Grafen saknas → `task graph` (~5 s, ingen LLM).
 - Golden-checksumman (`DeterminismTests.GoldenBotMatch`, 2 min bot mot bot) vaktar refaktorer: får bara
   ändras när beteendet medvetet ändrats (felet skriver ut det nya värdet). Ren refaktor = oförändrad.
 - `task coverage` = täckning Sim/UI + 10 sämsta filer (~100 s); `-File X.cs -Reuse` (ps1) visar otestade rader.

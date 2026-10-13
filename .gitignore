@@ -39,3 +39,6 @@ TestResults/
 
 # Python bytecode caches (art tools)
 __pycache__/
+
+# graphify knowledge graph (local, rebuilt by the post-commit hook)
+graphify-out/
