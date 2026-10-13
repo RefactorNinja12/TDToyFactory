@@ -1,6 +1,7 @@
 using System.Linq;
 using FactoryTD.Sim;
 using FactoryTD.Sim.Tests.Support;
+using FactoryTD.UI;
 using Xunit;
 
 namespace FactoryTD.Sim.Tests;
@@ -110,5 +111,16 @@ public class SamuraiTests
 			return s.World.Checksum();
 		}
 		Assert.Equal(Run(), Run());
+	}
+
+	[Fact]
+	public void SlashArc_GoesThroughTheUnitHit_AndFades()
+	{
+		var (radius, start, end) = SlashLook.Arc(0, 0, 0, 30);
+		Assert.Equal(30f, radius, 3);
+		Assert.Equal(System.MathF.PI / 2, (start + end) / 2, 3); // straight down (y-down)
+		Assert.Equal(2 * SlashLook.HalfWidth, end - start, 3);
+		Assert.Equal(1f, SlashLook.Fade(0));
+		Assert.Equal(0f, SlashLook.Fade(1));
 	}
 }

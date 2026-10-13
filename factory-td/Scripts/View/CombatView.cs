@@ -163,6 +163,13 @@ public partial class CombatView : Node2D
 				if (shot.TicksLeft <= 1)
 					DrawCircle(to, 10, new Color(1f, 0.9f, 0.6f, 0.6f));
 				break;
+			case DamageKind.Slash:
+				// The sword's sweep: a bright arc round the samurai through the unit it cuts.
+				var (radius, start, end) = SlashLook.Arc(from.X, from.Y, to.X, to.Y);
+				float fade = SlashLook.Fade(t);
+				DrawArc(from, radius, start, end, 10, new Color(1f, 1f, 1f, 0.35f * fade), 7);
+				DrawArc(from, radius, start, end, 10, new Color(1f, 1f, 1f, fade), 2);
+				break;
 			case DamageKind.Water:
 				DrawCircle(p, 5, WaterColor);
 				DrawCircle(from.Lerp(to, Mathf.Max(0, t - 0.15f)), 3, WaterColor);

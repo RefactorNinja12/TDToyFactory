@@ -70,7 +70,7 @@ to crowds of small units. It is weak to area damage (plastic armour) and loses t
       SwingCount in the checksum; BuildingType.Dojo (UnitFactory), cost/health/build time/size, Buildable;
       Texts (the every-type tests ask for names). Tests above (sweep, targets, armour, dojo). Golden unchanged.
 - [x] 2. Balance: slow tests 1 vs 4 soldiers / 1 vs 1 golem; tune numbers; `task test:report`.
-- [ ] 3. UI: InfoRows, BuildMenu (Armé), UnitSheets/UnitLayout, UnitAnimation act frames on a swing, slash-arc helper
+- [x] 3. UI: InfoRows, BuildMenu (Armé), UnitSheets/UnitLayout, UnitAnimation act frames on a swing, slash-arc helper
       + tests.
 - [ ] 4. Art: samurai sheet + icon (mice.py); pagoda dojo (army.py): still picture + part sprites (sensei, speech
       bubble, trainee, door, lanterns); slash crescent; restyle, sheet review. `Motion.Pop` + tests; BuildingParts
@@ -104,3 +104,7 @@ to crowds of small units. It is weak to area damage (plastic armour) and loses t
 - Step 2: tuned to 60 hp, 10 dmg / 20 ticks, sweep reach 1.6 tiles (at 1.4 the soldiers spread just out of the arc).
   Measured: vs 3 clumped soldiers 36 hp left after 2 s, vs 4 soldiers 8 hp left after 4 s, a golem takes 27 s to fell
   (it ignores units, so it just walks on). Slow tests Balance_Samurai_*.
+- Step 3: InfoRows needed nothing (the dojo is a UnitFactory: recipe, progress, power). UnitSheets: file name and
+  top-down layout come from the defaults; UnitAnimation already shows the act frames from AttackCooldown. Menu Armé
+  (after the radio car factory), texture path Buildings/dojo.png (drawn in step 4). UI/SlashLook (arc round the samurai
+  through the unit hit, ±0.45 rad, fade) + test; CombatView draws Slash shots as that arc (glow + bright line).
