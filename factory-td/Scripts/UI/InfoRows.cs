@@ -57,6 +57,29 @@ public sealed class InfoRows
 				Needs(factory.Recipe, factory.Crafter);
 				Progress(factory.Crafter.Progress, UnitStats.BuildTicks(factory.Produces));
 				Text("Mata in materialet med band från vilken sida som helst.", Tone.Dim);
+				if (factory.IsBuilt && !UnitStats.IsWorker(factory.Produces) && _world.IsEnclosed(factory))
+					Text("Instängd: trupperna kommer inte ut. Bygg en grind i muren.", Tone.Missing);
+				break;
+
+			case Wall wall:
+				int punch = UnitStats.Def(UnitType.BrickGolem).Damage * UnitStats.Def(UnitType.BrickGolem).BuildingDamagePercent / 100;
+				Text($"Tål {(wall.Health + punch - 1) / punch} golemslag till.", Tone.Dim);
+				if (wall.Type == BuildingType.Gate)
+					Text("Dina enheter går igenom, fienden inte.", Tone.Dim);
+				if (wall.Type == BuildingType.ElectricFence)
+				{
+					Text($"Stöt: {WallStats.ZapDamage} skada, {WallStats.ZapEnergy} energi. Hittills: {wall.Zaps}", Tone.Dim);
+				}
+				break;
+
+			case Trapdoor trapdoor:
+				Text(trapdoor.IsOpen ? "Öppen!" : trapdoor.IsWarning ? "Öppnas snart" : "Stängd", trapdoor.IsOpen ? Tone.Good : Tone.Dim);
+				Text($"Öppnas var {TrapStats.TrapdoorPeriod / World.TicksPerSecond}:e sekund. Slits {TrapStats.TrapdoorWear} per fångst.", Tone.Dim);
+				break;
+
+			case Pendulum:
+				Text($"Knuffar fiender {TrapStats.PushDistance / UnitStats.SubTile} rutor i svängriktningen.", Tone.Dim);
+				Text($"Slits {TrapStats.PendulumWear} per träff.", Tone.Dim);
 				break;
 
 			case Assembler assembler:
@@ -168,11 +191,11 @@ public sealed class InfoRows
 			PowerStatus(building);
 	}
 
-	/// <summary>Army factories, assemblers and towers run on the grid.</summary>
+	/// <summary>Army factories, assemblers, towers and electric fences run on the grid.</summary>
 	private static bool NeedsPower(Building building) => building switch
 	{
 		UnitFactory factory => !UnitStats.IsWorker(factory.Produces),
-		Assembler or Tower => true,
+		Assembler or Tower or Wall { Type: BuildingType.ElectricFence } => true,
 		_ => false,
 	};
 

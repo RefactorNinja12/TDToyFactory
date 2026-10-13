@@ -111,7 +111,7 @@ public sealed partial class World
 		if (_powerFieldDirty[player])
 		{
 			_powerFieldDirty[player] = false;
-			_powerFields[player].Build(this, player, (x, y) => _power.NetworkAt(player, x, y) != null);
+			_powerFields[player].Build(this, player, WallStats.SealedWallPenalty, (x, y) => _power.NetworkAt(player, x, y) != null);
 		}
 		return _powerFields[player];
 	}

@@ -68,6 +68,8 @@ public sealed class Scenario
 			player.Add(ItemType.Brick, amount);
 			player.Add(ItemType.Plastic, amount);
 			player.Add(ItemType.Battery, amount);
+			player.Add(ItemType.Gear, amount);
+			player.Add(ItemType.Spring, amount);
 		}
 		return this;
 	}

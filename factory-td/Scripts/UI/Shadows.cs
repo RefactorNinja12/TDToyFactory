@@ -119,7 +119,7 @@ public sealed class ShadowCaster
 		{
 			if (IsFlat(building.Type) || !Knowledge.ShowBuilding(world, player, building))
 				continue;
-			var (w, h) = BuildingRules.Size(building.Type);
+			var (w, h) = (building.Width, building.Height);
 			float x = building.X + w / 2f, y = building.Y + h / 2f;
 			if (Follow(building, Shadows.Cast(x, y, Math.Max(w, h) * 0.9f, Near(lights, x, y), Reaches), k) is { } shadow)
 				Buildings.Add((building, shadow));

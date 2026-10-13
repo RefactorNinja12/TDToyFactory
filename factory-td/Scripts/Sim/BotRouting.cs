@@ -15,24 +15,25 @@ public sealed partial class BotPlayer
 	/// <paramref name="target"/>, ending pointing into the target. Breadth-first, so the shortest path.
 	/// It never runs over deposits (kept free for extractors) and never passes a tile that some other
 	/// building would push items into, so the belt carries only what the source makes and can't jam.
-	/// If there is no way through, nothing is planned.
+	/// If there is no way through, nothing is planned (false). <paramref name="exit"/>: the side the source puts its
+	/// items out of (a kitchen's front); extractors push to every side.
 	/// </summary>
-	private void Route(World world, Step source, Step target)
+	private bool Route(World world, Step source, Step target, Direction? exit = null, System.Func<Step, Direction, bool> endsAt = null)
 	{
 		if (_reserving)
-			return; // routes are worked out when the module is actually built
+			return true; // routes are worked out when the module is actually built
 		var start = (-1, -1);
 		foreach (var d in Directions)
 		{
 			var tile = (source.X + d.DX(), source.Y + d.DY());
-			if (IsRoutable(world, tile, source, target))
+			if ((exit == null || exit == d) && IsRoutable(world, tile, source, target))
 			{
 				start = tile;
 				break;
 			}
 		}
 		if (start.Item1 < 0)
-			return;
+			return false;
 
 		var previous = new Dictionary<(int, int), (int, int)> { [start] = start };
 		var crossedAt = new Dictionary<(int, int), (int, int)>(); // tile after a crossing -> the crossing tile
@@ -47,7 +48,7 @@ public sealed partial class BotPlayer
 			foreach (var d in Directions)
 			{
 				var next = (tile.X + d.DX(), tile.Y + d.DY());
-				if (_planned.TryGetValue(next, out var step) && step == target)
+				if (_planned.TryGetValue(next, out var step) && (endsAt != null ? endsAt(step, d) : step == target))
 				{
 					goal = tile;
 					into = d;
@@ -79,7 +80,7 @@ public sealed partial class BotPlayer
 			}
 		}
 		if (goal.X < 0)
-			return;
+			return false;
 
 		// Walk back from the goal, putting the crossings back in between.
 		var path = new List<(int X, int Y)> { goal };
@@ -110,6 +111,21 @@ public sealed partial class BotPlayer
 			var facing = i + 1 < path.Count ? DirectionBetween(path[i], path[i + 1]) : into;
 			AddStep(new Step(BuildingType.Conveyor, path[i].X, path[i].Y, facing, ItemType.None));
 		}
+		return true;
+	}
+
+	/// <summary>
+	/// Like Route to the toybox, but the belt may also end feeding into the side of one of our belts that runs
+	/// into the toybox (the tiles round the toybox itself fill up).
+	/// </summary>
+	private bool RouteToCore(World world, Step source, Direction? exit = null)
+	{
+		var intoCore = new HashSet<Step>();
+		foreach (var step in _plan)
+			if (step.Type == BuildingType.Conveyor && ReachesCore(step))
+				intoCore.Add(step);
+		return Route(world, source, _core, exit, (step, moving) =>
+			step == _core || (intoCore.Contains(step) && moving != step.Facing.Opposite()));
 	}
 
 	/// <summary>
@@ -160,7 +176,7 @@ public sealed partial class BotPlayer
 	/// <summary>Whether a building would hand items moving in <paramref name="moving"/> into the tile next to it.</summary>
 	private static bool Pushes(Step step, Direction moving, (int X, int Y) from, (int X, int Y) to) => step.Type switch
 	{
-		BuildingType.BrickExtractor or BuildingType.PlasticExtractor or BuildingType.BatteryExtractor => true,
+		BuildingType.BrickExtractor or BuildingType.PlasticExtractor or BuildingType.BatteryExtractor or BuildingType.CheeseMelter => true,
 		BuildingType.Splitter or BuildingType.Sorter => true,
 		BuildingType.Conveyor or BuildingType.Assembler => step.Facing == moving,
 		// A junction only passes items along its two lines, which already run through their tiles.

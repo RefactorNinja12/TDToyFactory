@@ -245,7 +245,7 @@ public class StorageTests
 	[Fact]
 	public void Warehouse_AddsCapacityOnlyWhenFinished_AndSharesThePool()
 	{
-		var s = Scenario.Match().NoWorkers().Rich();
+		var s = Scenario.Match().NoWorkers().Rich().Empty(ItemType.Gear);
 		var warehouse = s.Place(BuildingType.Warehouse, 20, 20);
 		s.World.Tick();
 		Assert.Equal(PlayerState.CoreCapacity, s.P0.Capacity(ItemType.Gear));

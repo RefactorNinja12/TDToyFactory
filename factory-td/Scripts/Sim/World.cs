@@ -22,9 +22,10 @@ public sealed partial class World
 
 	// _fields[p] leads player p's units to the enemy core. Rebuilt lazily when buildings change.
 	private readonly FlowField[] _fields;
-	// What has to be worked out again before it is used. The power grid changes whenever a node is placed,
-	// removed or finished; a player's flow field only when an ENEMY building appears or goes (own buildings
-	// cost nothing to walk through, and a construction site already counts as a building).
+	private readonly FlowField[] _golemFields; // the same for units that smash through walls
+											   // What has to be worked out again before it is used. The power grid changes whenever a node is placed,
+											   // removed or finished; a player's flow field only when an ENEMY building appears or goes (own buildings
+											   // cost nothing to walk through, and a construction site already counts as a building).
 	private bool _powerDirty = true;
 	private int _nextBuildingSerial;
 	private int _scanMark;
@@ -64,6 +65,7 @@ public sealed partial class World
 		_players = new PlayerState[playerCount];
 		_cores = new Core[playerCount];
 		_fields = new FlowField[playerCount];
+		_golemFields = new FlowField[playerCount];
 		_power = new PowerGrid(map.Width, map.Height, playerCount);
 		_flowDirty = new bool[playerCount];
 		System.Array.Fill(_flowDirty, true);
@@ -74,6 +76,7 @@ public sealed partial class World
 		{
 			_players[i] = new PlayerState(i);
 			_fields[i] = new FlowField(map.Width, map.Height);
+			_golemFields[i] = new FlowField(map.Width, map.Height);
 			_powerFields[i] = new FlowField(map.Width, map.Height);
 		}
 	}
@@ -82,11 +85,32 @@ public sealed partial class World
 
 	public int EnemyOf(int player) => (player + 1) % _players.Length;
 
-	public FlowField GetFlowField(int player)
+	public FlowField GetFlowField(int player, UnitType type = UnitType.PlasticSoldier)
 	{
 		RebuildFieldsIfDirty();
-		return _fields[player];
+		return FieldFor(player, type);
 	}
+
+	private FlowField FieldFor(int player, UnitType type) =>
+		WallStats.BreaksWalls(type) ? _golemFields[player] : _fields[player];
+
+	/// <summary>Whether a unit of <paramref name="player"/> can't stand on (x, y): not floor, or a wall in its way.</summary>
+	internal bool BlocksUnit(int player, int x, int y) =>
+		!Map.InBounds(x, y) || Map[x, y] != TileType.Floor || WallBlocks(player, x, y);
+
+	/// <summary>Whether its owner's own walls shut the building in: no tile around it leads to the enemy core.</summary>
+	public bool IsEnclosed(Building building)
+	{
+		var field = GetFlowField(building.Owner);
+		for (int y = building.Y - 1; y <= building.Y + building.Height; y++)
+			for (int x = building.X - 1; x <= building.X + building.Width; x++)
+				if (!BlocksUnit(building.Owner, x, y) && GetBuilding(x, y) != building && field.Distance(x, y) != FlowField.Unreachable)
+					return false;
+		return true;
+	}
+
+	/// <summary>Whether a built wall stands on (x, y) that a unit of <paramref name="player"/> can't pass.</summary>
+	internal bool WallBlocks(int player, int x, int y) => GetBuilding(x, y) is Wall wall && wall.Blocks(player);
 
 	/// <summary>A new 1v1 match: the default map with each player's core at the back of their room.</summary>
 	/// <param name="obstacles">Big toys lying in the rooms (MapLayout.Obstacles).</param>
@@ -118,12 +142,13 @@ public sealed partial class World
 
 	public Building GetBuilding(int x, int y) => Map.InBounds(x, y) ? _grid[y * Map.Width + x] : null;
 
-	public bool CanPlace(BuildingType type, int x, int y, int owner) => CheckPlace(type, x, y, owner) == PlaceError.None;
+	public bool CanPlace(BuildingType type, int x, int y, int owner, Direction facing = Direction.East) =>
+		CheckPlace(type, x, y, owner, facing) == PlaceError.None;
 
 	/// <summary>Why <paramref name="owner"/> can't build here (location first, then cost), or None if they can.</summary>
-	public PlaceError CheckPlace(BuildingType type, int x, int y, int owner)
+	public PlaceError CheckPlace(BuildingType type, int x, int y, int owner, Direction facing = Direction.East)
 	{
-		var location = CheckLocation(type, x, y, owner);
+		var location = CheckLocation(type, x, y, owner, facing);
 		if (location != PlaceError.None)
 			return location;
 		return _players[owner].CanAfford(BuildingRules.Cost(type)) ? PlaceError.None : PlaceError.NotEnoughResources;
@@ -133,9 +158,9 @@ public sealed partial class World
 	/// Whether <paramref name="owner"/> may put the building with its top-left corner on (x, y), ignoring cost:
 	/// floor only, in their own room or the hall, not on another building, extractors on their deposit.
 	/// </summary>
-	public PlaceError CheckLocation(BuildingType type, int x, int y, int owner)
+	public PlaceError CheckLocation(BuildingType type, int x, int y, int owner, Direction facing = Direction.East)
 	{
-		var (w, h) = BuildingRules.Size(type);
+		var (w, h) = BuildingRules.Size(type, facing);
 		var required = BuildingRules.RequiredResource(type);
 		var home = MapLayout.HomeZone(owner);
 
@@ -179,7 +204,7 @@ public sealed partial class World
 
 	public bool TryPlace(BuildingType type, int x, int y, Direction facing, int owner)
 	{
-		if (!CanPlace(type, x, y, owner))
+		if (!CanPlace(type, x, y, owner, facing))
 			return false;
 
 		_players[owner].TrySpend(BuildingRules.Cost(type));
@@ -244,9 +269,15 @@ public sealed partial class World
 		foreach (var building in _buildings)
 			if (building.IsBuilt)
 				building.Tick(this);
+		foreach (var trap in _wornOut)
+			if (IsStanding(trap))
+				Destroy(trap);
+		_wornOut.Clear();
 		foreach (var unit in _units)
 		{
-			if (unit.Type == UnitType.Builder)
+			if (unit.PushTicks > 0)
+				TickPush(unit);
+			else if (unit.Type == UnitType.Builder)
 				TickBuilder(unit);
 			else if (unit.Type == UnitType.Farmer)
 				TickFarmer(unit);
@@ -297,6 +328,10 @@ public sealed partial class World
 			hash.Add((int)unit.Carrying); hash.Add(unit.CarryAmount); hash.Add(unit.WorkTimer);
 			hash.Add(unit.Charge); hash.Add((int)unit.PowerState); hash.Add(unit.LightDirection);
 			hash.Add(unit.ScoutTargetX); hash.Add(unit.ScoutTargetY); hash.Add(unit.FleeTicks); hash.Add(unit.FleeX); hash.Add(unit.FleeY);
+			if (unit.PushTicks > 0)
+			{
+				hash.Add(unit.PushX); hash.Add(unit.PushY); hash.Add(unit.PushTicks);
+			}
 		}
 		hash.Add(_projectiles.Count);
 		foreach (var shot in _projectiles)
@@ -330,6 +365,16 @@ public sealed partial class World
 		return count;
 	}
 
+	private readonly System.Collections.Generic.List<Trap> _wornOut = new();
+
+	/// <summary>A trap caught something and wore down; it breaks (after the building ticks) at 0 health.</summary>
+	internal void WearTrap(Trap trap, int amount)
+	{
+		trap.TakeDamage(amount);
+		if (trap.Health == 0 && !_wornOut.Contains(trap))
+			_wornOut.Add(trap);
+	}
+
 	private bool IsStanding(Building building) => GetBuilding(building.X, building.Y) == building;
 
 	/// <summary>A building shot to pieces: gone, no refund.</summary>
@@ -341,12 +386,15 @@ public sealed partial class World
 		BuildingRemoved?.Invoke(building);
 	}
 
-	/// <summary>A building appeared or went: the power grid and the enemies' flow fields are out of date.</summary>
+	/// <summary>
+	/// A building appeared or went: the power grid and the enemies' flow fields are out of date
+	/// (everyone's for a wall: walls block their owner's units too).
+	/// </summary>
 	private void MarkChanged(Building building)
 	{
 		_powerDirty = true;
 		for (int p = 0; p < _flowDirty.Length; p++)
-			if (p != building.Owner)
+			if (p != building.Owner || building is Wall)
 				_flowDirty[p] = true;
 	}
 
@@ -366,7 +414,10 @@ public sealed partial class World
 			_flowDirty[p] = false;
 			var target = _cores[EnemyOf(p)];
 			if (target != null)
+			{
 				_fields[p].Build(this, target, p);
+				_golemFields[p].Build(this, target, p, WallStats.GolemWallPenalty);
+			}
 			_powerFieldDirty[p] = true; // the way back to the grid crosses enemy buildings too
 		}
 	}
