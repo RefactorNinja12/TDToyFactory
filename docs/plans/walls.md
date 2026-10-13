@@ -171,7 +171,7 @@ Goal:
       the attacker on contact with a cooldown, nothing without power, counter-armour decision. Tests: zaps and
       draws energy; no power = no zap; the RC car takes more; a golem dies against a powered fence line
       (balance: how many fences per golem, written as a measurement).
-- [ ] 4. **Facing-dependent size:** `BuildingRules.Size(type, facing)` + every call site (Sim, UI, View, bot);
+- [x] 4. **Facing-dependent size:** `BuildingRules.Size(type, facing)` + every call site (Sim, UI, View, bot);
       tests that every building except the pendulum is unchanged and that 4x1 ↔ 1x4 with R. Golden unchanged.
 - [ ] 5. **Traps sim** (`Sim/Traps.cs`): TrapStats, Trapdoor (cycle, enemies fall, own units safe),
       Pendulum (BobX/BobY, push via Unit.PushX/Y/Ticks through TryStep, golems half as far, small damage);
@@ -221,3 +221,7 @@ Goal:
   10 damage to the attacker, double to electronics (no new DamageKind). NoPower flag in Tick. Zaps/cooldown hashed.
   Measured: a soldier dies after 3 zaps; a golem pays 5 zaps (50) per fence, so 3 fences in a row kill one.
   Shots still fly over walls (a soldier next to the fence shoots a pylon 3 tiles behind it).
+- Step 4: `BuildingRules.Size(type, facing)` (north/south swap width and height; `Size(type)` = facing east).
+  Building ctor, CheckLocation/CheckPlace/CanPlace (facing, default East), TryPlace, bot steps, BuildController
+  ghost/sent previews use it; BeltPlanner and Shadows read the building's own Width/Height. Golden unchanged.
+  The 4x1 ↔ 1x4 test comes with the pendulum in step 5 (every building so far is square).

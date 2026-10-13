@@ -238,7 +238,7 @@ public sealed partial class BotPlayer
 				return Maintenance.Acted;
 			}
 
-			var error = world.CheckPlace(step.Type, step.X, step.Y, _player);
+			var error = world.CheckPlace(step.Type, step.X, step.Y, _player, step.Facing);
 			if (error == PlaceError.NotEnoughResources)
 			{
 				// The plan order is the priority order, so save up for this step... unless we've
@@ -296,7 +296,7 @@ public sealed partial class BotPlayer
 
 	private Step Place(BuildingType type, int x, int y, Direction facing, ItemType setting = ItemType.None)
 	{
-		var (w, h) = BuildingRules.Size(type);
+		var (w, h) = BuildingRules.Size(type, facing);
 		int absX = _mirror ? _width - x - w : x;
 		var absFacing = _mirror ? Mirror(facing) : facing;
 		return AddStep(new Step(type, absX, y, absFacing, setting));
@@ -315,7 +315,7 @@ public sealed partial class BotPlayer
 
 	private Step AddStep(Step step)
 	{
-		var (w, h) = BuildingRules.Size(step.Type);
+		var (w, h) = BuildingRules.Size(step.Type, step.Facing);
 		var tiles = _reserving ? _reserved : _planned;
 		for (int y = step.Y; y < step.Y + h; y++)
 			for (int x = step.X; x < step.X + w; x++)

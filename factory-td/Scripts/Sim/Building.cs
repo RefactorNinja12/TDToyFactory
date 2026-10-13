@@ -111,7 +111,7 @@ public abstract class Building
 		Y = y;
 		Facing = facing;
 		Owner = owner;
-		(Width, Height) = BuildingRules.Size(type);
+		(Width, Height) = BuildingRules.Size(type, facing);
 		Health = BuildingRules.MaxHealth(type);
 	}
 
@@ -349,6 +349,14 @@ public static class BuildingRules
 	};
 	// -------------------------------------------------------------------------------------
 
+	/// <summary>Size in tiles as it stands: long buildings turned north or south swap width and height.</summary>
+	public static (int Width, int Height) Size(BuildingType type, Direction facing)
+	{
+		var (w, h) = Size(type);
+		return facing is Direction.North or Direction.South ? (h, w) : (w, h);
+	}
+
+	/// <summary>Size in tiles facing east (or west).</summary>
 	public static (int Width, int Height) Size(BuildingType type) => type switch
 	{
 		BuildingType.Core => (2, 2),

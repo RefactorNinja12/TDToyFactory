@@ -145,7 +145,7 @@ public partial class BuildController : Node2D
 		foreach (var (type, cell, facing, _) in _sent)
 		{
 			var texture = BuildingVisuals.GetTexture(type);
-			var (w, h) = BuildingRules.Size(type);
+			var (w, h) = BuildingRules.Size(type, facing);
 			DrawSetTransform(new Vector2((cell.X + w / 2f) * ts, (cell.Y + h / 2f) * ts), BuildingVisuals.Rotation(facing));
 			DrawTexture(texture, -texture.GetSize() / 2, SentColor);
 		}
@@ -244,7 +244,7 @@ public partial class BuildController : Node2D
 			foreach (var command in BeltReplace.Commands(type, cell.X, cell.Y, facing, LocalPlayer))
 				Commands.Send(command);
 		}
-		else if (_world.CanPlace(type, cell.X, cell.Y, LocalPlayer))
+		else if (_world.CanPlace(type, cell.X, cell.Y, LocalPlayer, facing))
 			Commands.Send(PlayerCommand.Place(LocalPlayer, type, cell.X, cell.Y, facing));
 		else
 			return false;
@@ -297,12 +297,12 @@ public partial class BuildController : Node2D
 			SetStatus(Texts.BeltPlanText(_beltStart != null, (_beltPlan?.Count ?? 0) - junctions, junctions, _beltPlan != null));
 			return;
 		}
-		var error = _world.CheckPlace(type, cell.X, cell.Y, LocalPlayer);
+		var error = _world.CheckPlace(type, cell.X, cell.Y, LocalPlayer, _facing);
 		bool replacing = BeltReplace.CanReplace(_world, type, cell.X, cell.Y, LocalPlayer);
 		if (replacing)
 			error = PlaceError.None; // goes in place of our belt
 		_ghost.Visible = true;
-		var (w, h) = BuildingRules.Size(type);
+		var (w, h) = BuildingRules.Size(type, _facing);
 		_ghost.Position = new Vector2((cell.X + w / 2f) * BuildingVisuals.TileSize, (cell.Y + h / 2f) * BuildingVisuals.TileSize);
 		_ghost.Rotation = BuildingVisuals.Rotation(_facing);
 		_ghost.Modulate = error == PlaceError.None ? ValidColor : InvalidColor;

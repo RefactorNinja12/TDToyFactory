@@ -131,12 +131,13 @@ public sealed partial class World
 
 	public Building GetBuilding(int x, int y) => Map.InBounds(x, y) ? _grid[y * Map.Width + x] : null;
 
-	public bool CanPlace(BuildingType type, int x, int y, int owner) => CheckPlace(type, x, y, owner) == PlaceError.None;
+	public bool CanPlace(BuildingType type, int x, int y, int owner, Direction facing = Direction.East) =>
+		CheckPlace(type, x, y, owner, facing) == PlaceError.None;
 
 	/// <summary>Why <paramref name="owner"/> can't build here (location first, then cost), or None if they can.</summary>
-	public PlaceError CheckPlace(BuildingType type, int x, int y, int owner)
+	public PlaceError CheckPlace(BuildingType type, int x, int y, int owner, Direction facing = Direction.East)
 	{
-		var location = CheckLocation(type, x, y, owner);
+		var location = CheckLocation(type, x, y, owner, facing);
 		if (location != PlaceError.None)
 			return location;
 		return _players[owner].CanAfford(BuildingRules.Cost(type)) ? PlaceError.None : PlaceError.NotEnoughResources;
@@ -146,9 +147,9 @@ public sealed partial class World
 	/// Whether <paramref name="owner"/> may put the building with its top-left corner on (x, y), ignoring cost:
 	/// floor only, in their own room or the hall, not on another building, extractors on their deposit.
 	/// </summary>
-	public PlaceError CheckLocation(BuildingType type, int x, int y, int owner)
+	public PlaceError CheckLocation(BuildingType type, int x, int y, int owner, Direction facing = Direction.East)
 	{
-		var (w, h) = BuildingRules.Size(type);
+		var (w, h) = BuildingRules.Size(type, facing);
 		var required = BuildingRules.RequiredResource(type);
 		var home = MapLayout.HomeZone(owner);
 
@@ -192,7 +193,7 @@ public sealed partial class World
 
 	public bool TryPlace(BuildingType type, int x, int y, Direction facing, int owner)
 	{
-		if (!CanPlace(type, x, y, owner))
+		if (!CanPlace(type, x, y, owner, facing))
 			return false;
 
 		_players[owner].TrySpend(BuildingRules.Cost(type));
