@@ -51,21 +51,24 @@ public sealed partial class World
 			{
 				unit.MoveX = wall.CenterX - unit.X;
 				unit.MoveY = wall.CenterY - unit.Y;
-				Attack(unit, null, wall, DamageKind.Punch);
+				if (Attack(unit, null, wall, DamageKind.Punch))
+					wall.HitBy(this, unit);
 				return;
 			}
 		}
 		TryStep(unit, nextX * UnitStats.SubTile + half, nextY * UnitStats.SubTile + half);
 	}
 
-	private void Attack(Unit unit, Unit targetUnit, Building targetBuilding, DamageKind kind)
+	/// <summary>Fires at the target if the unit is ready; false while it reloads.</summary>
+	private bool Attack(Unit unit, Unit targetUnit, Building targetBuilding, DamageKind kind)
 	{
 		if (unit.AttackCooldown > 0)
-			return;
+			return false;
 		var def = UnitStats.Def(unit.Type);
 		int damage = targetBuilding != null ? def.Damage * def.BuildingDamagePercent / 100 : def.Damage;
 		Fire(new Projectile(kind, unit.Owner, damage, 0, def.ShotTravelTicks, unit.X, unit.Y, targetUnit, targetBuilding));
 		unit.AttackCooldown = def.AttackTicks;
+		return true;
 	}
 
 	/// <summary>A wall just finished: everyone it blocks who stands on it steps off to the nearest free tile.</summary>

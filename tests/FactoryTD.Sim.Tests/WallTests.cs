@@ -12,13 +12,24 @@ public class WallTests
 	private const int HallTop = 25, HallBottom = 36, WallX = 70;
 
 	/// <summary>A wall across the hall at <see cref="WallX"/>, leaving out the tiles in <paramref name="gaps"/>.</summary>
-	private static List<Building> WallAcrossHall(Scenario s, int owner = 0, int gateAt = -1, params int[] gaps)
+	private static List<Building> WallAcrossHall(Scenario s, int owner = 0, int gateAt = -1, params int[] gaps) =>
+		LineAcrossHall(s, BuildingType.BrickWall, owner, gateAt, gaps);
+
+	private static List<Building> LineAcrossHall(Scenario s, BuildingType type, int owner = 0, int gateAt = -1, params int[] gaps)
 	{
 		var walls = new List<Building>();
 		for (int y = HallTop; y <= HallBottom; y++)
 			if (!gaps.Contains(y))
-				walls.Add(s.Place(y == gateAt ? BuildingType.Gate : BuildingType.BrickWall, WallX, y, owner: owner));
+				walls.Add(s.Place(y == gateAt ? BuildingType.Gate : type, WallX, y, owner: owner));
 		return walls;
+	}
+
+	/// <summary>A powered fence line across the hall: a pylon behind it and a charged charger.</summary>
+	private static (List<Building> Fences, BatteryCharger Charger) PoweredFence(Scenario s)
+	{
+		var fences = LineAcrossHall(s, BuildingType.ElectricFence);
+		s.Pylon(WallX - 5, 30); // out of the attackers' range: shots fly over walls
+		return (fences, s.Charger(WallX - 7, 30, energy: 12000));
 	}
 
 	private static bool AnyDamaged(List<Building> walls) => walls.Any(w => w.Health < w.MaxHealth);
@@ -156,5 +167,45 @@ public class WallTests
 			return s.World.Checksum();
 		}
 		Assert.Equal(Run(), Run());
+	}
+
+	[Fact]
+	public void Fence_ZapsWhoeverHitsIt_FromTheGrid()
+	{
+		var s = Scenario.Match().NoWorkers().Instant().Rich().RealPower();
+		var (fences, charger) = PoweredFence(s);
+		var soldier = s.Spawn(UnitType.PlasticSoldier, WallX + 2, 30, owner: 1);
+		s.World.Until(() => soldier.Health <= 0, 30, "the fence zaps the soldier to death");
+		int zaps = fences.Sum(f => ((Wall)f).Zaps);
+		Assert.InRange(zaps, 3, 4); // 30 health, 10 a zap
+		Assert.Equal(12000 - zaps * WallStats.ZapEnergy, charger.Energy);
+	}
+
+	[Fact]
+	public void Fence_WithoutPower_IsJustAWall()
+	{
+		var s = Scenario.Match().NoWorkers().Instant().Rich().RealPower();
+		var fences = LineAcrossHall(s, BuildingType.ElectricFence);
+		var soldier = s.Spawn(UnitType.PlasticSoldier, WallX + 2, 30, owner: 1);
+		s.World.Seconds(10);
+		Assert.Equal(UnitStats.MaxHealth(UnitType.PlasticSoldier), soldier.Health);
+		Assert.True(AnyDamaged(fences));
+		Assert.True(fences[0].NoPower);
+	}
+
+	[Fact]
+	public void Fence_HurtsElectronicsDouble()
+	{
+		Assert.Equal(2 * WallStats.ZapDamageTo(UnitType.PlasticSoldier), WallStats.ZapDamageTo(UnitType.RcCar));
+	}
+
+	[Fact]
+	public void Golem_PaysFiveZapsPerFence()
+	{
+		var s = Scenario.Match().NoWorkers().Instant().Rich().RealPower();
+		var (fences, _) = PoweredFence(s);
+		var golem = s.Spawn(UnitType.BrickGolem, WallX + 2, 30, owner: 1);
+		s.World.Until(() => !fences.All(s.World.Buildings.Contains), 30, "the golem breaks a fence");
+		Assert.Equal(UnitStats.MaxHealth(UnitType.BrickGolem) - 5 * WallStats.ZapDamage, golem.Health);
 	}
 }

@@ -167,7 +167,7 @@ Goal:
       - units on a tile when a wall completes are pushed out to free floor;
       - scouts/workers (own and enemy) go round, own workers use the gate;
       - the flow field is rebuilt when a wall falls; deterministic (checksum with walls).
-- [ ] 3. **Electric fence:** BuildingType.ElectricFence, cost with batteries, power per zap (`TryDrawPower`), zap
+- [x] 3. **Electric fence:** BuildingType.ElectricFence, cost with batteries, power per zap (`TryDrawPower`), zap
       the attacker on contact with a cooldown, nothing without power, counter-armour decision. Tests: zaps and
       draws energy; no power = no zap; the RC car takes more; a golem dies against a powered fence line
       (balance: how many fences per golem, written as a measurement).
@@ -216,3 +216,8 @@ Goal:
   (builder finishes a wall): fields dirty, units on it pushed to the nearest free tile.
   Deviation: no separate WallDamagePercent: walls take the usual building damage (golem 24 = 5 punches,
   soldier 4 = 30 hits); simpler and already balanced by BuildingDamagePercent. WallTests 11, golden unchanged.
+- Step 3: ElectricFence = a third Wall type (health 120, cost 4 bricks + 2 plastic + 2 batteries). `Wall.HitBy` when
+  a unit's punch is launched at it: powered (TryDrawPower 300 = 40 zaps/battery) and off cooldown (20 ticks) →
+  10 damage to the attacker, double to electronics (no new DamageKind). NoPower flag in Tick. Zaps/cooldown hashed.
+  Measured: a soldier dies after 3 zaps; a golem pays 5 zaps (50) per fence, so 3 fences in a row kill one.
+  Shots still fly over walls (a soldier next to the fence shoots a pylon 3 tiles behind it).
