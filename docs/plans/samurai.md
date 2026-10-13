@@ -69,7 +69,7 @@ to crowds of small units. It is weak to area damage (plastic armour) and loses t
 - [x] 1. Sim: UnitType.Samurai, UnitDef, DamageKind.Slash + DamagePercent, SamuraiStats, sweep in Attack,
       SwingCount in the checksum; BuildingType.Dojo (UnitFactory), cost/health/build time/size, Buildable;
       Texts (the every-type tests ask for names). Tests above (sweep, targets, armour, dojo). Golden unchanged.
-- [ ] 2. Balance: slow tests 1 vs 4 soldiers / 1 vs 1 golem; tune numbers; `task test:report`.
+- [x] 2. Balance: slow tests 1 vs 4 soldiers / 1 vs 1 golem; tune numbers; `task test:report`.
 - [ ] 3. UI: InfoRows, BuildMenu (Armé), UnitSheets/UnitLayout, UnitAnimation act frames on a swing, slash-arc helper
       + tests.
 - [ ] 4. Art: samurai sheet + icon (mice.py); pagoda dojo (army.py): still picture + part sprites (sensei, speech
@@ -101,3 +101,6 @@ to crowds of small units. It is weak to area damage (plastic armour) and loses t
   forward from step 4 (every unit must have its sheet): kabuto over the back of the head with gold horns, blue gi,
   katana (3 px white blade: 2 px lines turn into outline), act = drawn back / swept with a white slash arc.
   SamuraiTests 7.
+- Step 2: tuned to 60 hp, 10 dmg / 20 ticks, sweep reach 1.6 tiles (at 1.4 the soldiers spread just out of the arc).
+  Measured: vs 3 clumped soldiers 36 hp left after 2 s, vs 4 soldiers 8 hp left after 4 s, a golem takes 27 s to fell
+  (it ignores units, so it just walks on). Slow tests Balance_Samurai_*.

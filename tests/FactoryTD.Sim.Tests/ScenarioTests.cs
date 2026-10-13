@@ -64,6 +64,31 @@ public class ScenarioTests
 		Assert.True(walls >= 10, $"walls {walls}");
 	}
 
+	[Theory]
+	[InlineData(3)]
+	[InlineData(4)]
+	public void Balance_Samurai_BeatsAClumpOfSoldiers(int soldiers)
+	{
+		var s = Scenario.Match().NoWorkers().Instant().Rich();
+		var samurai = s.Spawn(UnitType.Samurai, 70, 30);
+		var enemies = Enumerable.Range(0, soldiers).Select(i => s.Spawn(UnitType.PlasticSoldier, 71, 29 + i % 3, owner: 1)).ToList();
+		int ticks = s.World.Until(() => samurai.Health <= 0 || enemies.All(e => e.Health <= 0), 60, "the fight ends");
+		_out.WriteLine($"samurai vs {soldiers} soldiers: samurai {System.Math.Max(0, samurai.Health)} hp left after {ticks / WorldRunner.TicksPerSecond} s, " +
+			$"soldiers left {enemies.Count(e => e.Health > 0)}");
+		Assert.True(samurai.Health > 0, $"the samurai lost to {soldiers} soldiers ({enemies.Count(e => e.Health > 0)} left)");
+	}
+
+	[Fact]
+	public void Balance_Samurai_IsSlowAgainstAGolem()
+	{
+		var s = Scenario.Match().NoWorkers().Instant().Rich();
+		var samurai = s.Spawn(UnitType.Samurai, 70, 30);
+		var golem = s.Spawn(UnitType.BrickGolem, 71, 30, owner: 1);
+		int ticks = s.World.Until(() => golem.Health <= 0, 120, "the samurai fells the golem");
+		_out.WriteLine($"samurai fells a golem in {ticks / WorldRunner.TicksPerSecond} s");
+		Assert.True(ticks >= 15 * WorldRunner.TicksPerSecond, $"only {ticks / WorldRunner.TicksPerSecond} s");
+	}
+
 	[Fact]
 	public void BotVsBot_FifteenMinutes_HealthyEconomy()
 	{

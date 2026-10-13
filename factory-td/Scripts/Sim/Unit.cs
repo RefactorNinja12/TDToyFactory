@@ -99,7 +99,7 @@ public static class UnitStats
 	// Samurai mouse: a sword fighter that sweeps the arc in front of it and hits every enemy there (SamuraiStats).
 	// The counter to crowds of small units; plastic armour, so area damage hurts, and golems shrug off the sword.
 	private static readonly UnitDef Samurai = new(
-		ArmorClass.Plastic, MaxHealth: 45, Speed: 26, Damage: 7, AttackTicks: 24,
+		ArmorClass.Plastic, MaxHealth: 60, Speed: 26, Damage: 10, AttackTicks: 20,
 		Range: SubTile * 13 / 10, Sight: SubTile * 7, ShotTravelTicks: 2,
 		TargetsUnits: true, BuildingDamagePercent: 100,
 		Recipe: new ItemStack[] { new(ItemType.Plastic, 3), new(ItemType.Spring, 1), new(ItemType.Gear, 1) }, BuildTicks: 180);
@@ -242,7 +242,7 @@ public sealed class Unit
 /// <summary>The samurai's sword sweep. Distances in sub-tile units.</summary>
 public static class SamuraiStats
 {
-	public const int SweepReach = UnitStats.SubTile * 7 / 5;
+	public const int SweepReach = UnitStats.SubTile * 8 / 5;
 	public const int SweepMaxTargets = 5;
 
 	/// <summary>Half the arc's width: cos² of 60°, as a fraction (dot² ≥ cos²·|v|²·|f|²).</summary>
