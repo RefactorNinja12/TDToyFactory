@@ -328,6 +328,8 @@ public sealed partial class World
 			hash.Add((int)unit.Carrying); hash.Add(unit.CarryAmount); hash.Add(unit.WorkTimer);
 			hash.Add(unit.Charge); hash.Add((int)unit.PowerState); hash.Add(unit.LightDirection);
 			hash.Add(unit.ScoutTargetX); hash.Add(unit.ScoutTargetY); hash.Add(unit.FleeTicks); hash.Add(unit.FleeX); hash.Add(unit.FleeY);
+			if (unit.Type == UnitType.Samurai)
+				hash.Add(unit.SwingCount);
 			if (unit.PushTicks > 0)
 			{
 				hash.Add(unit.PushX); hash.Add(unit.PushY); hash.Add(unit.PushTicks);

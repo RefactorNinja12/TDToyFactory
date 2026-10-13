@@ -82,9 +82,34 @@ public sealed partial class World
 			return false;
 		var def = UnitStats.Def(unit.Type);
 		int damage = targetBuilding != null ? def.Damage * def.BuildingDamagePercent / 100 : def.Damage;
-		Fire(new Projectile(kind, unit.Owner, damage, 0, def.ShotTravelTicks, unit.X, unit.Y, targetUnit, targetBuilding));
+		if (unit.Type == UnitType.Samurai)
+			unit.SwingCount++;
+		if (unit.Type == UnitType.Samurai && targetUnit != null)
+			Sweep(unit, targetUnit, damage, def.ShotTravelTicks);
+		else
+			Fire(new Projectile(kind, unit.Owner, damage, 0, def.ShotTravelTicks, unit.X, unit.Y, targetUnit, targetBuilding));
 		unit.AttackCooldown = def.AttackTicks;
 		return true;
+	}
+
+	/// <summary>
+	/// The samurai's sword: the target and every other enemy unit in the arc in front of it (towards the target,
+	/// within <see cref="SamuraiStats.SweepReach"/>) take a slash, at most <see cref="SamuraiStats.SweepMaxTargets"/>,
+	/// in spawn order.
+	/// </summary>
+	private void Sweep(Unit unit, Unit target, int damage, int travelTicks)
+	{
+		Fire(new Projectile(DamageKind.Slash, unit.Owner, damage, 0, travelTicks, unit.X, unit.Y, target, null));
+		int hits = 1;
+		foreach (var other in _units)
+		{
+			if (hits >= SamuraiStats.SweepMaxTargets)
+				break;
+			if (other == target || other.Owner == unit.Owner || other.Health <= 0 || !SamuraiStats.InArc(unit, target, other))
+				continue;
+			Fire(new Projectile(DamageKind.Slash, unit.Owner, damage, 0, travelTicks, unit.X, unit.Y, other, null));
+			hits++;
+		}
 	}
 
 	/// <summary>A wall just finished: everyone it blocks who stands on it steps off to the nearest free tile.</summary>
