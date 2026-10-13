@@ -62,10 +62,19 @@ public class BuildingPartsTests
 	}
 
 	[Fact]
+	public void Turn_LooksOneWayThenTheOther()
+	{
+		var look = new Part("x", 0, 0, Motion.Turn, Speed: 0.5f);
+		Assert.False(BuildingParts.PoseAt(look, 0.2f).Flip);
+		Assert.True(BuildingParts.PoseAt(look, 1.2f).Flip);
+		Assert.False(BuildingParts.PoseAt(look, 2.2f).Flip);
+	}
+
+	[Fact]
 	public void Dojo_SenseiShoutAndLanterns_MoveWhileIdle_TheRestOnlyWhileTraining()
 	{
 		var always = BuildingParts.For(BuildingType.Dojo).Where(p => p.Always).Select(p => p.Sprite).Distinct().OrderBy(n => n);
-		Assert.Equal(new[] { "dojo_lantern", "sensei", "sensei_shout" }, always);
+		Assert.Equal(new[] { "dojo_lantern", "pagoda", "sensei", "sensei_shout" }, always);
 	}
 
 	[Fact]

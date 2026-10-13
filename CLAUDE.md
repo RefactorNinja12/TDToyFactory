@@ -51,8 +51,8 @@ Hinder (stora leksaker/växter) = `TileType.Obstacle`: stoppar gång och bygge, 
 - Skuggor räknas ut från ljuskällorna (`UI/Shadows.cs`), målas aldrig i sprites.
 - Byggnader rör sig när de arbetar (`UI/Activity.cs`, `UI/BuildingParts.cs`, `View/BuildingAnimator.cs`).
 - Samurajmus (`UnitType.Samurai`, `SamuraiStats` i Unit.cs): närkämpe vars svärd sveper bågen framför sig och träffar
-  alla fiender där (max 5, `DamageKind.Slash`: halv mot golems). Byggs i dojon (`BuildingType.Dojo`, en animerad pagod:
-  senseimusen vid dörren vrider sig och ropar då och då med `Motion.Pop`). Boten: modulen "samurajer" + armérotationen.
+  alla fiender där (max 5, `DamageKind.Slash`: halv mot golems). Byggs i dojon (`BuildingType.Dojo`, en pagod från sidan
+  som piratskeppet (`KeepsUpright`): senseimusen vid dörren vänder sig (`Motion.Turn`, speglar) och ropar (`Motion.Pop`)). Boten: modulen "samurajer" + armérotationen.
 - Enheter: möss ovanifrån som vrids, nosen österut i spriten; golemen står upprätt och vrids aldrig
   (`UI/UnitSheets.cs`, `UI/UnitAnimation.cs`).
 

@@ -51,7 +51,7 @@ public partial class BuildingAnimator : Node2D
 				continue;
 			float time = _clocks.Advance(building, _activity.IsWorking(building), _delta);
 			float wall = Time.GetTicksMsec() / 1000f + building.X * 0.37f + building.Y * 0.61f;
-			// Side-view buildings (the ship) stay upright and only mirror when facing west.
+			// Side-view buildings (the ship, the pagoda) stay upright and only mirror when facing west.
 			var place = BuildingParts.KeepsUpright(building.Type)
 				? new Transform2D(0, new Vector2(building.Facing == Direction.West ? -1 : 1, 1), 0, center)
 				: new Transform2D(BuildingVisuals.TurnsWithFacing(building.Type) ? BuildingVisuals.Rotation(building.Facing) : 0, center);
@@ -59,7 +59,7 @@ public partial class BuildingAnimator : Node2D
 			{
 				var pose = BuildingParts.PoseAt(part, BuildingParts.TimeFor(part, time, wall));
 				var texture = BuildingVisuals.GetPartTexture(part.Sprite);
-				DrawSetTransformMatrix(place * new Transform2D(pose.Angle, new Vector2(pose.Scale, pose.Scale), 0, new Vector2(pose.X, pose.Y)));
+				DrawSetTransformMatrix(place * new Transform2D(pose.Angle, new Vector2(pose.Flip ? -pose.Scale : pose.Scale, pose.Scale), 0, new Vector2(pose.X, pose.Y)));
 				DrawTexture(texture, -texture.GetSize() / 2, new Color(1, 1, 1, pose.Alpha));
 			}
 		}

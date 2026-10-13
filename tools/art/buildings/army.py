@@ -3,8 +3,8 @@ Army factories (2x2 = 128 px, output east):
   soldier - a toy pirate ship seen from the side, sails full of wind, bobbing on the water; cannons puff while it builds
   golem   - a toy crane stacking ABC blocks: the hook lowers a block, a mouse swings a mallet
   car     - a slot-car track round a paint booth: two cars lap it, a mouse waves the chequered flag
-  dojo    - a pagoda (three red roof tiers from above) with a tatami yard and a red gate on the east; parts: the sensei
-            mouse at the door (turns, shouts now and then), a trainee with a wooden sword, lanterns, the sliding door
+  dojo    - a pagoda seen from the side (three curved red roofs, gold spire) on a gravel yard; parts: the pagoda, the
+            sensei mouse by the door (looks right and left, shouts now and then), a trainee, lanterns, the sliding door
 
     python tools/art/buildings/army.py && python tools/art/restyle.py <the files it lists>
 """
@@ -173,75 +173,111 @@ def car_factory():
 
 
 LACQUER = (196, 52, 52)
-TATAMI = (206, 198, 120)
 ROBE = (90, 70, 120)
 
 
-def roof_tier(d, x0, y0, x1, y1):
-    """One pagoda roof seen from above: a square pyramid (hip lines to the middle) with gold upturned corner tips."""
-    cx, cy = (x0 + x1) // 2, (y0 + y1) // 2
-    d.rectangle((x0, y0, x1, y1), fill=tint(LACQUER, -0.35))
-    d.rectangle((x0 + 2, y0 + 2, x1 - 2, y1 - 2), fill=LACQUER)
-    d.polygon([(x0 + 2, y0 + 2), (x1 - 2, y0 + 2), (cx, cy)], fill=tint(LACQUER, 0.15))   # the lit north face
-    d.polygon([(x0 + 2, y0 + 2), (x0 + 2, y1 - 2), (cx, cy)], fill=tint(LACQUER, 0.05))
-    for corner in ((x0, y0), (x1, y0), (x0, y1), (x1, y1)):
-        d.line((corner, (cx, cy)), fill=tint(LACQUER, -0.3), width=3)
-        disc(d, corner[0], corner[1], 4, YELLOW)
+GRAVEL = (170, 160, 140)
+STONE = (150, 150, 160)
+PAPER = (240, 232, 210)
 
 
-def small_mouse(robe, held=None, hat=None, extra=None, size=32):
-    from kit import topdown_mouse
-    cell = topdown_mouse("idle", 0, hat=hat, shirt=robe, held=held, extra=extra)
-    return cell.resize((size, size), Image.NEAREST)
+def eave(d, cx, top, half_top, half_base, base, tip_lift=5):
+    """A curved pagoda roof from the side: narrow at the top, sweeping out to upturned tips at the eave."""
+    dark = tint(LACQUER, -0.35)
+    pts = [(cx - half_top, top), (cx + half_top, top), (cx + half_base - 4, base - 3), (cx + half_base + 2, base - 3 - tip_lift),
+           (cx + half_base, base), (cx - half_base, base), (cx - half_base - 2, base - 3 - tip_lift), (cx - half_base + 4, base - 3)]
+    d.polygon(pts, fill=dark)
+    d.polygon([(cx - half_top, top + 1), (cx + half_top, top + 1), (cx + half_base - 5, base - 4), (cx - half_base + 5, base - 4)],
+              fill=LACQUER)
+    d.line((cx - half_base, base - 1, cx + half_base, base - 1), fill=YELLOW, width=2)   # gold trim along the eave
+    for x in (cx - half_base - 1, cx + half_base + 1):
+        disc(d, x, base - 4 - tip_lift, 2, YELLOW, shine=False)
+
+
+def storey(d, x0, y0, x1, y1):
+    """One floor's wall from the side: red pillars with paper screens between them."""
+    d.rectangle((x0, y0, x1, y1), fill=PAPER)
+    for x in range(x0, x1 + 1, max(6, (x1 - x0) // 4)):
+        d.rectangle((x, y0, x + 2, y1), fill=tint(LACQUER, -0.15))
+    d.rectangle((x1 - 2, y0, x1, y1), fill=tint(LACQUER, -0.15))
+
+
+def profile_mouse(robe, held=None, beard=False, w=22, h=30):
+    """A mouse standing upright seen from the side, facing right: robe, head with an ear, snout, pink nose."""
+    img, d = canvas(w, h)
+    d.line((6, h - 9, 1, h - 4), fill=TAIL, width=2)                                  # the tail behind
+    box(d, (5, 13, 16, h - 3), robe, radius=4, bevel=1)                                # robe
+    d.rectangle((6, h - 3, 9, h - 1), fill=PINK)                                      # feet
+    d.rectangle((12, h - 3, 15, h - 1), fill=PINK)
+    disc(d, 9, 5, 4, MOUSE, shine=False)                                               # the ear
+    d.ellipse((6, 4, 9 + 3, 8), fill=PINK)
+    d.ellipse((7, 4, 18, 14), fill=MOUSE)                                              # head
+    d.polygon([(15, 7), (21, 10), (15, 12)], fill=MOUSE)                               # snout
+    disc(d, 20, 10, 1, PINK, shine=False)
+    d.point((14, 8), fill=INK)                                                         # eye
+    if beard:
+        d.polygon([(13, 12), (19, 12), (15, 19)], fill=WHITE)
+    if held:
+        held(d)
+    return img
 
 
 def dojo():
+    """
+    The samurai dojo: the ground (gravel with stepping stones and a path to the output, turns with the building) and
+    the pagoda itself as a part seen from the side, like the pirate ship: three curved red roofs, paper storeys, a gold
+    spire. Parts in front: the sensei by the door (looks right and left, shouts now and then), a trainee with a wooden
+    sword, the sliding door, lanterns on the eaves.
+    """
     img, d = canvas(128, 128)
-    box(d, (0, 0, 127, 127), WOOD, radius=4, bevel=2)                        # the wooden platform
-    for y in (30, 64, 98):                                                   # tatami mats in the yard
-        box(d, (90, y - 16, 124, y + 15), TATAMI, radius=1, bevel=1)
-    roof_tier(d, 6, 10, 86, 118)
-    roof_tier(d, 18, 22, 74, 106)
-    roof_tier(d, 30, 34, 62, 94)
-    disc(d, 46, 64, 6, YELLOW)                                               # the finial
-    d.rectangle((84, 52, 90, 76), fill=DARK)                                 # the doorway
-    d.line((118, 32, 118, 96), fill=tint(LACQUER, -0.2), width=6)            # the gate's beam
-    for y in (40, 88):
-        disc(d, 118, y, 4, LACQUER)                                          # its posts
+    baseplate(img, d, color=GRAVEL)
+    for x, y in ((18, 20), (40, 106), (98, 22), (20, 92), (100, 100)):
+        d.ellipse((x, y, x + 10, y + 7), fill=STONE)                                   # stepping stones
+    box(d, (64, 58, 127, 70), STONE, radius=1, bevel=1)                                # the path to the output
+    chute(d, 128, 128)
     out(img, "Buildings/dojo.png")
 
-    def beard(d2, info):
-        hx, hy = info["head"]
-        d2.polygon([(hx + 9, hy - 3), (hx + 18, hy), (hx + 9, hy + 3)], fill=WHITE)
+    pagoda, p_ = part(100, 116)
+    p_.line((50, 0, 50, 16), fill=YELLOW, width=2)                                     # the spire with its rings
+    for y in (4, 8, 12):
+        p_.line((47, y, 53, y), fill=YELLOW, width=2)
+    storey(p_, 34, 26, 66, 40)
+    eave(p_, 50, 14, 6, 30, 28)
+    storey(p_, 24, 52, 76, 70)
+    eave(p_, 50, 38, 16, 42, 54)
+    storey(p_, 14, 84, 86, 110)
+    eave(p_, 50, 68, 26, 50, 86)
+    p_.rectangle((40, 90, 60, 110), fill=tint(DARK, -0.2))                             # the doorway behind the door
+    box(p_, (6, 108, 94, 115), STONE, radius=1, bevel=1)                               # the stone base
+    out(pagoda, "Parts/pagoda.png")
 
-    def stick(d2, x, y, pose, step):
-        d2.line((x - 4, y + 2, x + 10, y - 2), fill=WOOD, width=3)
+    def stick(d2):
+        d2.line((19, 12, 21, 29), fill=WOOD, width=2)
 
-    out(small_mouse(ROBE, held=stick, extra=beard), "Parts/sensei.png")
+    out(profile_mouse(ROBE, held=stick, beard=True), "Parts/sensei.png")
 
-    def wooden_sword(d2, x, y, pose, step):
-        d2.line((x, y, x + 13, y + 3), fill=tint(WOOD, 0.2), width=3)
+    def wooden_sword(d2):
+        d2.line((15, 17, 21, 2), fill=tint(WOOD, 0.25), width=3)
 
-    def band(d2, hx, hy):
-        d2.ellipse((hx - 7, hy - 7, hx + 6, hy + 6), outline=WHITE, width=2)
-
-    out(small_mouse(WHITE, held=wooden_sword, hat=band, size=28), "Parts/dojo_trainee.png")
+    out(profile_mouse(WHITE, held=wooden_sword), "Parts/dojo_trainee.png")
 
     bubble, bd = canvas(20, 18)
     bd.rounded_rectangle((1, 1, 18, 13), radius=4, fill=WHITE)
     bd.polygon([(4, 12), (8, 12), (3, 17)], fill=WHITE)
-    bd.rectangle((8, 3, 11, 8), fill=RED)                                    # "!"
+    bd.rectangle((8, 3, 11, 8), fill=RED)                                              # "!"
     bd.rectangle((8, 10, 11, 11), fill=RED)
     out(bubble, "Parts/sensei_shout.png")
 
-    lantern, ld = canvas(12, 12)
-    disc(ld, 6, 6, 5, (246, 140, 60))
+    lantern, ld = canvas(10, 14)
+    ld.line((5, 0, 5, 3), fill=INK)
+    box(ld, (1, 3, 8, 13), (246, 140, 60), radius=3, bevel=1)                          # a paper lantern on a cord
     out(lantern, "Parts/dojo_lantern.png")
 
-    door, dd = canvas(8, 26)
-    box(dd, (0, 0, 7, 25), WHITE, radius=1, bevel=1)                          # a paper sliding door
-    for y in (6, 12, 18):
-        dd.line((1, y, 6, y), fill=WOOD)
+    door, dd = canvas(12, 20)
+    box(dd, (0, 0, 11, 19), PAPER, radius=1, bevel=1)                                  # a paper sliding door
+    for y in (5, 10, 15):
+        dd.line((1, y, 10, y), fill=WOOD)
+    dd.line((6, 1, 6, 18), fill=WOOD)
     out(door, "Parts/dojo_door.png")
 
 
