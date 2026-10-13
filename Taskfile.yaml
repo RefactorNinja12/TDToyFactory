@@ -77,16 +77,6 @@ tasks:
     cmds:
       - "{{.PS}} tests/dupes.ps1"
 
-  graph:
-    desc: "Rebuild the graphify code graph (graphify-out/, AST only, ~5 s; the post-commit hook does it too)"
-    cmds:
-      - graphify update .
-
-  graph:explain:
-    desc: "One symbol's file:line and connections, e.g. task graph:explain -- ClawCrane (path::Name if ambiguous)"
-    cmds:
-      - graphify explain {{.CLI_ARGS}}
-
   fmt:
     desc: Apply the automatic lint fixes
     cmds:

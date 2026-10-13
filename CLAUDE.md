@@ -196,15 +196,8 @@ Kompakt fabrik, max 3 nivåer i produktionskedjan, matcher 15–25 min.
   `.gitattributes` håller `.cs` i LF trots `core.autocrlf=true`.
 - Snabbast: `task test:changed` kör bara testerna för ändrade .cs-filer sedan senaste commit
   (tabell i `tests/changed.ps1`; kärnfiler som World → alla snabba; View → build). Flera områden: `task test -- "A|B"`.
-- Hitta kod billigt (graphify, lokal graf i `graphify-out/`, gitignorerad, byggs om av post-commit-kroken eller `task graph`):
-  `graphify explain Namn` (eller `fil.cs::Namn` om flera) = typens/metodens fil:rad, medlemmar och anropare för
-  ~1/3 av tokens jämfört med att läsa filen; läs sedan bara raderna som behövs. `graphify path A B` = hur två delar
-  hänger ihop. Grafen missar användningar (t.ex. `is Typ`, lokala variabler): "vem använder X" = Grep, inte grafen.
-  `graphify query` ger brus, undvik. Grafen saknas → `task graph` (~5 s, ingen LLM).
-  Arbetsgång vid ny funktion: `explain` på typerna som ska ändras → Read med offset/limit på de raderna → Grep
-  för användningar → ändra. Grafen visar senaste commit: efter egna ändringar/nya filer i sessionen stämmer
-  radnumren inte, kör `task graph` först (eller lita på Grep). Detta går före graphify-skillens standardväg:
-  ingen `/graphify query`, ingen ombyggnad med LLM, läs inte `GRAPH_REPORT.md` (~6k tokens) i vanligt arbete.
+- Läs billigt: översikt av en fil först (Grep `^\t(public|internal|private|protected)` med radnummer), sedan
+  Read med offset/limit på de rader som behövs; "vem använder X" = Grep. Läs inte hela stora filer i onödan.
 - Golden-checksumman (`DeterminismTests.GoldenBotMatch`, 2 min bot mot bot) vaktar refaktorer: får bara
   ändras när beteendet medvetet ändrats (felet skriver ut det nya värdet). Ren refaktor = oförändrad.
 - `task coverage` = täckning Sim/UI + 10 sämsta filer (~100 s); `-File X.cs -Reuse` (ps1) visar otestade rader.
