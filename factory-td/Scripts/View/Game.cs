@@ -113,6 +113,11 @@ public partial class Game : Node2D
 		AddChild(beds);
 		MoveChild(beds, shadows.GetIndex());
 		beds.Bind(World.Map);
+		// Trapdoor holes and pendulum weights: over the buildings, under the units.
+		var traps = new TrapView { Name = "Traps" };
+		AddChild(traps);
+		MoveChild(traps, Buildings.GetIndex() + 1);
+		traps.Bind(World, LocalPlayer);
 		_cranes = new CraneView { Name = "Cranes" };
 		AddChild(_cranes);
 		_cranes.Bind(World, LocalPlayer);

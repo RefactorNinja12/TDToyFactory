@@ -185,7 +185,7 @@ Goal:
       - own units are unaffected.
 - [x] 6. **UI:** menu category Försvar (BuildHotkeys), Texts, InfoRows, click–click wall line (DragPath/
       planner variant, pure helper + tests), previews (pendulum swing path, fence coverage), toasts.
-- [ ] 7. **Art + views:** tools/art/defense/*.py (brick wall with damage states and joined pieces, fence,
+- [x] 7. **Art + views:** tools/art/defense/*.py (brick wall with damage states and joined pieces, fence,
       trapdoor closed/warning/open, pendulum stand + weight), restyle, sheet review; `View/TrapView.cs`
       (weight interpolated, trapdoor state), falling animation, spark; shadows (walls throw short shadows,
       the trapdoor lies flat); `PROBE_SCENE=walls`, screenshot.
@@ -240,3 +240,10 @@ Goal:
   Deviations: no new click–click wall planner and no toast: the existing hold-and-drag already places a gap-free row
   of any building (DragPath, tile by tile), which is what a wall line needs; the hover row covers "enclosed". The
   pendulum's rotated ghost already shows its 4 tiles, so no extra swing preview.
+- Step 7: tools/art/defense/defense.py: brick wall (red 2x2-stud brick), gate (brick posts, wooden door), fence (posts,
+  wires, battery box with a bolt), trapdoor 128x128 (lid, hinges, warning stripes) + parts trapdoor_open (hole) and
+  trapdoor_warn (red border), pendulum 256x64 (rail on two stands) + part pendulum_bob. View/TrapView (after
+  Buildings, under units): hole while open, border blinking every 4 ticks while warning, weight at Pendulum.Bob.
+  VisualProbe PROBE_SCENE=walls (wall across the hall with gate + fence, trapdoor, two pendulums, a golem and soldiers
+  coming): renders, the mice beat on the wall. Not done (small, later if wanted): wall damage frames, gate door
+  part, fence spark, weight interpolation between ticks (it moves at 20 fps).
