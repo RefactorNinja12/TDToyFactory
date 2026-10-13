@@ -93,6 +93,16 @@ Kompakt fabrik, max 3 nivåer i produktionskedjan, matcher 15–25 min.
   på enheter och byggnader. Byggare på väg till ett löpband räknas inte; en kallad byggare som skulle
   bli den sista kliver inte in. Dör sista byggaren kommer en ny ur leksakslådan (`ReplaceLostBuilders`,
   av i `Scenario.NoWorkers()`). Musfälla = hinder. Närstrid (räckvidd ≤ 1,5 ruta) = `DamageKind.Punch`.
+- Murar och fällor (Försvar, `Sim/Walls.cs`, `Sim/Traps.cs`): klossvägg, grind, elstängsel (1x1, `Wall`) stoppar ALLA
+  enheter och arbetare när de är klara, även ägarens; egen grind släpps igenom (`World.BlocksUnit`). Flödesfältet: egen
+  mur = oframkomlig, fiendemur = `WallStats.SealedWallPenalty` (går alltid runt, slår sig bara igenom inmurad bas där
+  murarna är färrast), golems eget fält (`_golemFields`, `GolemWallPenalty` ≈ 8 rutor; 5 golemslag per kloss). Inga
+  diagonala genvägar mellan murar. Murar väljs aldrig som mål; enheter slår på muren (närstrid) bara när vägen går
+  igenom. Elstängsel: stöt mot den som slår (ström från nätet, dubbelt mot elektronik). Instängd armefabrik =
+  `World.IsEnclosed` (hoverraden). Fallucka 2x2 (öppnas på timer, fiender på den dör), pendel 4x1 (vrids: storlek
+  beror på riktning, `BuildingRules.Size(type, facing)`; vikten knuffar fiender 3 rutor, `Unit.PushX/Y/Ticks`).
+  Fiender ser inte fällor (inget mål, golvkostnad); de slits per fångst. Boten bygger inga murar/fällor.
+  `View/TrapView.cs`, bilder `tools/art/defense/defense.py`, `PROBE_SCENE=walls`.
 - Kortkommandon för bygge, bara siffror: siffra 1–7 öppnar en kategori (flik), sedan väljer en siffra kortet på
   den platsen (1 = första). Kategorin står kvar öppen; mellanslag, eller samma siffra som det valda kortet igen, avslutar direkt (släpper
   bygget och bandets start, stänger kategorin, nästa siffra väljer kategori). Esc = pausmenyn.
@@ -180,6 +190,7 @@ Kompakt fabrik, max 3 nivåer i produktionskedjan, matcher 15–25 min.
   `docs/plans/refactor.md` (GridSearch, smutsflaggor för fält, rumslig målsökning, test:changed).
   `docs/plans/animations.md` (fabriker ritade av kod, rörliga delar), `docs/plans/units.md` (upprätta enheter,
   piratmus, uträknade skuggor), `docs/plans/belts-crane.md` (animerade band, klokran), `docs/plans/garden.md` (trädgårdskartan, kartval).
+  `docs/plans/walls.md` (murar, grind, elstängsel, fallucka, pendel).
 
 ## Arbetsflöde (tester är feedbackloopen)
 - `Taskfile.yaml` (go-task) samlar kommandona; `task` listar dem.

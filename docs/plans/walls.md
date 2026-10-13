@@ -189,10 +189,10 @@ Goal:
       trapdoor closed/warning/open, pendulum stand + weight), restyle, sheet review; `View/TrapView.cs`
       (weight interpolated, trapdoor state), falling animation, spark; shadows (walls throw short shadows,
       the trapdoor lies flat); `PROBE_SCENE=walls`, screenshot.
-- [ ] 8. **Bot (optional):** a wall with a gap in front of the door + a pendulum/trapdoor in the gap when it sees
+- [~] 8. **Bot (optional, skipped):** a wall with a gap in front of the door + a pendulum/trapdoor in the gap when it sees
       golems/many soldiers; the golden checksum changes deliberately; `task test:report` (balance:
       the bot's matches must still end within 15–25 min).
-- [ ] 9. `task mp:smoke` (new state in the checksum), CLAUDE.md (Design: walls/traps, plan listed), `task check`,
+- [x] 9. `task mp:smoke` (new state in the checksum), CLAUDE.md (Design: walls/traps, plan listed), `task check`,
       push, PR link.
 
 ## Open questions (default chosen if nobody answers)
@@ -247,3 +247,7 @@ Goal:
   VisualProbe PROBE_SCENE=walls (wall across the hall with gate + fence, trapdoor, two pendulums, a golem and soldiers
   coming): renders, the mice beat on the wall. Not done (small, later if wanted): wall damage frames, gate door
   part, fence spark, weight interpolation between ticks (it moves at 20 fps).
+- Step 8: skipped (optional). The bot's armies already handle walls and traps through the flow fields. Building
+  traps itself would need gears/springs in its stock (the core doesn't take gears) and would change the golden checksum
+  and the balance; a later plan if wanted.
+- Step 9: `task mp:smoke` OK (checksums equal), CLAUDE.md (design bullet + plan listed), `task check` green. Done.
