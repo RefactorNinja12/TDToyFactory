@@ -22,9 +22,10 @@ public sealed partial class World
 
 	// _fields[p] leads player p's units to the enemy core. Rebuilt lazily when buildings change.
 	private readonly FlowField[] _fields;
-	// What has to be worked out again before it is used. The power grid changes whenever a node is placed,
-	// removed or finished; a player's flow field only when an ENEMY building appears or goes (own buildings
-	// cost nothing to walk through, and a construction site already counts as a building).
+	private readonly FlowField[] _golemFields; // the same for units that smash through walls
+											   // What has to be worked out again before it is used. The power grid changes whenever a node is placed,
+											   // removed or finished; a player's flow field only when an ENEMY building appears or goes (own buildings
+											   // cost nothing to walk through, and a construction site already counts as a building).
 	private bool _powerDirty = true;
 	private int _nextBuildingSerial;
 	private int _scanMark;
@@ -64,6 +65,7 @@ public sealed partial class World
 		_players = new PlayerState[playerCount];
 		_cores = new Core[playerCount];
 		_fields = new FlowField[playerCount];
+		_golemFields = new FlowField[playerCount];
 		_power = new PowerGrid(map.Width, map.Height, playerCount);
 		_flowDirty = new bool[playerCount];
 		System.Array.Fill(_flowDirty, true);
@@ -74,6 +76,7 @@ public sealed partial class World
 		{
 			_players[i] = new PlayerState(i);
 			_fields[i] = new FlowField(map.Width, map.Height);
+			_golemFields[i] = new FlowField(map.Width, map.Height);
 			_powerFields[i] = new FlowField(map.Width, map.Height);
 		}
 	}
@@ -82,11 +85,21 @@ public sealed partial class World
 
 	public int EnemyOf(int player) => (player + 1) % _players.Length;
 
-	public FlowField GetFlowField(int player)
+	public FlowField GetFlowField(int player, UnitType type = UnitType.PlasticSoldier)
 	{
 		RebuildFieldsIfDirty();
-		return _fields[player];
+		return FieldFor(player, type);
 	}
+
+	private FlowField FieldFor(int player, UnitType type) =>
+		WallStats.BreaksWalls(type) ? _golemFields[player] : _fields[player];
+
+	/// <summary>Whether a unit of <paramref name="player"/> can't stand on (x, y): not floor, or a wall in its way.</summary>
+	internal bool BlocksUnit(int player, int x, int y) =>
+		!Map.InBounds(x, y) || Map[x, y] != TileType.Floor || WallBlocks(player, x, y);
+
+	/// <summary>Whether a built wall stands on (x, y) that a unit of <paramref name="player"/> can't pass.</summary>
+	internal bool WallBlocks(int player, int x, int y) => GetBuilding(x, y) is Wall wall && wall.Blocks(player);
 
 	/// <summary>A new 1v1 match: the default map with each player's core at the back of their room.</summary>
 	/// <param name="obstacles">Big toys lying in the rooms (MapLayout.Obstacles).</param>
@@ -341,12 +354,15 @@ public sealed partial class World
 		BuildingRemoved?.Invoke(building);
 	}
 
-	/// <summary>A building appeared or went: the power grid and the enemies' flow fields are out of date.</summary>
+	/// <summary>
+	/// A building appeared or went: the power grid and the enemies' flow fields are out of date
+	/// (everyone's for a wall: walls block their owner's units too).
+	/// </summary>
 	private void MarkChanged(Building building)
 	{
 		_powerDirty = true;
 		for (int p = 0; p < _flowDirty.Length; p++)
-			if (p != building.Owner)
+			if (p != building.Owner || building is Wall)
 				_flowDirty[p] = true;
 	}
 
@@ -366,7 +382,10 @@ public sealed partial class World
 			_flowDirty[p] = false;
 			var target = _cores[EnemyOf(p)];
 			if (target != null)
+			{
 				_fields[p].Build(this, target, p);
+				_golemFields[p].Build(this, target, p, WallStats.GolemWallPenalty);
+			}
 			_powerFieldDirty[p] = true; // the way back to the grid crosses enemy buildings too
 		}
 	}

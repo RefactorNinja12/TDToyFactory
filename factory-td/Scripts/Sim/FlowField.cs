@@ -4,7 +4,8 @@ namespace FactoryTD.Sim;
 
 /// <summary>
 /// Distance-to-target for every tile, towards one player's core. Units walk downhill.
-/// Walls are impassable; buildings are expensive but never blocking (they get smashed later).
+/// Map walls and the owner's own walls are impassable; enemy walls cost <c>wallPenalty</c> (smashed through);
+/// other buildings are expensive but never blocking (they get smashed later).
 /// Integer costs only, so it's identical on every machine.
 /// </summary>
 public sealed class FlowField
@@ -24,12 +25,14 @@ public sealed class FlowField
 	private readonly int _width;
 	private readonly int _height;
 	private readonly int[] _distance;
+	private readonly bool[] _open; // floor with no wall standing on it: diagonal steps may pass its corner
 
 	public FlowField(int width, int height)
 	{
 		_width = width;
 		_height = height;
 		_distance = new int[width * height];
+		_open = new bool[width * height];
 	}
 
 	public int Distance(int x, int y) =>
@@ -39,13 +42,15 @@ public sealed class FlowField
 	/// Dijkstra outwards from every tile of <paramref name="target"/>, for <paramref name="owner"/>'s units:
 	/// enemy buildings cost extra (they have to be shot down), the owner's own buildings don't.
 	/// </summary>
-	public void Build(World world, Building target, int owner) =>
-		Build(world, owner, (x, y) => x >= target.X && x < target.X + target.Width && y >= target.Y && y < target.Y + target.Height);
+	public void Build(World world, Building target, int owner, int wallPenalty = WallStats.SealedWallPenalty) =>
+		Build(world, owner, wallPenalty, (x, y) => x >= target.X && x < target.X + target.Width && y >= target.Y && y < target.Y + target.Height);
 
 	/// <summary>Same, from every tile where <paramref name="isTarget"/> holds (e.g. every powered tile).</summary>
-	public void Build(World world, int owner, System.Func<int, int, bool> isTarget)
+	public void Build(World world, int owner, int wallPenalty, System.Func<int, int, bool> isTarget)
 	{
 		System.Array.Fill(_distance, Unreachable);
+		for (int i = 0; i < _open.Length; i++)
+			_open[i] = world.Map[i % _width, i / _width] == TileType.Floor && world.GetBuilding(i % _width, i / _width) is not Wall { IsBuilt: true };
 		var queue = new PriorityQueue<int, int>();
 
 		for (int y = 0; y < _height; y++)
@@ -68,17 +73,28 @@ public sealed class FlowField
 			foreach (var (dx, dy, cost) in Neighbours)
 			{
 				int nx = x + dx, ny = y + dy;
-				if (!IsWalkable(world, nx, ny))
+				if (!world.Map.InBounds(nx, ny) || world.Map[nx, ny] != TileType.Floor)
 					continue;
-				// No cutting corners past walls.
-				if (dx != 0 && dy != 0 && (!IsWalkable(world, x + dx, y) || !IsWalkable(world, x, y + dy)))
+				// No cutting corners past walls (map walls or built ones).
+				if (dx != 0 && dy != 0 && (!_open[y * _width + x + dx] || !_open[(y + dy) * _width + x]))
 					continue;
 
 				var building = world.GetBuilding(nx, ny);
-				int step = cost + (building != null && building.Owner != owner ? BuildingPenalty : 0);
+				int step = cost;
+				if (building is Wall { IsBuilt: true } wall)
+				{
+					if (wall.Owner == owner && wall.Blocks(owner))
+						continue; // never through its own wall
+					if (wall.Owner != owner)
+						step += wallPenalty;
+				}
+				else if (building != null && building.Owner != owner)
+				{
+					step += BuildingPenalty;
+				}
 				int next = distance + step;
 				int nIndex = ny * _width + nx;
-				if (next < _distance[nIndex])
+				if (next > distance && next < _distance[nIndex])
 				{
 					_distance[nIndex] = next;
 					queue.Enqueue(nIndex, next);
@@ -95,7 +111,7 @@ public sealed class FlowField
 		foreach (var (dx, dy, _) in Neighbours)
 		{
 			int d = Distance(x + dx, y + dy);
-			if (d < best && (dx == 0 || dy == 0 || (Distance(x + dx, y) != Unreachable && Distance(x, y + dy) != Unreachable)))
+			if (d < best && (dx == 0 || dy == 0 || (IsOpen(x + dx, y) && IsOpen(x, y + dy))))
 			{
 				best = d;
 				result = (x + dx, y + dy);
@@ -104,6 +120,5 @@ public sealed class FlowField
 		return result;
 	}
 
-	private static bool IsWalkable(World world, int x, int y) =>
-		world.Map.InBounds(x, y) && world.Map[x, y] == TileType.Floor;
+	private bool IsOpen(int x, int y) => x >= 0 && y >= 0 && x < _width && y < _height && _open[y * _width + x];
 }

@@ -115,7 +115,11 @@ public sealed partial class World
 				job.AddWork(UnitStats.BuilderWorkPerTick);
 				Face(builder, job);
 				if (job.IsBuilt)
+				{
 					_powerDirty = true; // finished: it may be a pylon or charger now
+					if (job is Wall wall)
+						WallRaised(wall);
+				}
 				break;
 			case Walk.Unreachable:
 				builder.Job = null; // try something else next tick
@@ -300,7 +304,7 @@ public sealed partial class World
 
 		if (unit.Path == null || unit.PathTarget != target)
 		{
-			unit.Path = FindPathTo(unit.TileX, unit.TileY, target);
+			unit.Path = FindPathTo(unit, target);
 			unit.PathIndex = 0;
 			unit.PathTarget = target;
 			if (unit.Path == null)
@@ -319,8 +323,9 @@ public sealed partial class World
 			const int half = UnitStats.SubTile / 2;
 			var (tx, ty) = unit.Path[unit.PathIndex];
 			int goalX = tx * UnitStats.SubTile + half, goalY = ty * UnitStats.SubTile + half;
-			TryStep(unit, goalX, goalY);
-			if (CloseTo(unit, goalX, goalY))
+			if (!TryStep(unit, goalX, goalY))
+				unit.Path = null; // a wall went up across the path: find a new one next tick
+			else if (CloseTo(unit, goalX, goalY))
 				unit.PathIndex++;
 		}
 	}
@@ -362,11 +367,9 @@ public sealed partial class World
 	private static readonly (int dx, int dy)[] Steps = { (1, 0), (0, 1), (-1, 0), (0, -1) };
 
 	/// <summary>
-	/// Breadth-first path over floor (buildings don't block builders) to any tile around the building.
-	/// The start tile is not included. Null if unreachable.
+	/// Breadth-first path over floor (only walls block workers, not other buildings) to any tile around the
+	/// building. The start tile is not included. Null if unreachable.
 	/// </summary>
-	private List<(int X, int Y)> FindPathTo(int fromX, int fromY, Building target) =>
-		GridSearch.PathTo(Map.Width, Map.Height, fromX, fromY, IsFloor, (x, y) => IsAround(target, x, y));
-
-	private bool IsFloor(int x, int y) => Map[x, y] == TileType.Floor;
+	private List<(int X, int Y)> FindPathTo(Unit unit, Building target) =>
+		GridSearch.PathTo(Map.Width, Map.Height, unit.TileX, unit.TileY, (x, y) => !BlocksUnit(unit.Owner, x, y), (x, y) => IsAround(target, x, y));
 }

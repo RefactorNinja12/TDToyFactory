@@ -92,7 +92,7 @@ public sealed partial class World
 	{
 		int x = unit.X + dx, y = unit.Y + dy;
 		int tileX = x / UnitStats.SubTile, tileY = y / UnitStats.SubTile;
-		if (!Map.InBounds(tileX, tileY) || Map[tileX, tileY] != TileType.Floor)
+		if (BlocksUnit(unit.Owner, tileX, tileY))
 			return;
 		unit.X = x;
 		unit.Y = y;

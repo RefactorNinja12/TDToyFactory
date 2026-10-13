@@ -154,7 +154,7 @@ public sealed partial class World
 			for (int y = core.Y; y < core.Y + core.Height; y++)
 				for (int x = core.X; x < core.X + core.Width; x++)
 					sources.Add(y * width + x);
-		GridSearch.Distances(width, Map.Height, distance, sources, (x, y) => IsFloor(x, y) && IsExplored(player, x, y));
+		GridSearch.Distances(width, Map.Height, distance, sources, (x, y) => !BlocksUnit(player, x, y) && IsExplored(player, x, y));
 		return distance;
 	}
 
@@ -165,7 +165,7 @@ public sealed partial class World
 			return;
 		if (unit.Path == null || unit.Path.Count == 0 || unit.Path[^1] != (x, y))
 		{
-			unit.Path = FindPathToTile(unit.TileX, unit.TileY, x, y);
+			unit.Path = FindPathToTile(unit, x, y);
 			unit.PathIndex = 0;
 			unit.PathTarget = null;
 			if (unit.Path == null)
@@ -177,6 +177,6 @@ public sealed partial class World
 		StepAlongPath(unit);
 	}
 
-	private List<(int X, int Y)> FindPathToTile(int fromX, int fromY, int toX, int toY) =>
-		GridSearch.PathTo(Map.Width, Map.Height, fromX, fromY, IsFloor, (x, y) => x == toX && y == toY);
+	private List<(int X, int Y)> FindPathToTile(Unit unit, int toX, int toY) =>
+		GridSearch.PathTo(Map.Width, Map.Height, unit.TileX, unit.TileY, (x, y) => !BlocksUnit(unit.Owner, x, y), (x, y) => x == toX && y == toY);
 }

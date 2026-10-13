@@ -30,6 +30,8 @@ public enum BuildingType : byte
 	CheeseMelter,
 	Treadmill,
 	ClawCrane,
+	BrickWall,
+	Gate,
 }
 
 /// <summary>Facing / output direction. Clockwise order, matching Godot's y-down rotation.</summary>
@@ -224,6 +226,8 @@ public static class BuildingRules
 		BuildingType.Catapult,
 		BuildingType.WaterTower,
 		BuildingType.LaserTower,
+		BuildingType.BrickWall,
+		BuildingType.Gate,
 	};
 
 	// ---- Balance ------------------------------------------------------------------------
@@ -266,6 +270,8 @@ public static class BuildingRules
 	private static readonly ItemStack[] LampCost = { new(ItemType.Brick, 3), new(ItemType.Plastic, 3) };
 	private static readonly ItemStack[] TentCost = { new(ItemType.Brick, 5), new(ItemType.Plastic, 10) };
 	private static readonly ItemStack[] CheeseMelterCost = { new(ItemType.Brick, 10), new(ItemType.Plastic, 10) };
+	private static readonly ItemStack[] BrickWallCost = { new(ItemType.Brick, 3) };
+	private static readonly ItemStack[] GateCost = { new(ItemType.Brick, 4), new(ItemType.Plastic, 2) };
 	private static readonly ItemStack[] TreadmillCost = { new(ItemType.Brick, 15), new(ItemType.Plastic, 10) };
 
 	public static ItemStack[] Cost(BuildingType type) => type switch
@@ -297,6 +303,8 @@ public static class BuildingRules
 		BuildingType.Tent => TentCost,
 		BuildingType.CheeseMelter => CheeseMelterCost,
 		BuildingType.Treadmill => TreadmillCost,
+		BuildingType.BrickWall => BrickWallCost,
+		BuildingType.Gate => GateCost,
 		_ => Free,
 	};
 	// -------------------------------------------------------------------------------------
@@ -308,6 +316,7 @@ public static class BuildingRules
 		BuildingType.Conveyor => 20,
 		BuildingType.Splitter or BuildingType.Sorter or BuildingType.Junction or BuildingType.CropField or BuildingType.Pylon or BuildingType.Lamp => 40,
 		BuildingType.ClawCrane => 50,
+		BuildingType.BrickWall or BuildingType.Gate => WallStats.BrickHealth,
 		BuildingType.BrickExtractor or BuildingType.PlasticExtractor or BuildingType.BatteryExtractor or BuildingType.CheeseMelter => 60,
 		BuildingType.Assembler or BuildingType.Kitchen or BuildingType.BatteryCharger => 80,
 		BuildingType.SoldierFactory or BuildingType.GolemWorkshop or BuildingType.CarFactory or BuildingType.Toolbox or BuildingType.Warehouse or BuildingType.Farmhouse => 150,
@@ -323,6 +332,7 @@ public static class BuildingRules
 		BuildingType.Conveyor => 10,
 		BuildingType.Splitter or BuildingType.Sorter or BuildingType.Junction or BuildingType.Pylon or BuildingType.Lamp => 30,
 		BuildingType.ClawCrane => 60,
+		BuildingType.BrickWall or BuildingType.Gate => 20,
 		BuildingType.CropField => 40,
 		BuildingType.BrickExtractor or BuildingType.PlasticExtractor or BuildingType.BatteryExtractor or BuildingType.CheeseMelter => 60,
 		BuildingType.Assembler or BuildingType.Kitchen or BuildingType.BatteryCharger => 100,
@@ -359,6 +369,7 @@ public static class BuildingRules
 		BuildingType.Sorter => new Sorter(x, y, facing, owner),
 		BuildingType.Junction => new Junction(x, y, facing, owner),
 		BuildingType.ClawCrane => new ClawCrane(x, y, facing, owner),
+		BuildingType.BrickWall or BuildingType.Gate => new Wall(type, x, y, facing, owner),
 		BuildingType.Assembler => new Assembler(x, y, facing, owner),
 		BuildingType.SoldierFactory => new UnitFactory(type, x, y, facing, owner, UnitType.PlasticSoldier),
 		BuildingType.GolemWorkshop => new UnitFactory(type, x, y, facing, owner, UnitType.BrickGolem),

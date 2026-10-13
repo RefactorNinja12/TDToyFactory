@@ -25,15 +25,8 @@ public sealed partial class World
 			int aimY = targetUnit?.Y ?? targetBuilding.CenterY;
 			unit.MoveX = aimX - unit.X;
 			unit.MoveY = aimY - unit.Y;
-			if (unit.AttackCooldown == 0)
-			{
-				var def = UnitStats.Def(unit.Type);
-				int damage = targetBuilding != null ? def.Damage * def.BuildingDamagePercent / 100 : def.Damage;
-				// Short reach (golems, cheese hunters) is a punch; the rest shoot.
-				var kind = def.Range <= UnitStats.SubTile * 3 / 2 ? DamageKind.Punch : DamageKind.Bullet;
-				Fire(new Projectile(kind, unit.Owner, damage, 0, def.ShotTravelTicks, unit.X, unit.Y, targetUnit, targetBuilding));
-				unit.AttackCooldown = def.AttackTicks;
-			}
+			// Short reach (golems, cheese hunters) is a punch; the rest shoot.
+			Attack(unit, targetUnit, targetBuilding, UnitStats.Def(unit.Type).Range <= UnitStats.SubTile * 3 / 2 ? DamageKind.Punch : DamageKind.Bullet);
 			return;
 		}
 
@@ -49,9 +42,51 @@ public sealed partial class World
 		}
 
 		// Head for the centre of the next tile downhill in the flow field.
-		var (nextX, nextY) = _fields[unit.Owner].NextTile(unit.TileX, unit.TileY);
+		var (nextX, nextY) = FieldFor(unit.Owner, unit.Type).NextTile(unit.TileX, unit.TileY);
 		const int half = UnitStats.SubTile / 2;
+		if (GetBuilding(nextX, nextY) is Wall wall && wall.Owner != unit.Owner && wall.Blocks(unit.Owner))
+		{
+			// The way leads through an enemy wall: walk up to it and beat on it (everyone punches walls).
+			if (DistanceSquaredTo(wall, unit.X, unit.Y) <= (long)WallStats.HitReach * WallStats.HitReach)
+			{
+				unit.MoveX = wall.CenterX - unit.X;
+				unit.MoveY = wall.CenterY - unit.Y;
+				Attack(unit, null, wall, DamageKind.Punch);
+				return;
+			}
+		}
 		TryStep(unit, nextX * UnitStats.SubTile + half, nextY * UnitStats.SubTile + half);
+	}
+
+	private void Attack(Unit unit, Unit targetUnit, Building targetBuilding, DamageKind kind)
+	{
+		if (unit.AttackCooldown > 0)
+			return;
+		var def = UnitStats.Def(unit.Type);
+		int damage = targetBuilding != null ? def.Damage * def.BuildingDamagePercent / 100 : def.Damage;
+		Fire(new Projectile(kind, unit.Owner, damage, 0, def.ShotTravelTicks, unit.X, unit.Y, targetUnit, targetBuilding));
+		unit.AttackCooldown = def.AttackTicks;
+	}
+
+	/// <summary>A wall just finished: everyone it blocks who stands on it steps off to the nearest free tile.</summary>
+	private void WallRaised(Wall wall)
+	{
+		MarkChanged(wall);
+		const int half = UnitStats.SubTile / 2;
+		foreach (var unit in _units)
+		{
+			if (GetBuilding(unit.TileX, unit.TileY) != wall || !wall.Blocks(unit.Owner))
+				continue;
+			int owner = unit.Owner;
+			var path = GridSearch.PathTo(Map.Width, Map.Height, unit.TileX, unit.TileY,
+				(x, y) => Map[x, y] == TileType.Floor, (x, y) => !BlocksUnit(owner, x, y));
+			if (path == null || path.Count == 0)
+				continue;
+			var (tx, ty) = path[^1];
+			unit.X = unit.PrevX = tx * UnitStats.SubTile + half;
+			unit.Y = unit.PrevY = ty * UnitStats.SubTile + half;
+			unit.Path = null;
+		}
 	}
 
 	/// <summary>Moves the unit up to its speed towards a point. Refuses (returns false) to step into a wall.</summary>
@@ -72,7 +107,10 @@ public sealed partial class World
 		}
 
 		int tileX = (unit.X + dx) / UnitStats.SubTile, tileY = (unit.Y + dy) / UnitStats.SubTile;
-		if (!Map.InBounds(tileX, tileY) || Map[tileX, tileY] != TileType.Floor)
+		if (BlocksUnit(unit.Owner, tileX, tileY))
+			return false;
+		// No slipping diagonally between two walls that touch at a corner.
+		if (tileX != unit.TileX && tileY != unit.TileY && (WallBlocks(unit.Owner, tileX, unit.TileY) || WallBlocks(unit.Owner, unit.TileX, tileY)))
 			return false;
 
 		unit.X += dx;
@@ -131,7 +169,8 @@ public sealed partial class World
 			for (int tx = unit.TileX - reach; tx <= unit.TileX + reach; tx++)
 			{
 				var building = GetBuilding(tx, ty);
-				if (building == null || building.Owner == unit.Owner || building.ScanMark == mark)
+				// Walls are only attacked when the way leads through them (see TickUnit).
+				if (building == null || building.Owner == unit.Owner || building.ScanMark == mark || building is Wall)
 					continue;
 				building.ScanMark = mark;
 				long distance = DistanceSquaredTo(building, unit.X, unit.Y);
