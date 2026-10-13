@@ -16,6 +16,9 @@ public static class MatchSetup
 	/// <summary>Local play: which map (online the host's choice comes with the session).</summary>
 	public static Sim.MapTheme Theme { get; set; }
 
+	/// <summary>Local play: which layout (online it comes with the session).</summary>
+	public static Sim.MapLayoutKind Layout { get; set; }
+
 	/// <summary>Local play: how long the bot's armies wait (BotPlayer armyDelayTicks).</summary>
 	public static int BotArmyDelayTicks { get; set; }
 

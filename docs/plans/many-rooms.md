@@ -83,7 +83,7 @@ between the bases, where the way goes up and down and meets in the middle. It wo
 ## Steps
 - [x] 1. Sim: MapLayoutKind, the rooms + doors (Zone.Hall), deposits, obstacles allowed area; CreateDefault/CreateMatch
       parameter; RoomsTests. Golden unchanged.
-- [ ] 2. Net + menu: MatchSettings.Layout (protocol), ClientSession/HostSession, MenuModel (choice, saved, LaunchArgs
+- [x] 2. Net + menu: MatchSettings.Layout (protocol), ClientSession/HostSession, MenuModel (choice, saved, LaunchArgs
       `--layout`), MainMenu option, MatchSetup; Net/Menu tests; mp_smoke `-Layout`.
 - [ ] 3. View check: tileset walls/floors round the new rooms in both themes, floor decor/clover, minimap; VisualProbe
       `PROBE_LAYOUT`; screenshots; fix what looks wrong.
@@ -109,3 +109,8 @@ between the bases, where the way goes up and down and meets in the middle. It wo
   CreateDefault/CreateMatch/Scenario.Match get a layout parameter. RoomsTests: the shortest door-to-door walk is ≥3x the
   hall's and goes through the centre, no door from the entry room to the centre, mirrored, all floor reachable (also
   with obstacles, several seeds), small rooms shared ground, a soldier finds the long way. Golden unchanged.
+- Step 2: MatchSettings.Layout, protocol version 3 (Start carries a layout byte, the client checks its range);
+  HostSession.Start(seed, theme, layout); MenuSettings.Layout (saved as layout=...), MenuModel.Layouts ("Två rum",
+  "Många rum") + LayoutIndex, LaunchArgs `--layout two-rooms|many-rooms`; MainMenu "Planlösning" option under "Karta"
+  (the background preview follows it), MatchSetup.Layout, Game builds the world with it, the smoke output line carries the
+  layout too. mp_smoke.ps1 -Layout; both "Nursery TwoRooms" and "Garden ManyRooms" end with equal checksums.

@@ -42,13 +42,13 @@ public sealed class HostSession : MatchSession
 	/// <summary>Input delay for a measured round trip: the turn must be back before the step that needs it.</summary>
 	public static int DelayFor(int rttMs) => Math.Clamp((rttMs + 40 + 49) / 50 + 1, 3, 12);
 
-	public void Start(int seed, MapTheme theme = MapTheme.Nursery)
+	public void Start(int seed, MapTheme theme = MapTheme.Nursery, MapLayoutKind layout = MapLayoutKind.TwoRooms)
 	{
 		if (!CanStart)
 			return;
 		int delay = DelayFor(RttMs);
-		Transport.Send(_opponent, new PacketWriter(MessageType.Start).Int(seed).Byte((byte)delay).Byte((byte)theme).ToArray());
-		BeginMatch(new MatchSettings(seed, theme), delay);
+		Transport.Send(_opponent, new PacketWriter(MessageType.Start).Int(seed).Byte((byte)delay).Byte((byte)theme).Byte((byte)layout).ToArray());
+		BeginMatch(new MatchSettings(seed, theme, layout), delay);
 	}
 
 	protected override void SendToOpponent(byte[] packet)

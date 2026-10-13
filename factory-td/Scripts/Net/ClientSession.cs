@@ -81,8 +81,9 @@ public sealed class ClientSession : MatchSession
 				int seed = r.Int();
 				int delay = r.Byte();
 				var theme = (MapTheme)r.Byte();
-				if (r.Ok && theme <= MapTheme.Garden)
-					BeginMatch(new MatchSettings(seed, theme), delay);
+				var layout = (MapLayoutKind)r.Byte();
+				if (r.Ok && theme <= MapTheme.Garden && layout <= MapLayoutKind.ManyRooms)
+					BeginMatch(new MatchSettings(seed, theme, layout), delay);
 				break;
 			case MessageType.Turn when State == SessionState.Playing:
 				var commands = Protocol.ReadCommands(ref r, out long step);
