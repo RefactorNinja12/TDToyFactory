@@ -1,3 +1,5 @@
+using System.Collections.Generic;
+using System.Linq;
 using FactoryTD.Sim;
 using FactoryTD.Sim.Tests.Support;
 using Xunit;
@@ -27,6 +29,42 @@ public class MapTests
 	}
 
 	private static readonly MapLayout Map = MapLayout.CreateDefault();
+
+	[Fact]
+	public void SmallClusters_SpreadOutTowardsTheMiddle_Mirrored()
+	{
+		var map = MapLayout.CreateDefault();
+		for (int y = 0; y < map.Height; y++)
+			for (int x = 0; x < map.Width; x++)
+				Assert.Equal(map.GetResource(x, y), map.GetResource(map.Width - 1 - x, y));
+		// connected groups of one resource in the left room
+		var seen = new HashSet<(int, int)>();
+		var small = new List<(ResourceType Type, int Size, double X)>();
+		for (int y = 1; y <= MapLayout.RoomSize; y++)
+			for (int x = 1; x <= MapLayout.RoomSize; x++)
+			{
+				var type = map.GetResource(x, y);
+				if (type == ResourceType.None || !seen.Add((x, y)))
+					continue;
+				var todo = new Stack<(int X, int Y)>(new[] { (x, y) });
+				int size = 0, sumX = 0;
+				while (todo.Count > 0)
+				{
+					var (cx, cy) = todo.Pop();
+					size++;
+					sumX += cx;
+					foreach (var (nx, ny) in new[] { (cx + 1, cy), (cx - 1, cy), (cx, cy + 1), (cx, cy - 1) })
+						if (map.GetResource(nx, ny) == type && seen.Add((nx, ny)))
+							todo.Push((nx, ny));
+				}
+				if (size is >= 4 and <= 6)
+					small.Add((type, size, sumX / (double)size));
+			}
+		Assert.True(small.Count >= 9, $"{small.Count} small clusters");
+		Assert.True(small.Select(c => c.Type).Distinct().Count() >= 4, "bricks, plastic, batteries and cheese");
+		Assert.True(small.Count(c => c.X > 40) >= 4, "several out towards the door");
+		Assert.True(MapLayout.CreateDefault().AllFloorConnected(), "the toys still leave every tile reachable");
+	}
 
 	[Fact]
 	public void Layout_RoomsHallAndDoors()
@@ -207,7 +245,7 @@ public class StorageTests
 	[Fact]
 	public void Warehouse_AddsCapacityOnlyWhenFinished_AndSharesThePool()
 	{
-		var s = Scenario.Match().NoWorkers().Rich();
+		var s = Scenario.Match().NoWorkers().Rich().Empty(ItemType.Gear);
 		var warehouse = s.Place(BuildingType.Warehouse, 20, 20);
 		s.World.Tick();
 		Assert.Equal(PlayerState.CoreCapacity, s.P0.Capacity(ItemType.Gear));

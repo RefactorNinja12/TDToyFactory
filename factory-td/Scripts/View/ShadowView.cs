@@ -7,8 +7,8 @@ namespace FactoryTD.View;
 
 /// <summary>
 /// Draws the shadows UI/ShadowCaster works out from the light sources: one soft disc stretched and turned
-/// per shadow, with one MultiMesh for buildings and one for units (two draw calls). Sits over the floor and
-/// under the buildings and units; never painted into sprites, so it doesn't turn with them.
+/// per shadow, with one MultiMesh each for the big toys/plants, buildings and units (three draw calls). Sits over
+/// the floor and the plants' soil beds and under the buildings, units and toys; never painted into sprites, so it doesn't turn with them.
 /// </summary>
 public partial class ShadowView : Node2D
 {
@@ -17,13 +17,14 @@ public partial class ShadowView : Node2D
 	private readonly ShadowCaster _caster = new();
 	private World _world;
 	private int _localPlayer;
-	private MultiMesh _buildings, _units;
+	private MultiMesh _obstacles, _buildings, _units;
 
 	public void Bind(World world, int localPlayer)
 	{
 		_world = world;
 		_localPlayer = localPlayer;
 		var texture = BuildingVisuals.SoftDisc(Disc, 0.55f, 0.8f);
+		_obstacles = AddMesh(texture);
 		_buildings = AddMesh(texture);
 		_units = AddMesh(texture);
 	}
@@ -33,6 +34,7 @@ public partial class ShadowView : Node2D
 		if (_world == null)
 			return;
 		_caster.Update(_world, _localPlayer, (float)delta);
+		Fill(_obstacles, _caster.Obstacles);
 		Fill(_buildings, _caster.Buildings);
 		Fill(_units, _caster.Units);
 	}

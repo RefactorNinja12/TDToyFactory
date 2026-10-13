@@ -30,6 +30,11 @@ public enum BuildingType : byte
 	CheeseMelter,
 	Treadmill,
 	ClawCrane,
+	BrickWall,
+	Gate,
+	ElectricFence,
+	Trapdoor,
+	Pendulum,
 }
 
 /// <summary>Facing / output direction. Clockwise order, matching Godot's y-down rotation.</summary>
@@ -108,7 +113,7 @@ public abstract class Building
 		Y = y;
 		Facing = facing;
 		Owner = owner;
-		(Width, Height) = BuildingRules.Size(type);
+		(Width, Height) = BuildingRules.Size(type, facing);
 		Health = BuildingRules.MaxHealth(type);
 	}
 
@@ -224,6 +229,11 @@ public static class BuildingRules
 		BuildingType.Catapult,
 		BuildingType.WaterTower,
 		BuildingType.LaserTower,
+		BuildingType.BrickWall,
+		BuildingType.Gate,
+		BuildingType.ElectricFence,
+		BuildingType.Trapdoor,
+		BuildingType.Pendulum,
 	};
 
 	// ---- Balance ------------------------------------------------------------------------
@@ -266,6 +276,11 @@ public static class BuildingRules
 	private static readonly ItemStack[] LampCost = { new(ItemType.Brick, 3), new(ItemType.Plastic, 3) };
 	private static readonly ItemStack[] TentCost = { new(ItemType.Brick, 5), new(ItemType.Plastic, 10) };
 	private static readonly ItemStack[] CheeseMelterCost = { new(ItemType.Brick, 10), new(ItemType.Plastic, 10) };
+	private static readonly ItemStack[] BrickWallCost = { new(ItemType.Brick, 3) };
+	private static readonly ItemStack[] GateCost = { new(ItemType.Brick, 4), new(ItemType.Plastic, 2) };
+	private static readonly ItemStack[] ElectricFenceCost = { new(ItemType.Brick, 4), new(ItemType.Plastic, 2), new(ItemType.Battery, 2) };
+	private static readonly ItemStack[] TrapdoorCost = { new(ItemType.Brick, 10), new(ItemType.Gear, 4), new(ItemType.Spring, 2) };
+	private static readonly ItemStack[] PendulumCost = { new(ItemType.Brick, 10), new(ItemType.Gear, 3), new(ItemType.Spring, 4) };
 	private static readonly ItemStack[] TreadmillCost = { new(ItemType.Brick, 15), new(ItemType.Plastic, 10) };
 
 	public static ItemStack[] Cost(BuildingType type) => type switch
@@ -297,6 +312,11 @@ public static class BuildingRules
 		BuildingType.Tent => TentCost,
 		BuildingType.CheeseMelter => CheeseMelterCost,
 		BuildingType.Treadmill => TreadmillCost,
+		BuildingType.BrickWall => BrickWallCost,
+		BuildingType.Gate => GateCost,
+		BuildingType.ElectricFence => ElectricFenceCost,
+		BuildingType.Trapdoor => TrapdoorCost,
+		BuildingType.Pendulum => PendulumCost,
 		_ => Free,
 	};
 	// -------------------------------------------------------------------------------------
@@ -308,6 +328,8 @@ public static class BuildingRules
 		BuildingType.Conveyor => 20,
 		BuildingType.Splitter or BuildingType.Sorter or BuildingType.Junction or BuildingType.CropField or BuildingType.Pylon or BuildingType.Lamp => 40,
 		BuildingType.ClawCrane => 50,
+		BuildingType.BrickWall or BuildingType.Gate or BuildingType.ElectricFence or BuildingType.Trapdoor => WallStats.BrickHealth,
+		BuildingType.Pendulum => 100,
 		BuildingType.BrickExtractor or BuildingType.PlasticExtractor or BuildingType.BatteryExtractor or BuildingType.CheeseMelter => 60,
 		BuildingType.Assembler or BuildingType.Kitchen or BuildingType.BatteryCharger => 80,
 		BuildingType.SoldierFactory or BuildingType.GolemWorkshop or BuildingType.CarFactory or BuildingType.Toolbox or BuildingType.Warehouse or BuildingType.Farmhouse => 150,
@@ -323,6 +345,9 @@ public static class BuildingRules
 		BuildingType.Conveyor => 10,
 		BuildingType.Splitter or BuildingType.Sorter or BuildingType.Junction or BuildingType.Pylon or BuildingType.Lamp => 30,
 		BuildingType.ClawCrane => 60,
+		BuildingType.BrickWall or BuildingType.Gate => 20,
+		BuildingType.ElectricFence => 30,
+		BuildingType.Trapdoor or BuildingType.Pendulum => 80,
 		BuildingType.CropField => 40,
 		BuildingType.BrickExtractor or BuildingType.PlasticExtractor or BuildingType.BatteryExtractor or BuildingType.CheeseMelter => 60,
 		BuildingType.Assembler or BuildingType.Kitchen or BuildingType.BatteryCharger => 100,
@@ -334,9 +359,18 @@ public static class BuildingRules
 	};
 	// -------------------------------------------------------------------------------------
 
+	/// <summary>Size in tiles as it stands: long buildings turned north or south swap width and height.</summary>
+	public static (int Width, int Height) Size(BuildingType type, Direction facing)
+	{
+		var (w, h) = Size(type);
+		return facing is Direction.North or Direction.South ? (h, w) : (w, h);
+	}
+
+	/// <summary>Size in tiles facing east (or west).</summary>
 	public static (int Width, int Height) Size(BuildingType type) => type switch
 	{
-		BuildingType.Core => (2, 2),
+		BuildingType.Core or BuildingType.Trapdoor => (2, 2),
+		BuildingType.Pendulum => (4, 1),
 		BuildingType.SoldierFactory or BuildingType.GolemWorkshop or BuildingType.CarFactory or BuildingType.Toolbox or BuildingType.Warehouse or BuildingType.Farmhouse or BuildingType.Treadmill => (2, 2),
 		_ => (1, 1),
 	};
@@ -359,6 +393,9 @@ public static class BuildingRules
 		BuildingType.Sorter => new Sorter(x, y, facing, owner),
 		BuildingType.Junction => new Junction(x, y, facing, owner),
 		BuildingType.ClawCrane => new ClawCrane(x, y, facing, owner),
+		BuildingType.BrickWall or BuildingType.Gate or BuildingType.ElectricFence => new Wall(type, x, y, facing, owner),
+		BuildingType.Trapdoor => new Trapdoor(x, y, facing, owner),
+		BuildingType.Pendulum => new Pendulum(x, y, facing, owner),
 		BuildingType.Assembler => new Assembler(x, y, facing, owner),
 		BuildingType.SoldierFactory => new UnitFactory(type, x, y, facing, owner, UnitType.PlasticSoldier),
 		BuildingType.GolemWorkshop => new UnitFactory(type, x, y, facing, owner, UnitType.BrickGolem),

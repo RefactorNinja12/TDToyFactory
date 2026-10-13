@@ -13,6 +13,9 @@ public static class MatchSetup
 
 	public static ENetTransport Transport { get; set; }
 
+	/// <summary>Local play: which map (online the host's choice comes with the session).</summary>
+	public static Sim.MapTheme Theme { get; set; }
+
 	/// <summary>Local play: how long the bot's armies wait (BotPlayer armyDelayTicks).</summary>
 	public static int BotArmyDelayTicks { get; set; }
 

@@ -26,6 +26,45 @@ public class ScenarioTests
 	}
 
 	[Fact]
+	public void Bot_KeepsGrowing_TwentyFiveMinutes()
+	{
+		var s = Scenario.Match(obstacles: true).RealPower().RealFog();
+		s.World.CoresInvulnerable = true;
+		var bot = new BotPlayer(1);
+		var p = s.World.Players[1];
+		int Count(System.Func<Building, bool> what) => s.World.Buildings.Count(b => b.Owner == 1 && b.IsBuilt && what(b));
+		var buildings = new Dictionary<int, int>();
+		var towers = new Dictionary<int, int>();
+		var armies = new Dictionary<int, int>();
+		int walls = 0;
+		var log = new System.Text.StringBuilder();
+		for (int minute = 5; minute <= 25; minute += 5)
+		{
+			// Armies die at the front in a real match: here they fall every minute (else they'd eat it all).
+			for (int m = 0; m < 5; m++)
+			{
+				s.World.Minutes(1, bot);
+				foreach (var unit in s.World.Units)
+					if (unit.Owner == 1 && !UnitStats.IsWorker(unit.Type))
+						unit.Health = 0;
+			}
+			buildings[minute] = Count(_ => true);
+			towers[minute] = Count(b => b is Tower);
+			armies[minute] = Count(b => b is UnitFactory f && !UnitStats.IsWorker(f.Produces));
+			walls = Count(b => b is Wall);
+			log.Append($" | min {minute}: buildings {buildings[minute]}, towers {towers[minute]}, army factories {armies[minute]}, walls {walls}, " +
+				$"army {s.World.Units.Count(u => u.Owner == 1 && !UnitStats.IsWorker(u.Type))}, bricks {p.GetCount(ItemType.Brick)}, " +
+				$"plastic {p.GetCount(ItemType.Plastic)}, batteries {p.GetCount(ItemType.Battery)}, food {p.GetCount(ItemType.Food)}");
+		}
+		log.Append(" | growth " + string.Join(" ", bot.GrowthLog));
+		_out.WriteLine(log.ToString());
+		Assert.True(buildings[25] >= buildings[20] + 20 && buildings[20] >= buildings[15] + 20, $"buildings {buildings[15]} -> {buildings[25]}{log}");
+		Assert.True(towers[25] >= towers[10] + 3, $"towers {towers[10]} -> {towers[25]}");
+		Assert.True(armies[25] >= armies[10] + 2, $"army factories {armies[10]} -> {armies[25]}");
+		Assert.True(walls >= 10, $"walls {walls}");
+	}
+
+	[Fact]
 	public void BotVsBot_FifteenMinutes_HealthyEconomy()
 	{
 		var s = Scenario.Match(obstacles: true).RealPower().RealFog();

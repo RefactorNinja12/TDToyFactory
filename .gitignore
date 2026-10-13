@@ -32,10 +32,13 @@ Desktop.ini
 
 # Local headless test probes (never committed)
 /factory-td/Scripts/_Test/
-/factory-td/Scenes/_Probe.tscn*
+/factory-td/Scenes/_Probe*.tscn*
 
 # Test run output
 TestResults/
 
 # Python bytecode caches (art tools)
 __pycache__/
+
+# graphify output, if it is ever run by hand
+graphify-out/

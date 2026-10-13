@@ -2,13 +2,15 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using FactoryTD.Net;
+using FactoryTD.Sim;
 
 namespace FactoryTD.UI;
 
 /// <summary>What the start menu remembers between runs. Never the password.</summary>
-public sealed record MenuSettings(string Name = "Spelare", string Address = "", int Port = Protocol.DefaultPort)
+public sealed record MenuSettings(string Name = "Spelare", string Address = "", int Port = Protocol.DefaultPort,
+	MapTheme Map = MapTheme.Nursery)
 {
-	public string ToText() => $"name={Name}\naddress={Address}\nport={Port}\n";
+	public string ToText() => $"name={Name}\naddress={Address}\nport={Port}\nmap={Map}\n";
 
 	public static MenuSettings FromText(string text)
 	{
@@ -21,7 +23,9 @@ public sealed record MenuSettings(string Name = "Spelare", string Address = "", 
 		return new MenuSettings(
 			values.TryGetValue("name", out var name) && name != "" ? name : defaults.Name,
 			values.TryGetValue("address", out var address) ? address : defaults.Address,
-			values.TryGetValue("port", out var port) && MenuModel.TryParsePort(port, out int p, out _) ? p : defaults.Port);
+			values.TryGetValue("port", out var port) && MenuModel.TryParsePort(port, out int p, out _) ? p : defaults.Port,
+			values.TryGetValue("map", out var map) && System.Enum.TryParse(map, out MapTheme theme) && System.Enum.IsDefined(theme)
+				? theme : defaults.Map);
 	}
 }
 
@@ -29,6 +33,16 @@ public sealed record MenuSettings(string Name = "Spelare", string Address = "", 
 public static class MenuModel
 {
 	public const int MinPort = 1024, MaxPort = 65535, MinPasswordLength = 4;
+
+	/// <summary>The maps to choose from, in menu order.</summary>
+	public static readonly (string Name, MapTheme Theme)[] Maps =
+	{
+		("Barnrummet", MapTheme.Nursery),
+		("Trädgården", MapTheme.Garden),
+	};
+
+	/// <summary>The place of <paramref name="theme"/> in <see cref="Maps"/> (for the option buttons).</summary>
+	public static int MapIndex(MapTheme theme) => Math.Max(0, Array.FindIndex(Maps, m => m.Theme == theme));
 
 	public static readonly (string Name, int ArmyDelayTicks)[] Difficulties =
 	{
@@ -155,10 +169,10 @@ public static class MenuModel
 /// <summary>
 /// Command-line start (after "--"), for the smoke test and quick testing:
 /// --host [--port N] --password X | --join ip[:port] --password X, plus --name X, --bot (a bot plays for you),
-/// --steps N --out FILE (write the checksum at step N, then quit), --seed N.
+/// --steps N --out FILE (write the checksum at step N, then quit), --seed N, --map nursery|garden.
 /// </summary>
 public sealed record LaunchArgs(bool Host, string Join, int Port, string Password, string Name, bool Bot,
-	int Steps, string Out, int Seed)
+	int Steps, string Out, int Seed, MapTheme Map = MapTheme.Nursery)
 {
 	public bool Online => Host || Join != null;
 
@@ -172,6 +186,7 @@ public sealed record LaunchArgs(bool Host, string Join, int Port, string Passwor
 		int Number(string key, int fallback) => int.TryParse(Value(key), out int n) ? n : fallback;
 		return new LaunchArgs(args.Contains("--host"), Value("--join"), Number("--port", Protocol.DefaultPort),
 			Value("--password") ?? "", Value("--name") ?? (args.Contains("--host") ? "Värd" : "Gäst"),
-			args.Contains("--bot"), Number("--steps", 0), Value("--out") ?? "", Number("--seed", 1));
+			args.Contains("--bot"), Number("--steps", 0), Value("--out") ?? "", Number("--seed", 1),
+			Enum.TryParse(Value("--map") ?? "", ignoreCase: true, out MapTheme map) && Enum.IsDefined(map) ? map : MapTheme.Nursery);
 	}
 }

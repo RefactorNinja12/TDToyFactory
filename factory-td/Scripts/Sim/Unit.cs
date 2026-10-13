@@ -179,6 +179,11 @@ public sealed class Unit
 	public int MoveY { get; internal set; }
 
 	public int Health { get; internal set; }
+
+	/// <summary>Shoved by a pendulum: moves (PushX, PushY) per tick for PushTicks ticks instead of acting.</summary>
+	public int PushX { get; internal set; }
+	public int PushY { get; internal set; }
+	public int PushTicks { get; internal set; }
 	internal int AttackCooldown { get; set; }
 
 	/// <summary>Battery charge (golems and cars only, see PowerStats).</summary>

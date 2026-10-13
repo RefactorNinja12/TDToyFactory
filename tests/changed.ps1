@@ -27,9 +27,13 @@ $areas = @{
 	"Logistics" = "Splitter|Sorter|Junction|Belt|EveryType"; "Conveyor" = "Belt|ConveyorLook"
 	"Extractor" = "Extractor|Cheese"; "Assembler" = "Crafting|Assembler"
 	"Tower" = "Tower|Targeting|Combat|Balance_Tower"; "Treadmill" = "Treadmill|CheeseHunter|LastBuilder"
-	"UnitFactory" = "UnitFactory|Tent|Treadmill|Upkeep"; "BotPlayer" = "Bot"
+	"UnitFactory" = "UnitFactory|Tent|Treadmill|Upkeep"; "BotPlayer" = "Bot"; "BotModules" = "Bot"; "BotRouting" = "Bot"
 	"MapObstacles" = "Obstacle|Map"; "Core" = "Storage|Smoke"
 	"Item" = "EveryType|Texts"; "Checksum" = "Determinism"
+	# World partials (World.cs itself stays core: all fast tests)
+	"WorldPower" = "Power|Charge"; "WorldVision" = "Vision|Fog|Knowledge|Lamp|Scout|Placement"
+	"Workers" = "Construction|Farming|Upkeep|Treadmill|LastBuilder|Cheese|Smoke"
+	"Fighting" = "Tower|Targeting|Combat|Separation|Charge|Smoke"; "Upkeep" = "Upkeep|Farming|Storage|FoodMeter"
 }
 $core = $false; $build = $false; $filters = New-Object System.Collections.Generic.List[string]
 foreach ($file in $changed) {

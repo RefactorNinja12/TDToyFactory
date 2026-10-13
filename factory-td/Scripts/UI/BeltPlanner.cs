@@ -184,7 +184,7 @@ public static class BeltPlanner
 		var building = world.GetBuilding(at.X, at.Y);
 		if (building == null)
 			return ends;
-		var (w, h) = BuildingRules.Size(building.Type);
+		var (w, h) = (building.Width, building.Height);
 		for (int y = building.Y - 1; y <= building.Y + h; y++)
 			for (int x = building.X - 1; x <= building.X + w; x++)
 			{

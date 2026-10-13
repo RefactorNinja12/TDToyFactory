@@ -15,7 +15,7 @@ public sealed class ClientSession : MatchSession
 	private readonly byte[] _nonce = Protocol.RandomBytes(Protocol.NonceSize);
 	private bool _connected;
 
-	public ClientSession(ITransport transport, string password, string name, Func<int, World> createWorld,
+	public ClientSession(ITransport transport, string password, string name, Func<MatchSettings, World> createWorld,
 		string buildId = null)
 		: base(transport, name, createWorld)
 	{
@@ -80,8 +80,9 @@ public sealed class ClientSession : MatchSession
 			case MessageType.Start when State == SessionState.Lobby:
 				int seed = r.Int();
 				int delay = r.Byte();
-				if (r.Ok)
-					BeginMatch(seed, delay);
+				var theme = (MapTheme)r.Byte();
+				if (r.Ok && theme <= MapTheme.Garden)
+					BeginMatch(new MatchSettings(seed, theme), delay);
 				break;
 			case MessageType.Turn when State == SessionState.Playing:
 				var commands = Protocol.ReadCommands(ref r, out long step);

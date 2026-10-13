@@ -40,6 +40,11 @@ public static class BuildingVisuals
 		[BuildingType.Tent] = "res://Assets/Sprites/Fog/tent.png",
 		[BuildingType.CheeseMelter] = "res://Assets/Sprites/Buildings/cheese_melter.png",
 		[BuildingType.Treadmill] = "res://Assets/Sprites/Buildings/treadmill.png",
+		[BuildingType.BrickWall] = "res://Assets/Sprites/Defense/brick_wall.png",
+		[BuildingType.Gate] = "res://Assets/Sprites/Defense/gate.png",
+		[BuildingType.ElectricFence] = "res://Assets/Sprites/Defense/electric_fence.png",
+		[BuildingType.Trapdoor] = "res://Assets/Sprites/Defense/trapdoor.png",
+		[BuildingType.Pendulum] = "res://Assets/Sprites/Defense/pendulum.png",
 	};
 
 	/// <summary>Build menu tabs, in order.</summary>
@@ -55,7 +60,11 @@ public static class BuildingVisuals
 		("Utforska", new[] { BuildingType.Tent, BuildingType.Lamp }),
 		("Mat", new[] { BuildingType.CropField, BuildingType.Farmhouse, BuildingType.Kitchen, BuildingType.Warehouse }),
 		("Armé", new[] { BuildingType.SoldierFactory, BuildingType.GolemWorkshop, BuildingType.CarFactory, BuildingType.Treadmill }),
-		("Försvar", new[] { BuildingType.FoamTower, BuildingType.Catapult, BuildingType.WaterTower, BuildingType.LaserTower }),
+		("Försvar", new[]
+		{
+			BuildingType.FoamTower, BuildingType.Catapult, BuildingType.WaterTower, BuildingType.LaserTower,
+			BuildingType.BrickWall, BuildingType.Gate, BuildingType.ElectricFence, BuildingType.Trapdoor, BuildingType.Pendulum,
+		}),
 	};
 
 	/// <summary>A unit's picture for the UI (the idle front view): Units/&lt;UnitSheets.FileName&gt;.png.</summary>
@@ -106,6 +115,26 @@ public static class BuildingVisuals
 			Height = size,
 		};
 	}
+
+	/// <summary>The picture of each obstacle kind, in Assets/Sprites/Obstacles.</summary>
+	private static readonly Dictionary<ObstacleKind, string> ObstaclePictures = new()
+	{
+		[ObstacleKind.TeddyBear] = "teddy",
+		[ObstacleKind.AbcBlocks] = "blocks",
+		[ObstacleKind.RagDoll] = "doll",
+		[ObstacleKind.Lollipop] = "lollipop",
+		[ObstacleKind.MouseTrap] = "mousetrap",
+		[ObstacleKind.Pumpkin] = "pumpkin",
+		[ObstacleKind.Sunflower] = "sunflower",
+		[ObstacleKind.Cabbage] = "cabbage",
+		[ObstacleKind.Carrot] = "carrot",
+		[ObstacleKind.FlowerPatch] = "flowers",
+	};
+
+	public static Texture2D GetObstacleTexture(ObstacleKind kind) => Load($"res://Assets/Sprites/Obstacles/{ObstaclePictures[kind]}.png");
+
+	/// <summary>Dug soil with stones under each giant plant in the garden (ObstacleView).</summary>
+	public static Texture2D PlantBedTexture => Load("res://Assets/Sprites/Obstacles/plantbed.png");
 
 	/// <summary>A moving part drawn over a building (UI/BuildingParts), from Assets/Sprites/Parts.</summary>
 	public static Texture2D GetPartTexture(string name) => Load($"res://Assets/Sprites/Parts/{name}.png");
