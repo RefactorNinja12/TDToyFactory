@@ -201,6 +201,10 @@ Kompakt fabrik, max 3 nivåer i produktionskedjan, matcher 15–25 min.
   ~1/3 av tokens jämfört med att läsa filen; läs sedan bara raderna som behövs. `graphify path A B` = hur två delar
   hänger ihop. Grafen missar användningar (t.ex. `is Typ`, lokala variabler): "vem använder X" = Grep, inte grafen.
   `graphify query` ger brus, undvik. Grafen saknas → `task graph` (~5 s, ingen LLM).
+  Arbetsgång vid ny funktion: `explain` på typerna som ska ändras → Read med offset/limit på de raderna → Grep
+  för användningar → ändra. Grafen visar senaste commit: efter egna ändringar/nya filer i sessionen stämmer
+  radnumren inte, kör `task graph` först (eller lita på Grep). Detta går före graphify-skillens standardväg:
+  ingen `/graphify query`, ingen ombyggnad med LLM, läs inte `GRAPH_REPORT.md` (~6k tokens) i vanligt arbete.
 - Golden-checksumman (`DeterminismTests.GoldenBotMatch`, 2 min bot mot bot) vaktar refaktorer: får bara
   ändras när beteendet medvetet ändrats (felet skriver ut det nya värdet). Ren refaktor = oförändrad.
 - `task coverage` = täckning Sim/UI + 10 sämsta filer (~100 s); `-File X.cs -Reuse` (ps1) visar otestade rader.
