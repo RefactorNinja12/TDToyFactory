@@ -85,7 +85,7 @@ between the bases, where the way goes up and down and meets in the middle. It wo
       parameter; RoomsTests. Golden unchanged.
 - [x] 2. Net + menu: MatchSettings.Layout (protocol), ClientSession/HostSession, MenuModel (choice, saved, LaunchArgs
       `--layout`), MainMenu option, MatchSetup; Net/Menu tests; mp_smoke `-Layout`.
-- [ ] 3. View check: tileset walls/floors round the new rooms in both themes, floor decor/clover, minimap; VisualProbe
+- [x] 3. View check: tileset walls/floors round the new rooms in both themes, floor decor/clover, minimap; VisualProbe
       `PROBE_LAYOUT`; screenshots; fix what looks wrong.
 - [ ] 4. Bot exit defence on ManyRooms: the module (wall layers with alternating openings + gates in a straight line + towers, early/emergency), growth's wall layers and
       tower anchor per layout. Tests: every layer has its opening (alternate ends) and a gate in line; its own units go
@@ -114,3 +114,6 @@ between the bases, where the way goes up and down and meets in the middle. It wo
   "Många rum") + LayoutIndex, LaunchArgs `--layout two-rooms|many-rooms`; MainMenu "Planlösning" option under "Karta"
   (the background preview follows it), MatchSetup.Layout, Game builds the world with it, the smoke output line carries the
   layout too. mp_smoke.ps1 -Layout; both "Nursery TwoRooms" and "Garden ManyRooms" end with equal checksums.
+- Step 3: VisualProbe PROBE_LAYOUT=many-rooms. Screenshots: Nursery: the rooms' walls are the same blue skirting as the
+  home rooms' walls (one tile thick), floor boards inside; Garden: the shared middle is gravel (Zone.Hall, like the hall)
+  with hedges between the rooms, which marks it as contested ground; the minimap shows the rooms. Nothing to fix.
