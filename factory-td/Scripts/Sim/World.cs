@@ -98,6 +98,17 @@ public sealed partial class World
 	internal bool BlocksUnit(int player, int x, int y) =>
 		!Map.InBounds(x, y) || Map[x, y] != TileType.Floor || WallBlocks(player, x, y);
 
+	/// <summary>Whether its owner's own walls shut the building in: no tile around it leads to the enemy core.</summary>
+	public bool IsEnclosed(Building building)
+	{
+		var field = GetFlowField(building.Owner);
+		for (int y = building.Y - 1; y <= building.Y + building.Height; y++)
+			for (int x = building.X - 1; x <= building.X + building.Width; x++)
+				if (!BlocksUnit(building.Owner, x, y) && GetBuilding(x, y) != building && field.Distance(x, y) != FlowField.Unreachable)
+					return false;
+		return true;
+	}
+
 	/// <summary>Whether a built wall stands on (x, y) that a unit of <paramref name="player"/> can't pass.</summary>
 	internal bool WallBlocks(int player, int x, int y) => GetBuilding(x, y) is Wall wall && wall.Blocks(player);
 

@@ -183,7 +183,7 @@ Goal:
       - a push stops at a wall/obstacle;
       - pendulum + trapdoor combo kills;
       - own units are unaffected.
-- [ ] 6. **UI:** menu category Försvar (BuildHotkeys), Texts, InfoRows, click–click wall line (DragPath/
+- [x] 6. **UI:** menu category Försvar (BuildHotkeys), Texts, InfoRows, click–click wall line (DragPath/
       planner variant, pure helper + tests), previews (pendulum swing path, fence coverage), toasts.
 - [ ] 7. **Art + views:** tools/art/defense/*.py (brick wall with damage states and joined pieces, fence,
       trapdoor closed/warning/open, pendulum stand + weight), restyle, sheet review; `View/TrapView.cs`
@@ -233,3 +233,10 @@ Goal:
   = 20) via `WearTrap`, broken traps destroyed after the building loop. SelectTarget skips traps, FlowField
   charges them as floor. Costs: trapdoor 10 bricks + 4 gears + 2 springs, pendulum 10 bricks + 3 gears + 4 springs.
   Scenario.Rich now also gives gears and springs (one storage test empties gears first). TrapTests 8.
+- Step 6: Försvar menu: the four towers + brick wall, gate, fence, trapdoor, pendulum (digits 1–9). InfoRows: golem
+  punches left, gate/fence lines (fence gets the usual power status: `NeedsPower`), trapdoor state, pendulum push;
+  army factories show "Instängd …" when `World.IsEnclosed` (no free tile around it with a way to the enemy core).
+  PowerView shows the grid while placing a fence. Texture paths point at Assets/Sprites/Defense/ (drawn in step 7).
+  Deviations: no new click–click wall planner and no toast: the existing hold-and-drag already places a gap-free row
+  of any building (DragPath, tile by tile), which is what a wall line needs; the hover row covers "enclosed". The
+  pendulum's rotated ghost already shows its 4 tiles, so no extra swing preview.

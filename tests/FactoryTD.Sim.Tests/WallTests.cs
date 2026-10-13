@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using System.Linq;
 using FactoryTD.Sim;
 using FactoryTD.Sim.Tests.Support;
+using FactoryTD.UI;
 using Xunit;
 
 namespace FactoryTD.Sim.Tests;
@@ -207,5 +208,28 @@ public class WallTests
 		var golem = s.Spawn(UnitType.BrickGolem, WallX + 2, 30, owner: 1);
 		s.World.Until(() => !fences.All(s.World.Buildings.Contains), 30, "the golem breaks a fence");
 		Assert.Equal(UnitStats.MaxHealth(UnitType.BrickGolem) - 5 * WallStats.ZapDamage, golem.Health);
+	}
+
+	[Fact]
+	public void Factory_WalledInWithoutAGate_IsEnclosed()
+	{
+		var s = Scenario.Match().NoWorkers().Instant().Rich();
+		var factory = s.Place(BuildingType.SoldierFactory, 20, 20);
+		for (int i = 19; i <= 22; i++)
+		{
+			s.Place(BuildingType.BrickWall, i, 19);
+			s.Place(BuildingType.BrickWall, i, 22);
+			if (i is 20 or 21)
+			{
+				s.Place(BuildingType.BrickWall, 19, i);
+				s.Place(BuildingType.BrickWall, 22, i);
+			}
+		}
+		Assert.True(s.World.IsEnclosed(factory));
+		Assert.Contains(InfoRows.For(s.World, factory, 0), r => r.Text?.StartsWith("Instängd") == true);
+
+		s.World.TryRemove(22, 20, 0);
+		s.Place(BuildingType.Gate, 22, 20);
+		Assert.False(s.World.IsEnclosed(factory));
 	}
 }

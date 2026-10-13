@@ -40,6 +40,11 @@ public static class BuildingVisuals
 		[BuildingType.Tent] = "res://Assets/Sprites/Fog/tent.png",
 		[BuildingType.CheeseMelter] = "res://Assets/Sprites/Buildings/cheese_melter.png",
 		[BuildingType.Treadmill] = "res://Assets/Sprites/Buildings/treadmill.png",
+		[BuildingType.BrickWall] = "res://Assets/Sprites/Defense/brick_wall.png",
+		[BuildingType.Gate] = "res://Assets/Sprites/Defense/gate.png",
+		[BuildingType.ElectricFence] = "res://Assets/Sprites/Defense/electric_fence.png",
+		[BuildingType.Trapdoor] = "res://Assets/Sprites/Defense/trapdoor.png",
+		[BuildingType.Pendulum] = "res://Assets/Sprites/Defense/pendulum.png",
 	};
 
 	/// <summary>Build menu tabs, in order.</summary>
@@ -55,7 +60,11 @@ public static class BuildingVisuals
 		("Utforska", new[] { BuildingType.Tent, BuildingType.Lamp }),
 		("Mat", new[] { BuildingType.CropField, BuildingType.Farmhouse, BuildingType.Kitchen, BuildingType.Warehouse }),
 		("Armé", new[] { BuildingType.SoldierFactory, BuildingType.GolemWorkshop, BuildingType.CarFactory, BuildingType.Treadmill }),
-		("Försvar", new[] { BuildingType.FoamTower, BuildingType.Catapult, BuildingType.WaterTower, BuildingType.LaserTower }),
+		("Försvar", new[]
+		{
+			BuildingType.FoamTower, BuildingType.Catapult, BuildingType.WaterTower, BuildingType.LaserTower,
+			BuildingType.BrickWall, BuildingType.Gate, BuildingType.ElectricFence, BuildingType.Trapdoor, BuildingType.Pendulum,
+		}),
 	};
 
 	/// <summary>A unit's picture for the UI (the idle front view): Units/&lt;UnitSheets.FileName&gt;.png.</summary>
