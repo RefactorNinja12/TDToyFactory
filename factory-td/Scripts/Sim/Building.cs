@@ -94,6 +94,10 @@ public abstract class Building
 	/// <summary>Scratch mark so a search over tiles sees a 2x2 building only once.</summary>
 	internal int ScanMark { get; set; }
 
+	/// <summary>Vision: the tiles its light reaches at <see cref="LitRadius"/> (it never moves, so they're kept).</summary>
+	internal int[] LitTiles { get; set; }
+	internal int LitRadius { get; set; } = -1;
+
 	/// <summary>Whether <paramref name="test"/> holds for any of the tiles the building covers.</summary>
 	public bool AnyTile(System.Func<int, int, bool> test) => Footprint.Any(X, Y, Width, Height, test);
 

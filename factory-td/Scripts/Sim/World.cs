@@ -30,6 +30,10 @@ public sealed partial class World
 	private int _nextBuildingSerial;
 	private int _scanMark;
 	private bool[] _flowDirty;
+	// A changed field is built at the start of a tick only if something of the player's may walk by it in that tick
+	// (an army unit, or a factory that can make one); otherwise it waits until it is needed. Same result: a field only
+	// depends on the buildings, and every change to them marks it dirty again.
+	private bool[] _fieldStale, _golemFieldStale;
 	private readonly PowerGrid _power;
 	private readonly Vision _vision;
 	private readonly FlowField[] _powerFields; // per player: towards the nearest tile its grid powers
@@ -69,6 +73,8 @@ public sealed partial class World
 		_power = new PowerGrid(map.Width, map.Height, playerCount);
 		_flowDirty = new bool[playerCount];
 		System.Array.Fill(_flowDirty, true);
+		_fieldStale = new bool[playerCount];
+		_golemFieldStale = new bool[playerCount];
 		_vision = new Vision(map.Width, map.Height, playerCount);
 		_powerFields = new FlowField[playerCount];
 		_powerFieldDirty = new bool[playerCount];
@@ -279,7 +285,7 @@ public sealed partial class World
 	{
 		TickCount++;
 		ForgetOldSlams();
-		RebuildFieldsIfDirty();
+		RebuildFieldsIfDirty(onlyNeeded: true);
 		UpdateStorage();
 
 		foreach (var building in _buildings)
@@ -420,7 +426,7 @@ public sealed partial class World
 				_flowDirty[p] = true;
 	}
 
-	private void RebuildFieldsIfDirty()
+	private void RebuildFieldsIfDirty(bool onlyNeeded = false)
 	{
 		if (_powerDirty)
 		{
@@ -431,17 +437,43 @@ public sealed partial class World
 		}
 		for (int p = 0; p < _players.Length; p++)
 		{
-			if (!_flowDirty[p])
-				continue;
-			_flowDirty[p] = false;
-			var target = _cores[EnemyOf(p)];
-			if (target != null)
+			if (_flowDirty[p])
 			{
+				_flowDirty[p] = false;
+				_fieldStale[p] = _golemFieldStale[p] = true;
+				_powerFieldDirty[p] = true; // the way back to the grid crosses enemy buildings too
+			}
+			var target = _cores[EnemyOf(p)];
+			if (target == null)
+				continue;
+			if (_fieldStale[p] && (!onlyNeeded || MayWalkAField(p, golems: false)))
+			{
+				_fieldStale[p] = false;
 				_fields[p].Build(this, target, p);
+			}
+			if (_golemFieldStale[p] && (!onlyNeeded || MayWalkAField(p, golems: true)))
+			{
+				_golemFieldStale[p] = false;
 				_golemFields[p].Build(this, target, p, WallStats.GolemWallPenalty);
 			}
-			_powerFieldDirty[p] = true; // the way back to the grid crosses enemy buildings too
 		}
+	}
+
+	/// <summary>
+	/// Whether the player has a unit that walks by the flow field (golems: the golem field), or a finished factory
+	/// that may send one out this tick.
+	/// </summary>
+	private bool MayWalkAField(int player, bool golems)
+	{
+		bool Walks(UnitType type) => !UnitStats.IsWorker(type) && WallStats.BreaksWalls(type) == golems;
+		foreach (var unit in _units)
+			if (unit.Owner == player && Walks(unit.Type))
+				return true;
+		foreach (var building in _buildings)
+			if (building.Owner == player && building.IsBuilt &&
+				(building is UnitFactory factory ? Walks(factory.Produces) : building is Treadmill && Walks(UnitType.CheeseHunter)))
+				return true;
+		return false;
 	}
 
 	private void SetFootprint(Building building, Building value)

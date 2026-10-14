@@ -10,6 +10,8 @@
     <ImplicitUsings>disable</ImplicitUsings>
     <IsPackable>false</IsPackable>
     <RootNamespace>FactoryTD.Sim.Tests</RootNamespace>
+    <!-- Optimized even in Debug: the slow tests are whole bot matches. -->
+    <Optimize>true</Optimize>
   </PropertyGroup>
 
   <ItemGroup>

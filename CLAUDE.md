@@ -79,7 +79,7 @@ Hinder (stora leksaker/växter) = `TileType.Obstacle`: stoppar gång och bygge, 
 
 ## Arbetsflöde
 - `task` listar kommandona. `task test -- <Område>` (namnfilter, `"A|B"` för flera) före och efter en ändring;
-  `task test:changed` = bara det som berörs. `task test` ~9 s, `task test:slow` ~40 s, `task test:report` vid balans.
+  `task test:changed` = bara det som berörs. `task test` ~5 s, `task test:slow` ~8 s (de längsta matcherna i egna klasser, så de körs parallellt), `task test:report` vid balans.
 - `task check` (lint + dubbletter + alla tester) före varje commit. Lint FAIL (WHITESPACE/ENDOFLINE) → `task fmt`.
   Läs aldrig råutdata från `dotnet test/format/build`.
 - Läs billigt: Grep `^\t(public|internal|private|protected)` för översikt, sedan Read med offset/limit.
