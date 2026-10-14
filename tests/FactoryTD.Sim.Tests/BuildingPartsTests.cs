@@ -51,6 +51,33 @@ public class BuildingPartsTests
 	}
 
 	[Fact]
+	public void Pop_ShowsBrieflyEachBeat_ThenHides()
+	{
+		var shout = new Part("x", 0, 0, Motion.Pop, Speed: 0.25f, Amount: 0.15f, DY: -4);
+		Assert.True(BuildingParts.PoseAt(shout, 0.1f).Alpha > 0.9f);       // just popped up
+		Assert.True(BuildingParts.PoseAt(shout, 0.5f).Alpha > 0f);         // fading (shown for 0.6 s of the 4 s beat)
+		Assert.Equal(0f, BuildingParts.PoseAt(shout, 1f).Alpha);           // gone
+		Assert.Equal(0f, BuildingParts.PoseAt(shout, 3.9f).Alpha);
+		Assert.True(BuildingParts.PoseAt(shout, 4.05f).Alpha > 0.9f);      // and up again next beat
+	}
+
+	[Fact]
+	public void Turn_LooksOneWayThenTheOther()
+	{
+		var look = new Part("x", 0, 0, Motion.Turn, Speed: 0.5f);
+		Assert.False(BuildingParts.PoseAt(look, 0.2f).Flip);
+		Assert.True(BuildingParts.PoseAt(look, 1.2f).Flip);
+		Assert.False(BuildingParts.PoseAt(look, 2.2f).Flip);
+	}
+
+	[Fact]
+	public void Dojo_SenseiShoutAndLanterns_MoveWhileIdle_TheRestOnlyWhileTraining()
+	{
+		var always = BuildingParts.For(BuildingType.Dojo).Where(p => p.Always).Select(p => p.Sprite).Distinct().OrderBy(n => n);
+		Assert.Equal(new[] { "dojo_lantern", "pagoda", "sensei", "sensei_shout" }, always);
+	}
+
+	[Fact]
 	public void Float_BobsAndRocks_AQuarterBeatApart_AndAlwaysPartsUseTheWallClock()
 	{
 		var ship = new Part("x", 0, 0, Motion.Float, DY: 3, Amount: 0.05f, Always: true);

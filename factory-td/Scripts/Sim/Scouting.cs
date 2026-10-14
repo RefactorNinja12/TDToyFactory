@@ -178,5 +178,5 @@ public sealed partial class World
 	}
 
 	private List<(int X, int Y)> FindPathToTile(Unit unit, int toX, int toY) =>
-		GridSearch.PathTo(Map.Width, Map.Height, unit.TileX, unit.TileY, (x, y) => !BlocksUnit(unit.Owner, x, y), (x, y) => x == toX && y == toY);
+		GridSearch.PathTo(Map.Width, Map.Height, unit.TileX, unit.TileY, (x, y) => !BlocksUnit(unit.Owner, x, y), (x, y) => x == toX && y == toY, unit.Owner == 1);
 }

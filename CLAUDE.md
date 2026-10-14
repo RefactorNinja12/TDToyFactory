@@ -50,6 +50,14 @@ Hinder (stora leksaker/växter) = `TileType.Obstacle`: stoppar gång och bygge, 
   Modeller i `Scripts/UI` (`Hud.cs`, `InfoRows`, `Texts`); vyerna ritar bara dem.
 - Skuggor räknas ut från ljuskällorna (`UI/Shadows.cs`), målas aldrig i sprites.
 - Byggnader rör sig när de arbetar (`UI/Activity.cs`, `UI/BuildingParts.cs`, `View/BuildingAnimator.cs`).
+- Samurajmus (`UnitType.Samurai`, `SamuraiStats` i Unit.cs): närkämpe vars svärd sveper bågen framför sig och träffar
+  alla fiender där (max 5, `DamageKind.Slash`: halv mot golems). Byggs i dojon (`BuildingType.Dojo`, en pagod från sidan
+  som piratskeppet (`KeepsUpright`): senseimusen vid dörren vänder sig (`Motion.Turn`, speglar) och ropar (`Motion.Pop`)). Boten: modulen "samurajer" + armérotationen.
+- Golem (`GolemStats` i Unit.cs): störst av enheterna (radie 1/2 ruta, kropp ≤ 60 px bred i 80 px-rutor: går genom
+  1-rutsluckor). Söker inte upp enheter, men kommer en fiende inom räckhåll lyfter den händerna (`SlamTicks`) och slår i
+  marken: områdesskada på enheter runt den (inte genom väggar) och de kastas utåt (`Push*` + `AirTicks`). Höjden ritas
+  bara (`UnitAnimation.Lift/Spin`), skuggan ligger kvar på golvet; i luften faller man inte i falluckor förrän man
+  landar. Ringen ritas från `World.RecentSlams`. Enheters räckvidd mot enheter når målets kant (`toEdge`).
 - Enheter: möss ovanifrån som vrids, nosen österut i spriten; golemen står upprätt och vrids aldrig
   (`UI/UnitSheets.cs`, `UI/UnitAnimation.cs`).
 
@@ -71,7 +79,7 @@ Hinder (stora leksaker/växter) = `TileType.Obstacle`: stoppar gång och bygge, 
 
 ## Arbetsflöde
 - `task` listar kommandona. `task test -- <Område>` (namnfilter, `"A|B"` för flera) före och efter en ändring;
-  `task test:changed` = bara det som berörs. `task test` ~9 s, `task test:slow` ~40 s, `task test:report` vid balans.
+  `task test:changed` = bara det som berörs. `task test` ~5 s, `task test:slow` ~8 s (de längsta matcherna i egna klasser, så de körs parallellt), `task test:report` vid balans.
 - `task check` (lint + dubbletter + alla tester) före varje commit. Lint FAIL (WHITESPACE/ENDOFLINE) → `task fmt`.
   Läs aldrig råutdata från `dotnet test/format/build`.
 - Läs billigt: Grep `^\t(public|internal|private|protected)` för översikt, sedan Read med offset/limit.
@@ -89,7 +97,7 @@ Hinder (stora leksaker/växter) = `TileType.Obstacle`: stoppar gång och bygge, 
   `Scenes/_ProbeVisual.tscn` (instans av `Main.tscn` + en nod med VisualProbe-skriptet; gitignorerad) och kör
   `Godot*mono*console.exe --path factory-td --write-movie OUT.png --fixed-fps 20 --quit-after 40
   res://Scenes/_ProbeVisual.tscn` (Godot ligger under ~/Downloads). Miljövariabler: `PROBE_SCENE=` belts, crane,
-  shadows, toys, walls; `PROBE_CAM="x,y,zoom"`, `PROBE_MAP=garden`, `PROBE_GC=1`.
+  shadows, toys, walls, samurai; `PROBE_CAM="x,y,zoom"`, `PROBE_MAP=garden`, `PROBE_GC=1`.
 
 ## Grafik
 - `tools/art/restyle.py` gör om sprites från `tools/art/source/` (palett + svarta konturer); `restyle.py <filer>` =

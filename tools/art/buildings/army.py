@@ -3,6 +3,8 @@ Army factories (2x2 = 128 px, output east):
   soldier - a toy pirate ship seen from the side, sails full of wind, bobbing on the water; cannons puff while it builds
   golem   - a toy crane stacking ABC blocks: the hook lowers a block, a mouse swings a mallet
   car     - a slot-car track round a paint booth: two cars lap it, a mouse waves the chequered flag
+  dojo    - a pagoda seen from the side (three curved red roofs, gold spire) on a gravel yard; parts: the pagoda, the
+            sensei mouse by the door (looks right and left, shouts now and then), a trainee, lanterns, the sliding door
 
     python tools/art/buildings/army.py && python tools/art/restyle.py <the files it lists>
 """
@@ -170,8 +172,118 @@ def car_factory():
     out(flag, "Parts/race_flag.png")
 
 
+LACQUER = (196, 52, 52)
+ROBE = (90, 70, 120)
+
+
+GRAVEL = (170, 160, 140)
+STONE = (150, 150, 160)
+PAPER = (240, 232, 210)
+
+
+def eave(d, cx, top, half_top, half_base, base, tip_lift=5):
+    """A curved pagoda roof from the side: narrow at the top, sweeping out to upturned tips at the eave."""
+    dark = tint(LACQUER, -0.35)
+    pts = [(cx - half_top, top), (cx + half_top, top), (cx + half_base - 4, base - 3), (cx + half_base + 2, base - 3 - tip_lift),
+           (cx + half_base, base), (cx - half_base, base), (cx - half_base - 2, base - 3 - tip_lift), (cx - half_base + 4, base - 3)]
+    d.polygon(pts, fill=dark)
+    d.polygon([(cx - half_top, top + 1), (cx + half_top, top + 1), (cx + half_base - 5, base - 4), (cx - half_base + 5, base - 4)],
+              fill=LACQUER)
+    d.line((cx - half_base, base - 1, cx + half_base, base - 1), fill=YELLOW, width=2)   # gold trim along the eave
+    for x in (cx - half_base - 1, cx + half_base + 1):
+        disc(d, x, base - 4 - tip_lift, 2, YELLOW, shine=False)
+
+
+def storey(d, x0, y0, x1, y1):
+    """One floor's wall from the side: red pillars with paper screens between them."""
+    d.rectangle((x0, y0, x1, y1), fill=PAPER)
+    for x in range(x0, x1 + 1, max(6, (x1 - x0) // 4)):
+        d.rectangle((x, y0, x + 2, y1), fill=tint(LACQUER, -0.15))
+    d.rectangle((x1 - 2, y0, x1, y1), fill=tint(LACQUER, -0.15))
+
+
+def profile_mouse(robe, held=None, beard=False, w=22, h=30):
+    """A mouse standing upright seen from the side, facing right: robe, head with an ear, snout, pink nose."""
+    img, d = canvas(w, h)
+    d.line((6, h - 9, 1, h - 4), fill=TAIL, width=2)                                  # the tail behind
+    box(d, (5, 13, 16, h - 3), robe, radius=4, bevel=1)                                # robe
+    d.rectangle((6, h - 3, 9, h - 1), fill=PINK)                                      # feet
+    d.rectangle((12, h - 3, 15, h - 1), fill=PINK)
+    disc(d, 9, 5, 4, MOUSE, shine=False)                                               # the ear
+    d.ellipse((6, 4, 9 + 3, 8), fill=PINK)
+    d.ellipse((7, 4, 18, 14), fill=MOUSE)                                              # head
+    d.polygon([(15, 7), (21, 10), (15, 12)], fill=MOUSE)                               # snout
+    disc(d, 20, 10, 1, PINK, shine=False)
+    d.point((14, 8), fill=INK)                                                         # eye
+    if beard:
+        d.polygon([(13, 12), (19, 12), (15, 19)], fill=WHITE)
+    if held:
+        held(d)
+    return img
+
+
+def dojo():
+    """
+    The samurai dojo: the ground (gravel with stepping stones and a path to the output, turns with the building) and
+    the pagoda itself as a part seen from the side, like the pirate ship: three curved red roofs, paper storeys, a gold
+    spire. Parts in front: the sensei by the door (looks right and left, shouts now and then), a trainee with a wooden
+    sword, the sliding door, lanterns on the eaves.
+    """
+    img, d = canvas(128, 128)
+    baseplate(img, d, color=GRAVEL)
+    for x, y in ((18, 20), (40, 106), (98, 22), (20, 92), (100, 100)):
+        d.ellipse((x, y, x + 10, y + 7), fill=STONE)                                   # stepping stones
+    box(d, (64, 58, 127, 70), STONE, radius=1, bevel=1)                                # the path to the output
+    chute(d, 128, 128)
+    out(img, "Buildings/dojo.png")
+
+    pagoda, p_ = part(100, 116)
+    p_.line((50, 0, 50, 16), fill=YELLOW, width=2)                                     # the spire with its rings
+    for y in (4, 8, 12):
+        p_.line((47, y, 53, y), fill=YELLOW, width=2)
+    storey(p_, 34, 26, 66, 40)
+    eave(p_, 50, 14, 6, 30, 28)
+    storey(p_, 24, 52, 76, 70)
+    eave(p_, 50, 38, 16, 42, 54)
+    storey(p_, 14, 84, 86, 110)
+    eave(p_, 50, 68, 26, 50, 86)
+    p_.rectangle((40, 90, 60, 110), fill=tint(DARK, -0.2))                             # the doorway behind the door
+    box(p_, (6, 108, 94, 115), STONE, radius=1, bevel=1)                               # the stone base
+    out(pagoda, "Parts/pagoda.png")
+
+    def stick(d2):
+        d2.line((19, 12, 21, 29), fill=WOOD, width=2)
+
+    out(profile_mouse(ROBE, held=stick, beard=True), "Parts/sensei.png")
+
+    def wooden_sword(d2):
+        d2.line((15, 17, 21, 2), fill=tint(WOOD, 0.25), width=3)
+
+    out(profile_mouse(WHITE, held=wooden_sword), "Parts/dojo_trainee.png")
+
+    bubble, bd = canvas(20, 18)
+    bd.rounded_rectangle((1, 1, 18, 13), radius=4, fill=WHITE)
+    bd.polygon([(4, 12), (8, 12), (3, 17)], fill=WHITE)
+    bd.rectangle((8, 3, 11, 8), fill=RED)                                              # "!"
+    bd.rectangle((8, 10, 11, 11), fill=RED)
+    out(bubble, "Parts/sensei_shout.png")
+
+    lantern, ld = canvas(10, 14)
+    ld.line((5, 0, 5, 3), fill=INK)
+    box(ld, (1, 3, 8, 13), (246, 140, 60), radius=3, bevel=1)                          # a paper lantern on a cord
+    out(lantern, "Parts/dojo_lantern.png")
+
+    door, dd = canvas(12, 20)
+    box(dd, (0, 0, 11, 19), PAPER, radius=1, bevel=1)                                  # a paper sliding door
+    for y in (5, 10, 15):
+        dd.line((1, y, 10, y), fill=WOOD)
+    dd.line((6, 1, 6, 18), fill=WOOD)
+    out(door, "Parts/dojo_door.png")
+
+
 if __name__ == "__main__":
     soldier_factory()
     golem_workshop()
     car_factory()
+    dojo()
     print(" ".join(WRITTEN))

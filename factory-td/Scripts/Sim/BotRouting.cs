@@ -8,7 +8,11 @@ public sealed partial class BotPlayer
 	// ---------------------------------------------------------------------------------------------
 	// Belt routing (absolute coordinates).
 
-	private static readonly Direction[] Directions = { Direction.East, Direction.South, Direction.West, Direction.North };
+	private static readonly Direction[] EastFirst = { Direction.East, Direction.South, Direction.West, Direction.North };
+	private static readonly Direction[] WestFirst = { Direction.West, Direction.South, Direction.East, Direction.North };
+
+	/// <summary>The order searches try the sides in, mirrored for the right room so both bots pick mirrored ways.</summary>
+	private Direction[] Directions => _mirror ? WestFirst : EastFirst;
 
 	/// <summary>
 	/// Plans a belt from a free tile next to <paramref name="source"/> to a tile next to

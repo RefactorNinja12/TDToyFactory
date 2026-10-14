@@ -8,9 +8,9 @@ namespace FactoryTD.UI;
 
 /// <summary>What the start menu remembers between runs. Never the password.</summary>
 public sealed record MenuSettings(string Name = "Spelare", string Address = "", int Port = Protocol.DefaultPort,
-	MapTheme Map = MapTheme.Nursery)
+	MapTheme Map = MapTheme.Nursery, MapLayoutKind Layout = MapLayoutKind.TwoRooms)
 {
-	public string ToText() => $"name={Name}\naddress={Address}\nport={Port}\nmap={Map}\n";
+	public string ToText() => $"name={Name}\naddress={Address}\nport={Port}\nmap={Map}\nlayout={Layout}\n";
 
 	public static MenuSettings FromText(string text)
 	{
@@ -25,7 +25,9 @@ public sealed record MenuSettings(string Name = "Spelare", string Address = "", 
 			values.TryGetValue("address", out var address) ? address : defaults.Address,
 			values.TryGetValue("port", out var port) && MenuModel.TryParsePort(port, out int p, out _) ? p : defaults.Port,
 			values.TryGetValue("map", out var map) && System.Enum.TryParse(map, out MapTheme theme) && System.Enum.IsDefined(theme)
-				? theme : defaults.Map);
+				? theme : defaults.Map,
+			values.TryGetValue("layout", out var layout) && System.Enum.TryParse(layout, out MapLayoutKind kind) && System.Enum.IsDefined(kind)
+				? kind : defaults.Layout);
 	}
 }
 
@@ -43,6 +45,15 @@ public static class MenuModel
 
 	/// <summary>The place of <paramref name="theme"/> in <see cref="Maps"/> (for the option buttons).</summary>
 	public static int MapIndex(MapTheme theme) => Math.Max(0, Array.FindIndex(Maps, m => m.Theme == theme));
+
+	/// <summary>The layouts to choose from ("Planlösning"), in menu order.</summary>
+	public static readonly (string Name, MapLayoutKind Layout)[] Layouts =
+	{
+		("Två rum", MapLayoutKind.TwoRooms),
+		("Många rum", MapLayoutKind.ManyRooms),
+	};
+
+	public static int LayoutIndex(MapLayoutKind layout) => Math.Max(0, Array.FindIndex(Layouts, l => l.Layout == layout));
 
 	public static readonly (string Name, int ArmyDelayTicks)[] Difficulties =
 	{
@@ -169,10 +180,11 @@ public static class MenuModel
 /// <summary>
 /// Command-line start (after "--"), for the smoke test and quick testing:
 /// --host [--port N] --password X | --join ip[:port] --password X, plus --name X, --bot (a bot plays for you),
-/// --steps N --out FILE (write the checksum at step N, then quit), --seed N, --map nursery|garden.
+/// --steps N --out FILE (write the checksum at step N, then quit), --seed N, --map nursery|garden,
+/// --layout two-rooms|many-rooms.
 /// </summary>
 public sealed record LaunchArgs(bool Host, string Join, int Port, string Password, string Name, bool Bot,
-	int Steps, string Out, int Seed, MapTheme Map = MapTheme.Nursery)
+	int Steps, string Out, int Seed, MapTheme Map = MapTheme.Nursery, MapLayoutKind Layout = MapLayoutKind.TwoRooms)
 {
 	public bool Online => Host || Join != null;
 
@@ -187,6 +199,8 @@ public sealed record LaunchArgs(bool Host, string Join, int Port, string Passwor
 		return new LaunchArgs(args.Contains("--host"), Value("--join"), Number("--port", Protocol.DefaultPort),
 			Value("--password") ?? "", Value("--name") ?? (args.Contains("--host") ? "Värd" : "Gäst"),
 			args.Contains("--bot"), Number("--steps", 0), Value("--out") ?? "", Number("--seed", 1),
-			Enum.TryParse(Value("--map") ?? "", ignoreCase: true, out MapTheme map) && Enum.IsDefined(map) ? map : MapTheme.Nursery);
+			Enum.TryParse(Value("--map") ?? "", ignoreCase: true, out MapTheme map) && Enum.IsDefined(map) ? map : MapTheme.Nursery,
+			Enum.TryParse((Value("--layout") ?? "").Replace("-", ""), ignoreCase: true, out MapLayoutKind layout) && Enum.IsDefined(layout)
+				? layout : MapLayoutKind.TwoRooms);
 	}
 }

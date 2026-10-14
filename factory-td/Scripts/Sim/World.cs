@@ -30,6 +30,10 @@ public sealed partial class World
 	private int _nextBuildingSerial;
 	private int _scanMark;
 	private bool[] _flowDirty;
+	// A changed field is built at the start of a tick only if something of the player's may walk by it in that tick
+	// (an army unit, or a factory that can make one); otherwise it waits until it is needed. Same result: a field only
+	// depends on the buildings, and every change to them marks it dirty again.
+	private bool[] _fieldStale, _golemFieldStale;
 	private readonly PowerGrid _power;
 	private readonly Vision _vision;
 	private readonly FlowField[] _powerFields; // per player: towards the nearest tile its grid powers
@@ -69,6 +73,8 @@ public sealed partial class World
 		_power = new PowerGrid(map.Width, map.Height, playerCount);
 		_flowDirty = new bool[playerCount];
 		System.Array.Fill(_flowDirty, true);
+		_fieldStale = new bool[playerCount];
+		_golemFieldStale = new bool[playerCount];
 		_vision = new Vision(map.Width, map.Height, playerCount);
 		_powerFields = new FlowField[playerCount];
 		_powerFieldDirty = new bool[playerCount];
@@ -114,9 +120,10 @@ public sealed partial class World
 
 	/// <summary>A new 1v1 match: the default map with each player's core at the back of their room.</summary>
 	/// <param name="obstacles">Big toys lying in the rooms (MapLayout.Obstacles).</param>
-	public static World CreateMatch(bool obstacles = true, int seed = MapLayout.DefaultSeed, MapTheme theme = MapTheme.Nursery)
+	public static World CreateMatch(bool obstacles = true, int seed = MapLayout.DefaultSeed, MapTheme theme = MapTheme.Nursery,
+		MapLayoutKind layout = MapLayoutKind.TwoRooms)
 	{
-		var world = new World(MapLayout.CreateDefault(obstacles, seed, theme), 2);
+		var world = new World(MapLayout.CreateDefault(obstacles, seed, theme, layout), 2);
 		var (w, h) = BuildingRules.Size(BuildingType.Core);
 
 		// Player 0 in the left room, player 1 mirrored in the right room, both centred on the door.
@@ -230,6 +237,20 @@ public sealed partial class World
 	}
 
 	/// <summary>Creates a unit in the middle of tile (tileX, tileY).</summary>
+	/// <summary>
+	/// The building's middle tile. On an even width that's the west one of the two for player 1 (the right room),
+	/// so both players' units come out and see from mirrored tiles.
+	/// </summary>
+	public static (int X, int Y) MiddleTile(Building building) =>
+		(building.X + (building.Owner == 1 ? building.Width - 1 : building.Width) / 2, building.Y + building.Height / 2);
+
+	/// <summary>A new unit on the building's <see cref="MiddleTile"/>.</summary>
+	internal Unit SpawnFrom(UnitType type, Building building)
+	{
+		var (x, y) = MiddleTile(building);
+		return SpawnUnit(type, building.Owner, x, y);
+	}
+
 	public Unit SpawnUnit(UnitType type, int owner, int tileX, int tileY)
 	{
 		const int half = UnitStats.SubTile / 2;
@@ -263,7 +284,8 @@ public sealed partial class World
 	public void Tick()
 	{
 		TickCount++;
-		RebuildFieldsIfDirty();
+		ForgetOldSlams();
+		RebuildFieldsIfDirty(onlyNeeded: true);
 		UpdateStorage();
 
 		foreach (var building in _buildings)
@@ -328,9 +350,15 @@ public sealed partial class World
 			hash.Add((int)unit.Carrying); hash.Add(unit.CarryAmount); hash.Add(unit.WorkTimer);
 			hash.Add(unit.Charge); hash.Add((int)unit.PowerState); hash.Add(unit.LightDirection);
 			hash.Add(unit.ScoutTargetX); hash.Add(unit.ScoutTargetY); hash.Add(unit.FleeTicks); hash.Add(unit.FleeX); hash.Add(unit.FleeY);
+			if (unit.Type == UnitType.Samurai)
+				hash.Add(unit.SwingCount);
 			if (unit.PushTicks > 0)
 			{
 				hash.Add(unit.PushX); hash.Add(unit.PushY); hash.Add(unit.PushTicks);
+			}
+			if (unit.AirTicks != 0 || unit.SlamTicks != 0 || unit.SlamCooldown != 0)
+			{
+				hash.Add(unit.AirTicks); hash.Add(unit.SlamTicks); hash.Add(unit.SlamCooldown);
 			}
 		}
 		hash.Add(_projectiles.Count);
@@ -398,7 +426,7 @@ public sealed partial class World
 				_flowDirty[p] = true;
 	}
 
-	private void RebuildFieldsIfDirty()
+	private void RebuildFieldsIfDirty(bool onlyNeeded = false)
 	{
 		if (_powerDirty)
 		{
@@ -409,17 +437,43 @@ public sealed partial class World
 		}
 		for (int p = 0; p < _players.Length; p++)
 		{
-			if (!_flowDirty[p])
-				continue;
-			_flowDirty[p] = false;
-			var target = _cores[EnemyOf(p)];
-			if (target != null)
+			if (_flowDirty[p])
 			{
+				_flowDirty[p] = false;
+				_fieldStale[p] = _golemFieldStale[p] = true;
+				_powerFieldDirty[p] = true; // the way back to the grid crosses enemy buildings too
+			}
+			var target = _cores[EnemyOf(p)];
+			if (target == null)
+				continue;
+			if (_fieldStale[p] && (!onlyNeeded || MayWalkAField(p, golems: false)))
+			{
+				_fieldStale[p] = false;
 				_fields[p].Build(this, target, p);
+			}
+			if (_golemFieldStale[p] && (!onlyNeeded || MayWalkAField(p, golems: true)))
+			{
+				_golemFieldStale[p] = false;
 				_golemFields[p].Build(this, target, p, WallStats.GolemWallPenalty);
 			}
-			_powerFieldDirty[p] = true; // the way back to the grid crosses enemy buildings too
 		}
+	}
+
+	/// <summary>
+	/// Whether the player has a unit that walks by the flow field (golems: the golem field), or a finished factory
+	/// that may send one out this tick.
+	/// </summary>
+	private bool MayWalkAField(int player, bool golems)
+	{
+		bool Walks(UnitType type) => !UnitStats.IsWorker(type) && WallStats.BreaksWalls(type) == golems;
+		foreach (var unit in _units)
+			if (unit.Owner == player && Walks(unit.Type))
+				return true;
+		foreach (var building in _buildings)
+			if (building.Owner == player && building.IsBuilt &&
+				(building is UnitFactory factory ? Walks(factory.Produces) : building is Treadmill && Walks(UnitType.CheeseHunter)))
+				return true;
+		return false;
 	}
 
 	private void SetFootprint(Building building, Building value)

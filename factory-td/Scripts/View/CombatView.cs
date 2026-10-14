@@ -6,7 +6,7 @@ namespace FactoryTD.View;
 
 /// <summary>
 /// Draws the fighting on top of everything in the world: projectiles, tower ammo bars
-/// (with a warning when a tower is empty) and health bars on damaged units.
+/// (with a warning when a tower is empty), health bars on damaged units and the shock ring of a golem's slam.
 /// </summary>
 public partial class CombatView : Node2D
 {
@@ -43,6 +43,10 @@ public partial class CombatView : Node2D
 				DrawAmmo(tower);
 			DrawBuildingHealth(building);
 		}
+
+		foreach (var slam in _world.RecentSlams)
+			if (_world.IsVisible(LocalPlayer, slam.X / UnitStats.SubTile, slam.Y / UnitStats.SubTile))
+				DrawSlam(slam);
 
 		foreach (var unit in _world.Units)
 			if (_world.CanSee(LocalPlayer, unit))
@@ -115,8 +119,9 @@ public partial class CombatView : Node2D
 		int max = UnitStats.MaxHealth(unit.Type);
 		if (unit.Health >= max)
 			return;
-		var p = Interpolate(unit.PrevX, unit.PrevY, unit.X, unit.Y);
-		// Above the head: upright units stand on their position, vehicles are centred on it.
+		var p = Interpolate(unit.PrevX, unit.PrevY, unit.X, unit.Y) -
+			new Vector2(0, UnitAnimation.Lift(unit, (int)(Alpha * 1000)) * SubTileToPixels); // up in the air with it
+																							 // Above the head: upright units stand on their position, vehicles are centred on it.
 		float top = UnitSheets.IsUpright(unit.Type) ? UnitSheets.FeetY(unit.Type) + 2 : 28;
 		var bar = new Rect2(p.X - 16, p.Y - top, 32, 4);
 		DrawRect(bar, BarBack);
@@ -124,6 +129,30 @@ public partial class CombatView : Node2D
 	}
 
 	private const float BulletHeight = 16f;
+
+	private const float SlamRingTicks = 12f;
+	private const int SlamDust = 10;
+	private static readonly Color SlamColor = new(0.95f, 0.85f, 0.6f);
+
+	/// <summary>The slam: a ring running out over the floor to the slam's reach, and dust puffs thrown outwards.</summary>
+	private void DrawSlam(SlamMark slam)
+	{
+		float age = (_world.TickCount - slam.Tick + Alpha) / SlamRingTicks;
+		if (age >= 1)
+			return;
+		var at = new Vector2(slam.X, slam.Y) * SubTileToPixels;
+		float reach = GolemStats.SlamRadius * SubTileToPixels;
+		float radius = reach * (0.3f + 0.7f * Mathf.Sqrt(age));
+		float fade = 1 - age;
+		DrawArc(at, radius, 0, Mathf.Tau, 40, new Color(SlamColor, 0.3f * fade), 10);
+		DrawArc(at, radius, 0, Mathf.Tau, 40, new Color(SlamColor, 0.9f * fade), 3);
+		for (int i = 0; i < SlamDust; i++)
+		{
+			float angle = Mathf.Tau * (i + 0.5f * (i % 2)) / SlamDust;
+			var direction = new Vector2(Mathf.Cos(angle), Mathf.Sin(angle) * 0.7f);
+			DrawCircle(at + direction * reach * (0.2f + 0.6f * age), 4 + 5 * age, new Color(0.75f, 0.68f, 0.55f, 0.6f * fade));
+		}
+	}
 
 	private void DrawProjectile(Projectile shot)
 	{
@@ -162,6 +191,13 @@ public partial class CombatView : Node2D
 				DrawRect(new Rect2(p - new Vector2(4, 4), new Vector2(8, 8)), new Color(0.9f, 0.2f, 0.25f));
 				if (shot.TicksLeft <= 1)
 					DrawCircle(to, 10, new Color(1f, 0.9f, 0.6f, 0.6f));
+				break;
+			case DamageKind.Slash:
+				// The sword's sweep: a bright arc round the samurai through the unit it cuts.
+				var (radius, start, end) = SlashLook.Arc(from.X, from.Y, to.X, to.Y);
+				float fade = SlashLook.Fade(t);
+				DrawArc(from, radius, start, end, 10, new Color(1f, 1f, 1f, 0.35f * fade), 7);
+				DrawArc(from, radius, start, end, 10, new Color(1f, 1f, 1f, fade), 2);
 				break;
 			case DamageKind.Water:
 				DrawCircle(p, 5, WaterColor);

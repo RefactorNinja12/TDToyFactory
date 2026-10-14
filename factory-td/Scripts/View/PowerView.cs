@@ -72,7 +72,7 @@ public partial class PowerView : Node2D
 
 	/// <summary>Power buildings and everything that needs power: show the grid while placing them.</summary>
 	private static bool UsesPower(BuildingType type) => type is BuildingType.Pylon or BuildingType.BatteryCharger
-		or BuildingType.Assembler or BuildingType.SoldierFactory or BuildingType.GolemWorkshop or BuildingType.CarFactory
+		or BuildingType.Assembler or BuildingType.SoldierFactory or BuildingType.Dojo or BuildingType.GolemWorkshop or BuildingType.CarFactory
 		or BuildingType.FoamTower or BuildingType.Catapult or BuildingType.WaterTower or BuildingType.LaserTower
 		or BuildingType.ElectricFence;
 

@@ -74,8 +74,8 @@ public sealed class Trapdoor : Trap
 			return;
 		foreach (var unit in world.Units)
 		{
-			if (unit.Owner == Owner || unit.Health <= 0 || !Covers(unit))
-				continue;
+			if (unit.Owner == Owner || unit.Health <= 0 || unit.AirTicks > 0 || !Covers(unit))
+				continue; // a thrown unit flies over; it falls in only where it lands
 			unit.Health = 0; // fell in
 			world.WearTrap(this, TrapStats.TrapdoorWear);
 		}

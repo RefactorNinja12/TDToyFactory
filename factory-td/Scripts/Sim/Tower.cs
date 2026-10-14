@@ -9,6 +9,7 @@ public enum DamageKind : byte
 	Laser,  // single target; strong vs bricks
 	Bullet, // soldiers and cars
 	Punch,  // golems (short range)
+	Slash,  // the samurai's sword sweep; golems shrug it off
 }
 
 public sealed record TowerStats(
@@ -153,7 +154,8 @@ public static class Combat
 		(DamageKind.Water, ArmorClass.Electronic) => 300,
 		(DamageKind.Laser, ArmorClass.Brick) => 200,
 		// ...and bricks shrug off the light stuff, so golems need lasers (or catapults).
-		(DamageKind.Foam or DamageKind.Water or DamageKind.Bullet, ArmorClass.Brick) => 50,
+		(DamageKind.Foam or DamageKind.Water or DamageKind.Bullet or DamageKind.Slash, ArmorClass.Brick) => 50,
+		(DamageKind.Slash, ArmorClass.Electronic) => 125,
 		_ => 100,
 	};
 }

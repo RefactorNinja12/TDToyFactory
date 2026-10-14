@@ -33,13 +33,13 @@ public enum RejectReason : byte
 }
 
 /// <summary>What a match is played on, chosen by the host: the seed (where the obstacles lie) and the map.</summary>
-public readonly record struct MatchSettings(int Seed, MapTheme Theme = MapTheme.Nursery);
+public readonly record struct MatchSettings(int Seed, MapTheme Theme = MapTheme.Nursery, MapLayoutKind Layout = MapLayoutKind.TwoRooms);
 
 /// <summary>Message layouts, the build id and the password proof. All numbers little-endian.</summary>
 public static class Protocol
 {
-	/// <summary>Bump when a message layout changes (2: Start carries the map).</summary>
-	public const int Version = 2;
+	/// <summary>Bump when a message layout changes (2: Start carries the map, 3: and its layout).</summary>
+	public const int Version = 3;
 
 	public const int DefaultPort = 7777;
 	public const int NonceSize = 16, ChallengeSize = 32, ProofSize = 32;

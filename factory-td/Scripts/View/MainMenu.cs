@@ -25,6 +25,7 @@ public partial class MainMenu : Control
 	private ENetTransport _transport;
 	private bool _autoStart;
 	private Sim.MapTheme _map;
+	private Sim.MapLayoutKind _layout;
 	private Control _preview;
 	private int _seed;
 
@@ -32,6 +33,7 @@ public partial class MainMenu : Control
 	{
 		_settings = LoadSettings();
 		_map = MatchSetup.Theme = _settings.Map;
+		_layout = MatchSetup.Layout = _settings.Layout;
 		var theme = UiTheme.Create();
 		GetWindow().Theme = theme;
 		Theme = theme;
@@ -75,7 +77,7 @@ public partial class MainMenu : Control
 		if (_autoStart && _session is HostSession { CanStart: true } host)
 		{
 			_autoStart = false;
-			host.Start(_seed, _map);
+			host.Start(_seed, _map, _layout);
 		}
 		if (_session.State == SessionState.Playing)
 		{
@@ -138,6 +140,20 @@ public partial class MainMenu : Control
 			AddPreview(); // the background plays on the chosen map
 		};
 		_page.AddChild(maps);
+
+		_page.AddChild(new Label { Text = "Planlösning", Modulate = UiTheme.TextDim });
+		var layouts = new OptionButton();
+		foreach (var (name, _) in MenuModel.Layouts)
+			layouts.AddItem(name);
+		layouts.Selected = MenuModel.LayoutIndex(_layout);
+		layouts.ItemSelected += index =>
+		{
+			_layout = MatchSetup.Layout = MenuModel.Layouts[index].Layout;
+			_settings = _settings with { Layout = _layout };
+			SaveSettings();
+			AddPreview();
+		};
+		_page.AddChild(layouts);
 	}
 
 	// ---- pages ----
@@ -200,7 +216,7 @@ public partial class MainMenu : Control
 			addresses.Text = lan.Count == 0 ? $"Port {p}." : $"Din kompis ansluter till:\n{string.Join("\n", lan.ConvertAll(a => MenuModel.AddressLine(a, p)))}";
 			_startMatch.Visible = true;
 		});
-		_startMatch = AddButton("Starta matchen", () => (_session as HostSession)?.Start(_seed, _map));
+		_startMatch = AddButton("Starta matchen", () => (_session as HostSession)?.Start(_seed, _map, _layout));
 		_startMatch.Visible = false;
 		_startMatch.Disabled = true;
 		AddButton("Tillbaka", Back);
@@ -257,7 +273,7 @@ public partial class MainMenu : Control
 		_session = new ClientSession(_transport, password, name, NewWorld);
 	}
 
-	private static World NewWorld(MatchSettings settings) => World.CreateMatch(obstacles: true, settings.Seed, settings.Theme);
+	private static World NewWorld(MatchSettings settings) => World.CreateMatch(obstacles: true, settings.Seed, settings.Theme, settings.Layout);
 
 	private void Back()
 	{
@@ -282,6 +298,7 @@ public partial class MainMenu : Control
 		if (args.Host)
 		{
 			_map = MatchSetup.Theme = args.Map;
+			_layout = MatchSetup.Layout = args.Layout;
 			if (Host(args.Port, args.Password, args.Name))
 				_seed = args.Seed;
 			_autoStart = true;

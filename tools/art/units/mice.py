@@ -5,6 +5,7 @@ The mice seen from above (nose east, turned by the game), on two legs:
   scout         - green cap, binoculars; act = looking through them
   cheese_hunter - red headband, boxing gloves; act = punching (wind up, hit)
   pirate        - tricorn, eye patch, striped shirt, flintlock; act = aim, fire (puff)
+  samurai       - red kabuto with a gold crest, dark gi, katana; act = sword drawn back, swept across (slash)
 
     python tools/art/units/mice.py && python tools/art/restyle.py <the files it lists>
 Writes Units/<name>_sheet.png (one row of 7 cells, UI/UnitSheets) and Units/<name>.png (idle, for the UI).
@@ -139,6 +140,40 @@ def patch_and_puff(d, info):
             d.ellipse((x + dx - r, y + dy - r, x + dx + r, y + dy + r), fill=WHITE)
 
 
+KABUTO = (176, 44, 52)
+GI = (70, 96, 176)
+GOLD = (236, 186, 64)
+
+
+def kabuto(d, hx, hy):
+    # Over the back of the head (the face stays free): neck guard, dome, the crest's two gold horns.
+    cx = hx - 4
+    d.ellipse((cx - 7, hy - 8, cx + 4, hy + 8), fill=tint(KABUTO, -0.3))
+    d.ellipse((cx - 5, hy - 6, cx + 4, hy + 6), fill=KABUTO)
+    d.polygon([(cx + 2, hy - 2), (cx + 9, hy - 9), (cx + 6, hy - 1)], fill=GOLD)
+    d.polygon([(cx + 2, hy + 2), (cx + 9, hy + 9), (cx + 6, hy + 1)], fill=GOLD)
+
+
+def katana(d, x, y, pose, step):
+    # Blade direction by pose: held forward, drawn back over the shoulder, swept across to the front.
+    dx, dy = {("act", 0): (-6, -13), ("act", 1): (14, 7)}.get((pose, step), (14, 4))
+    d.line((x - dx // 4, y - dy // 4, x, y), fill=INK, width=3)                # the grip
+    d.line((x, y, x + dx, y + dy), fill=WHITE, width=3)                        # the blade
+    d.line((x, y, x + dx, y + dy), fill=STEEL, width=1)
+
+
+def swinging(info):
+    bx, cy = info["body"]
+    return {"hand": (bx + 5, cy - 9)} if info["step"] == 0 else {"hand": (bx + 13, cy + 7)}
+
+
+def slash(d, info):
+    if info["pose"] != "act" or info["step"] != 1:
+        return
+    hx, hy = info["head"]
+    d.arc((hx - 2, hy - 17, hx + 14, hy + 17), start=-75, end=75, fill=WHITE, width=3)
+
+
 def main():
     write("builder", lambda p, s: topdown_mouse(p, s, hat=hard_hat, shirt=ORANGE, held=hammer, act=hammering))
     write("farmer", lambda p, s: topdown_mouse(p, s, hat=straw_hat, shirt=BLUE, held=carrot, act=picking))
@@ -148,6 +183,7 @@ def main():
                                                       extra=back_glove))
     write("pirate", lambda p, s: topdown_mouse(p, s, hat=tricorn, shirt=WHITE, stripes=RED, held=pistol, act=aiming,
                                                extra=patch_and_puff))
+    write("samurai", lambda p, s: topdown_mouse(p, s, hat=kabuto, shirt=GI, held=katana, act=swinging, extra=slash))
     print(" ".join(WRITTEN))
 
 

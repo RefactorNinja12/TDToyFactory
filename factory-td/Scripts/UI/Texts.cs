@@ -37,6 +37,7 @@ public static class Texts
 		BuildingType.Tent => "Tält",
 		BuildingType.CheeseMelter => "Ostsmältare",
 		BuildingType.Treadmill => "Löpband",
+		BuildingType.Dojo => "Samurajdojo",
 		BuildingType.CropField => "Odlingslåda",
 		BuildingType.Farmhouse => "Bondgård",
 		BuildingType.Kitchen => "Kök",
@@ -70,6 +71,7 @@ public static class Texts
 		BuildingType.Pendulum => "En lång pendel (4 rutor, vrid med R). Vikten svingar från ena änden till den andra och knuffar fiender den möter 3 rutor i svängriktningen. Ställ den bredvid en fallucka.",
 		BuildingType.Gate => "En grind i muren: dina egna enheter och arbetare går igenom, för fienden är den en vägg.",
 		BuildingType.Tent => $"Leksakstält där spejare bor ({UnitStats.ScoutsPerTent} per tält, max {UnitStats.MaxScouts}). Gör en spejare av {Texts.ItemCount(ItemType.Plastic, 3)}. Spejare letar längs kanten av dimman, brett före djupt, och springer från fiender.",
+		BuildingType.Dojo => "2x2. En pagod där senseimusen tränar samurajmöss av 3 plast + 1 fjäder + 1 kugghjul. Samurajen sveper med svärdet och träffar alla fiender framför sig: bra mot klungor, svag mot katapulter och golems. Drar ström.",
 		BuildingType.Treadmill => $"2x2. En byggarmus springer efter en ostbit och blir en ostjägare: behöver {ItemCount(ItemType.MeltedCheese, Treadmill.Recipe[0].Amount)} och en byggarmus (som går dit själv, aldrig din sista). Drivs av musen, ingen ström. Ostjägare är billiga närkämpar som slår på fiender och byggnader.",
 		BuildingType.Warehouse => $"2x2. Leksakshylla som lagrar allt som körs in på band, i samma förråd som leksakslådan. Varje lager ger plats för {PlayerState.WarehouseCapacity} till av varje sort.",
 		BuildingType.CropField => $"Plastmorötter växer här på {CropField.GrowTicks / World.TicksPerSecond} s och ger {CropField.Yield} morötter. En bonde skördar, sedan växer den igen.",
@@ -156,6 +158,7 @@ public static class Texts
 		UnitType.Farmer => "Bondmus",
 		UnitType.Scout => "Spejarmus",
 		UnitType.CheeseHunter => "Ostjägare",
+		UnitType.Samurai => "Samurajmus",
 		_ => type.ToString(),
 	};
 

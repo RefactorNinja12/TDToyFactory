@@ -14,6 +14,8 @@ public enum Motion
 	Blink,  // on for the first half of each beat, dim for the rest
 	Puff,   // rises by (DX, DY), growing and fading (steam, bubbles)
 	Float,  // bobs DY up and down and rocks by Amount radians, a quarter beat apart (a ship on the water)
+	Pop,    // shown for the first Amount (0..1) of each beat: pops up quickly, then fades; hidden the rest (a shout)
+	Turn,   // faces one way for the first half of each beat, then mirrored the other way (someone looking about)
 }
 
 /// <summary>
@@ -26,7 +28,11 @@ public sealed record Part(string Sprite, float X, float Y, Motion Motion, float 
 	float DX = 0, float DY = 0, float Amount = 0, float Phase = 0, bool Always = false);
 
 /// <summary>Where a part is at a moment: offset from the building centre in sprite pixels, turn, size, opacity.</summary>
-public readonly record struct Pose(float X, float Y, float Angle, float Scale, float Alpha);
+public readonly record struct Pose(float X, float Y, float Angle, float Scale, float Alpha)
+{
+	/// <summary>Mirrored left to right (Motion.Turn).</summary>
+	public bool Flip { get; init; }
+}
 
 /// <summary>The moving parts of each building and how they move. Pure: the view only draws the poses.</summary>
 public static class BuildingParts
@@ -34,6 +40,21 @@ public static class BuildingParts
 	// Drawn by tools/art/buildings/*.py; anchors are sprite pixels from the centre, east = the output side.
 	private static readonly Dictionary<BuildingType, Part[]> Table = new()
 	{
+		// The pagoda, seen from the side like the pirate ship (upright, mirrored when facing west). The sensei by the door
+		// looks right and left and shouts now and then (always); the lanterns on the eaves glow (always); a trainee
+		// practises with a wooden sword and the paper door slides while it trains a samurai.
+		[BuildingType.Dojo] = new[]
+		{
+			new Part("pagoda", 0, -6, Motion.Swing, Amount: 0, Always: true),
+			new Part("dojo_door", -5, 36, Motion.Bob, Speed: 0.3f, DX: 10),
+			new Part("dojo_lantern", -44, 25, Motion.Blink, Speed: 0.4f, Always: true),
+			new Part("dojo_lantern", 44, 25, Motion.Blink, Speed: 0.4f, Phase: 0.5f, Always: true),
+			new Part("dojo_lantern", -38, 0, Motion.Blink, Speed: 0.4f, Phase: 0.25f, Always: true),
+			new Part("dojo_lantern", 38, 0, Motion.Blink, Speed: 0.4f, Phase: 0.75f, Always: true),
+			new Part("dojo_trainee", -32, 36, Motion.Bob, Speed: 0.7f, DX: 10),
+			new Part("sensei", 22, 36, Motion.Turn, Speed: 0.25f, Always: true),
+			new Part("sensei_shout", 32, 14, Motion.Pop, Speed: 0.25f, Amount: 0.15f, DY: -4, Always: true),
+		},
 		[BuildingType.BrickExtractor] = new[]
 		{
 			new Part("brick_ride", 5, 0, Motion.Slide, Speed: 0.8f, DX: 17),
@@ -120,6 +141,7 @@ public static class BuildingParts
 		float f = cycle - MathF.Floor(cycle);     // 0..1 through the current cycle
 		float wave = MathF.Sin(f * MathF.Tau);
 		float x = part.X, y = part.Y, angle = 0, scale = 1, alpha = 1;
+		bool flip = false;
 		switch (part.Motion)
 		{
 			case Motion.Spin:
@@ -155,15 +177,24 @@ public static class BuildingParts
 				scale = 0.6f + 0.6f * f;
 				alpha = 1 - f;
 				break;
+			case Motion.Pop:
+				float shown = part.Amount > 0 ? f / part.Amount : 1; // 0..1 while shown
+				scale = shown < 1 ? 0.5f + 0.5f * MathF.Min(1, shown * 4) : 1;
+				alpha = shown < 1 ? MathF.Min(1, 2 - 2 * shown) : 0;
+				y += part.DY * MathF.Min(1, shown);
+				break;
+			case Motion.Turn:
+				flip = f >= 0.5f;
+				break;
 		}
-		return new Pose(x, y, angle, scale, alpha);
+		return new Pose(x, y, angle, scale, alpha) { Flip = flip };
 	}
 
 	/// <summary>
 	/// Buildings drawn from the side (the pirate ship): their parts are never turned with the building, only
 	/// mirrored when it faces west; the base sprite under them (water and output) still turns.
 	/// </summary>
-	public static bool KeepsUpright(BuildingType type) => type == BuildingType.SoldierFactory;
+	public static bool KeepsUpright(BuildingType type) => type is BuildingType.SoldierFactory or BuildingType.Dojo;
 
 	/// <summary>The time a part is posed at: its building's work clock, or the wall clock if it always moves.</summary>
 	public static float TimeFor(Part part, float workTime, float wallTime) => part.Always ? wallTime : workTime;

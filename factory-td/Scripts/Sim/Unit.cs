@@ -11,6 +11,7 @@ public enum UnitType : byte
 	Farmer,
 	Scout,
 	CheeseHunter,
+	Samurai,
 }
 
 /// <summary>What a unit is made of; decides which tower hurts it most.</summary>
@@ -95,6 +96,14 @@ public static class UnitStats
 		TargetsUnits: true, BuildingDamagePercent: 100,
 		Recipe: new ItemStack[] { new(ItemType.MeltedCheese, 2) }, BuildTicks: 140);
 
+	// Samurai mouse: a sword fighter that sweeps the arc in front of it and hits every enemy there (SamuraiStats).
+	// The counter to crowds of small units; plastic armour, so area damage hurts, and golems shrug off the sword.
+	private static readonly UnitDef Samurai = new(
+		ArmorClass.Plastic, MaxHealth: 60, Speed: 26, Damage: 10, AttackTicks: 20,
+		Range: SubTile * 13 / 10, Sight: SubTile * 7, ShotTravelTicks: 2,
+		TargetsUnits: true, BuildingDamagePercent: 100,
+		Recipe: new ItemStack[] { new(ItemType.Plastic, 3), new(ItemType.Spring, 1), new(ItemType.Gear, 1) }, BuildTicks: 180);
+
 	/// <summary>Most scouts a player can have, and how many each tent houses.</summary>
 	public const int MaxScouts = 6;
 	public const int ScoutsPerTent = 2;
@@ -145,6 +154,7 @@ public static class UnitStats
 		UnitType.Farmer => Farmer,
 		UnitType.Scout => Scout,
 		UnitType.CheeseHunter => CheeseHunter,
+		UnitType.Samurai => Samurai,
 		_ => PlasticSoldier,
 	};
 
@@ -180,10 +190,20 @@ public sealed class Unit
 
 	public int Health { get; internal set; }
 
+	/// <summary>Sword swings so far (samurai): the view slashes when it changes.</summary>
+	public int SwingCount { get; internal set; }
+
 	/// <summary>Shoved by a pendulum: moves (PushX, PushY) per tick for PushTicks ticks instead of acting.</summary>
 	public int PushX { get; internal set; }
 	public int PushY { get; internal set; }
 	public int PushTicks { get; internal set; }
+
+	/// <summary>Thrown by a golem's slam: the whole flight in ticks while it is in the air (0 on the ground).</summary>
+	public int AirTicks { get; internal set; }
+
+	/// <summary>Golems: ticks left of the slam's wind-up (hands up), and until the next slam.</summary>
+	public int SlamTicks { get; internal set; }
+	public int SlamCooldown { get; internal set; }
 	internal int AttackCooldown { get; set; }
 
 	/// <summary>Battery charge (golems and cars only, see PowerStats).</summary>
@@ -223,5 +243,51 @@ public sealed class Unit
 		Y = PrevY = y;
 		Health = UnitStats.MaxHealth(type);
 		Charge = PowerStats.MaxCharge(type);
+	}
+}
+
+/// <summary>
+/// The golem's ground slam: when an enemy unit comes close it raises both hands, then slams the ground. Every enemy unit
+/// round it takes area damage and is thrown back, outwards from the golem. Distances in sub-tile units.
+/// </summary>
+public static class GolemStats
+{
+	public const int SlamTrigger = UnitStats.SubTile * 3 / 2;
+	public const int SlamRadius = UnitStats.SubTile * 7 / 4;
+	public const int SlamDamage = 5;
+	public const int SlamMaxTargets = 5;
+	public const int SlamWindupTicks = 8;
+	public const int SlamCooldownTicks = 80;
+	public const int ThrowDistance = UnitStats.SubTile * 3 / 2;
+	public const int ThrowTicks = 8;
+
+	/// <summary>Golems weigh more: thrown half as far.</summary>
+	public static int ThrowTicksFor(UnitType type) => type == UnitType.BrickGolem ? ThrowTicks / 2 : ThrowTicks;
+}
+
+/// <summary>A golem's slam: where (sub-tiles) and on which tick.</summary>
+public readonly record struct SlamMark(int X, int Y, long Tick);
+
+/// <summary>The samurai's sword sweep. Distances in sub-tile units.</summary>
+public static class SamuraiStats
+{
+	public const int SweepReach = UnitStats.SubTile * 8 / 5;
+	public const int SweepMaxTargets = 5;
+
+	/// <summary>Half the arc's width: cos² of 60°, as a fraction (dot² ≥ cos²·|v|²·|f|²).</summary>
+	private const int CosSquaredNumerator = 1, CosSquaredDenominator = 4;
+
+	/// <summary>Whether <paramref name="other"/> is in the arc the samurai sweeps when it strikes at the target.</summary>
+	public static bool InArc(Unit samurai, Unit target, Unit other)
+	{
+		long fx = target.X - samurai.X, fy = target.Y - samurai.Y;
+		long vx = other.X - samurai.X, vy = other.Y - samurai.Y;
+		long v2 = vx * vx + vy * vy;
+		if (v2 > (long)SweepReach * SweepReach)
+			return false;
+		long dot = vx * fx + vy * fy;
+		if (v2 == 0)
+			return true;
+		return dot > 0 && CosSquaredDenominator * dot * dot >= CosSquaredNumerator * v2 * (fx * fx + fy * fy);
 	}
 }

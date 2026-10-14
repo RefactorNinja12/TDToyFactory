@@ -29,7 +29,7 @@ public class WallTests
 	private static (List<Building> Fences, BatteryCharger Charger) PoweredFence(Scenario s)
 	{
 		var fences = LineAcrossHall(s, BuildingType.ElectricFence);
-		s.Pylon(WallX - 5, 30); // out of the attackers' range: shots fly over walls
+		s.Pylon(WallX - 4, 30); // out of the attackers' range (shots fly over walls), reaches the fences they hit
 		return (fences, s.Charger(WallX - 7, 30, energy: 12000));
 	}
 

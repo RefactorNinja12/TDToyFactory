@@ -48,7 +48,7 @@ public class NetTests
 {
 	private const string Password = "hemligt";
 
-	private static World NewWorld(MatchSettings settings) => World.CreateMatch(obstacles: true, settings.Seed, settings.Theme);
+	private static World NewWorld(MatchSettings settings) => World.CreateMatch(obstacles: true, settings.Seed, settings.Theme, settings.Layout);
 
 	private static HostSession Host(FakeNetwork net, string password = Password) =>
 		new(net.Host, password, "Värd", NewWorld);
@@ -215,10 +215,11 @@ public class NetTests
 	{
 		var net = new FakeNetwork(latencyMs: 40);
 		var (host, client) = Joined(net);
-		((HostSession)host.Session).Start(seed: 5, MapTheme.Garden);
+		((HostSession)host.Session).Start(seed: 5, MapTheme.Garden, MapLayoutKind.ManyRooms);
 		Run(net, () => client.Sums.Count >= 40, 5000, host, client);
 		Assert.Equal(MapTheme.Garden, client.Session.World.Map.Theme);
-		Assert.Equal(new MatchSettings(5, MapTheme.Garden), client.Session.Settings);
+		Assert.Equal(MapLayoutKind.ManyRooms, client.Session.World.Map.Layout);
+		Assert.Equal(new MatchSettings(5, MapTheme.Garden, MapLayoutKind.ManyRooms), client.Session.Settings);
 		Assert.Equal(host.Sums.Take(40), client.Sums.Take(40));
 	}
 

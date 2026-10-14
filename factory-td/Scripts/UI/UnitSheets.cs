@@ -12,13 +12,17 @@ public enum UnitLayout
 
 /// <summary>
 /// How the unit sprite sheets are laid out (Assets/Sprites/Units/&lt;name&gt;_sheet.png, drawn by
-/// tools/art/units): columns idle, walk 1-4, act 1-2 (vehicles: wheel frames); rows per UnitLayout.
+/// tools/art/units): columns idle, walk 1-4, act 1-2 (the golem also slam 1-2: hands up, fists down; vehicles: wheel
+/// frames); rows per UnitLayout.
 /// </summary>
 public static class UnitSheets
 {
 	public const int Columns = 7;
 	public const int Rows = 3;
-	public const int WalkColumn = 1, ActColumn = 5;
+	public const int WalkColumn = 1, ActColumn = 5, SlamColumn = 7;
+
+	/// <summary>Columns in the type's sheet: the golem has its two slam frames after the others.</summary>
+	public static int ColumnsOf(UnitType type) => type == UnitType.BrickGolem ? Columns + 2 : Columns;
 
 	public const int VehicleFrames = 2;
 
@@ -38,8 +42,8 @@ public static class UnitSheets
 	/// <summary>Sheet size in pixels: 7x3 cells upright, 7x1 top-down, a row of wheel frames for vehicles.</summary>
 	public static (int Width, int Height) SheetSize(UnitType type) => Layout(type) switch
 	{
-		UnitLayout.Upright => (Columns * CellSize(type), Rows * CellSize(type)),
-		UnitLayout.TopDown => (Columns * CellSize(type), CellSize(type)),
+		UnitLayout.Upright => (ColumnsOf(type) * CellSize(type), Rows * CellSize(type)),
+		UnitLayout.TopDown => (ColumnsOf(type) * CellSize(type), CellSize(type)),
 		_ => (VehicleFrames * CellSize(type), CellSize(type)),
 	};
 
@@ -58,13 +62,14 @@ public static class UnitSheets
 	{
 		PoseKind.Walk => WalkColumn + frame.Step % 4,
 		PoseKind.Act => ActColumn + frame.Step % 2,
+		PoseKind.Slam => SlamColumn + frame.Step % 2,
 		_ => 0,
 	};
 
 	/// <summary>Pixels per cell of the sheet.</summary>
 	public static int CellSize(UnitType type) => type switch
 	{
-		UnitType.BrickGolem => 64,
+		UnitType.BrickGolem => 80, // the biggest; the body is at most ~60 px wide (fits a 1-tile gap)
 		_ => 48,
 	};
 

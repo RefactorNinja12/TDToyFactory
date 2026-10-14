@@ -112,7 +112,9 @@ public sealed class ShadowCaster
 			if (!world.CanSee(player, unit))
 				continue;
 			float x = unit.X / (float)UnitStats.SubTile, y = unit.Y / (float)UnitStats.SubTile;
-			if (Follow(unit, Shadows.Cast(x, y, UnitSize, Near(lights, x, y), Reaches), k) is { } shadow)
+			// A thrown unit's shadow stays on the floor and shrinks the higher it flies.
+			float size = UnitSize * (UnitStats.SubTile - UnitAnimation.Lift(unit)) / UnitStats.SubTile;
+			if (Follow(unit, Shadows.Cast(x, y, size, Near(lights, x, y), Reaches), k) is { } shadow)
 				Units.Add((unit, shadow));
 		}
 		foreach (var building in world.Buildings)

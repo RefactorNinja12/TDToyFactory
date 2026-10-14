@@ -55,7 +55,7 @@ public class MenuModelTests
 	[Fact]
 	public void Settings_RoundTrip_AndNeverHoldThePassword()
 	{
-		var settings = new MenuSettings("Ricky", "192.168.1.20:7790", 7790, MapTheme.Garden);
+		var settings = new MenuSettings("Ricky", "192.168.1.20:7790", 7790, MapTheme.Garden, MapLayoutKind.ManyRooms);
 		Assert.Equal(settings, MenuSettings.FromText(settings.ToText()));
 		Assert.DoesNotContain("password", settings.ToText());
 		Assert.DoesNotContain(typeof(MenuSettings).GetProperties(), p => p.Name.Contains("Password"));
@@ -116,5 +116,9 @@ public class MenuModelTests
 		Assert.Equal(MapTheme.Garden, LaunchArgs.Parse("--host --map garden".Split(' ')).Map);
 		Assert.Equal(MapTheme.Nursery, LaunchArgs.Parse("--host --map moon".Split(' ')).Map);
 		Assert.Equal(MapTheme.Nursery, MenuSettings.FromText("map=99\n").Map);
+		Assert.Equal(new[] { MapLayoutKind.TwoRooms, MapLayoutKind.ManyRooms }, MenuModel.Layouts.Select(l => l.Layout));
+		Assert.Equal(1, MenuModel.LayoutIndex(MapLayoutKind.ManyRooms));
+		Assert.Equal(MapLayoutKind.ManyRooms, LaunchArgs.Parse("--host --layout many-rooms".Split(' ')).Layout);
+		Assert.Equal(MapLayoutKind.TwoRooms, LaunchArgs.Parse("--host --layout moon".Split(' ')).Layout);
 	}
 }

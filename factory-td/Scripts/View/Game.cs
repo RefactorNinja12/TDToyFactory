@@ -63,7 +63,7 @@ public partial class Game : Node2D
 		_session = Preview ? null : MatchSetup.Session;
 		if (Preview)
 		{
-			World = World.CreateMatch(theme: MatchSetup.Theme);
+			World = World.CreateMatch(theme: MatchSetup.Theme, layout: MatchSetup.Layout);
 			World.FullVision = true;
 			_commands = new DirectCommands(World);
 			_bot = new BotPlayer(1);
@@ -79,7 +79,7 @@ public partial class Game : Node2D
 		}
 		else
 		{
-			World = World.CreateMatch(theme: MatchSetup.Theme);
+			World = World.CreateMatch(theme: MatchSetup.Theme, layout: MatchSetup.Layout);
 			_commands = new DirectCommands(World);
 			if (EnableBot)
 				_bot = new BotPlayer(World.EnemyOf(LocalPlayer), MatchSetup.BotArmyDelayTicks);
@@ -280,7 +280,7 @@ public partial class Game : Node2D
 			return false;
 		if (_quitIn < 0 && (ReachedQuitStep() || _session is { State: SessionState.Ended }))
 		{
-			string line = ReachedQuitStep() ? $"{World.TickCount} {World.Checksum():X16} {World.Map.Theme}" : $"ended {_session.EndReason} {_session.DesyncStep}";
+			string line = ReachedQuitStep() ? $"{World.TickCount} {World.Checksum():X16} {World.Map.Theme} {World.Map.Layout}" : $"ended {_session.EndReason} {_session.DesyncStep}";
 			using (var file = FileAccess.Open(MatchSetup.ChecksumFile, FileAccess.ModeFlags.Write))
 				file?.StoreString(line + "\n");
 			_quitIn = 3;

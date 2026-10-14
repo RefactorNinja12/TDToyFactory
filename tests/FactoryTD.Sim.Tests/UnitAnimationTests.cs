@@ -88,6 +88,43 @@ public class UnitAnimationTests
 	}
 
 	[Fact]
+	public void Golem_RaisesItsHands_ThenSlamsTheFistsDown()
+	{
+		var s = Scenario.Match().NoWorkers().Instant();
+		var golem = s.Spawn(UnitType.BrickGolem, 72, 30);
+		s.Spawn(UnitType.Farmer, 73, 30, owner: 1);
+		var frames = Watch(s, golem, GolemStats.SlamWindupTicks + UnitAnimation.SlamDownTicks + 2, new UnitAnimation());
+		int up = frames.FindIndex(f => f.Kind == PoseKind.Slam && f.Step == 0);
+		int down = frames.FindIndex(f => f.Kind == PoseKind.Slam && f.Step == 1);
+		Assert.InRange(up, 0, 2);
+		Assert.Equal(GolemStats.SlamWindupTicks, frames.Count(f => f.Kind == PoseKind.Slam && f.Step == 0));
+		Assert.True(down > up);
+		Assert.Equal(UnitAnimation.SlamDownTicks, frames.Count(f => f.Kind == PoseKind.Slam && f.Step == 1));
+		Assert.NotEqual(PoseKind.Slam, frames[^1].Kind);
+	}
+
+	[Fact]
+	public void Thrown_FliesUpInAnArc_AndLands()
+	{
+		var unit = new Unit(1, UnitType.Farmer, 0, 0, 0);
+		Assert.Equal(0, UnitAnimation.Lift(unit)); // on the ground
+		unit.AirTicks = unit.PushTicks = 8;
+		unit.PushX = 10;
+		var arc = Enumerable.Range(0, 9).Select(flown => { unit.PushTicks = 8 - flown; return UnitAnimation.Lift(unit); }).ToList();
+		Assert.Equal(0, arc[0]);
+		Assert.Equal(UnitAnimation.MaxLift, arc[4]); // highest halfway
+		Assert.Equal(0, arc[8]);
+		Assert.True(arc[2] > arc[1] && arc[6] < arc[5]);
+		unit.PushTicks = 6;
+		Assert.True(UnitAnimation.Lift(unit, 500) > UnitAnimation.Lift(unit)); // smooth between ticks
+		Assert.Equal(2 * UnitAnimation.SpinPerTick, UnitAnimation.Spin(unit));
+		unit.PushX = -10;
+		Assert.Equal(-2 * UnitAnimation.SpinPerTick, UnitAnimation.Spin(unit)); // the other way when flying west
+		unit.AirTicks = unit.PushTicks = 0;
+		Assert.Equal(0, UnitAnimation.Spin(unit));
+	}
+
+	[Fact]
 	public void DeadUnits_AreForgotten_AndUnknownOnesIdle()
 	{
 		var s = Scenario.Match().NoWorkers().Instant();
@@ -107,6 +144,8 @@ public class UnitAnimationTests
 	[InlineData(Facing.Right, PoseKind.Walk, 3, 4, 2, false)]
 	[InlineData(Facing.Left, PoseKind.Walk, 0, 1, 2, true)]
 	[InlineData(Facing.Left, PoseKind.Act, 1, 6, 2, true)]
+	[InlineData(Facing.Toward, PoseKind.Slam, 0, 7, 0, false)]
+	[InlineData(Facing.Right, PoseKind.Slam, 1, 8, 2, false)]
 	public void Sheet_CellForEveryFrame(Facing facing, PoseKind kind, int step, int column, int row, bool mirror) =>
 		Assert.Equal((column, row, mirror), UnitSheets.Cell(new UnitFrame(facing, kind, step)));
 

@@ -30,7 +30,7 @@ public class DeterminismTests
 	/// into one number. A refactor must leave it unchanged. When a change is MEANT to change how the game
 	/// plays, update the value on purpose (the failure message prints the new one) and say so in the commit.
 	/// </summary>
-	private const ulong GoldenBotMatch = 0x299E99DC031BB7E0UL;
+	private const ulong GoldenBotMatch = 0xE849808215050361UL;
 
 	[Fact]
 	public void Golden_BotMatch_PlaysExactlyAsRecorded()

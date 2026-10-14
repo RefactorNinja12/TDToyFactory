@@ -28,6 +28,7 @@ public static class VisionStats
 		UnitType.RcCar => 3,
 		UnitType.Scout => 7,
 		UnitType.CheeseHunter => 4,
+		UnitType.Samurai => 5,
 		_ => 3, // builders, farmers
 	};
 
@@ -178,8 +179,16 @@ public sealed class Vision
 
 		foreach (var building in world.Buildings)
 		{
-			int cx = building.X + building.Width / 2, cy = building.Y + building.Height / 2;
-			Light(map, building.Owner, cx, cy, Disc(VisionStats.BuildingRadius(building)));
+			int radius = VisionStats.BuildingRadius(building);
+			if (building.LitRadius != radius)
+			{
+				var (cx, cy) = World.MiddleTile(building);
+				building.LitTiles = LitTiles(map, cx, cy, Disc(radius));
+				building.LitRadius = radius;
+			}
+			var visible = _visible[building.Owner];
+			foreach (int tile in building.LitTiles)
+				visible[tile] = true;
 		}
 		foreach (var unit in world.Units)
 		{
@@ -204,34 +213,53 @@ public sealed class Vision
 		}
 	}
 
-	private bool AnyVisible(int player, int x, int y, int width, int height) =>
-		Footprint.Any(x, y, width, height, (tx, ty) => IsVisible(player, tx, ty));
+	private bool AnyVisible(int player, int x, int y, int width, int height)
+	{
+		var visible = _visible[player];
+		for (int ty = y; ty < y + height; ty++)
+			for (int tx = x; tx < x + width; tx++)
+				if (visible[ty * _width + tx])
+					return true;
+		return false;
+	}
+
+	/// <summary>The tiles (as indices) the shape lights from (x, y).</summary>
+	private int[] LitTiles(MapLayout map, int x, int y, Ray[] shape)
+	{
+		var tiles = new List<int>();
+		foreach (var ray in shape)
+			if (Reaches(map, x, y, ray))
+				tiles.Add((y + ray.DY) * _width + x + ray.DX);
+		return tiles.ToArray();
+	}
+
+	private static bool Reaches(MapLayout map, int x, int y, Ray ray)
+	{
+		if (!map.InBounds(x + ray.DX, y + ray.DY))
+			return false;
+		foreach (var (bx, by) in ray.Between)
+		{
+			int wx = x + bx, wy = y + by;
+			if (!map.InBounds(wx, wy) || map[wx, wy] == TileType.Wall)
+				return false;
+		}
+		return true;
+	}
 
 	private void Light(MapLayout map, int player, int x, int y, Ray[] shape)
 	{
 		var visible = _visible[player];
 		foreach (var ray in shape)
-		{
-			int tx = x + ray.DX, ty = y + ray.DY;
-			if (!map.InBounds(tx, ty))
-				continue;
-			bool blocked = false;
-			foreach (var (bx, by) in ray.Between)
-			{
-				int wx = x + bx, wy = y + by;
-				if (!map.InBounds(wx, wy) || map[wx, wy] == TileType.Wall)
-				{
-					blocked = true;
-					break;
-				}
-			}
-			if (!blocked)
-				visible[ty * _width + tx] = true;
-		}
+			if (Reaches(map, x, y, ray))
+				visible[(y + ray.DY) * _width + x + ray.DX] = true;
 	}
+
+	private static readonly Ray[][] DiscCache = new Ray[64][]; // small radii, without the lock (worlds run in parallel)
 
 	private static Ray[] Disc(int radius)
 	{
+		if (radius < DiscCache.Length && DiscCache[radius] is { } cached)
+			return cached;
 		lock (Discs)
 		{
 			if (Discs.TryGetValue(radius, out var disc))
@@ -241,7 +269,10 @@ public sealed class Vision
 				for (int dx = -radius; dx <= radius; dx++)
 					if (dx * dx + dy * dy <= radius * radius)
 						rays.Add(new Ray(dx, dy, Line(dx, dy)));
-			return Discs[radius] = rays.ToArray();
+			disc = Discs[radius] = rays.ToArray();
+			if (radius < DiscCache.Length)
+				DiscCache[radius] = disc;
+			return disc;
 		}
 	}
 
