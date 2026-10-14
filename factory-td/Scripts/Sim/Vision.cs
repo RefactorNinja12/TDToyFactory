@@ -179,7 +179,7 @@ public sealed class Vision
 
 		foreach (var building in world.Buildings)
 		{
-			int cx = building.X + building.Width / 2, cy = building.Y + building.Height / 2;
+			var (cx, cy) = World.MiddleTile(building);
 			Light(map, building.Owner, cx, cy, Disc(VisionStats.BuildingRadius(building)));
 		}
 		foreach (var unit in world.Units)

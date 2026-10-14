@@ -90,7 +90,7 @@ public sealed partial class World
 		if (unit.Charge == 0)
 			unit.PowerState = UnitPower.Empty;
 		else if (unit.PowerState == UnitPower.Charging ||
-			(unit.PowerState == UnitPower.Normal && unit.Charge * 100L <= max * (long)PowerStats.ReturnPercent))
+			(unit.PowerState == UnitPower.Normal && (unit.Charge * 100L <= max * (long)PowerStats.ReturnPercent || JustEnoughToGetBack(unit))))
 			unit.PowerState = UnitPower.Returning;
 		if (unit.PowerState == UnitPower.Normal)
 			return false;
@@ -102,6 +102,21 @@ public sealed partial class World
 		const int half = UnitStats.SubTile / 2;
 		TryStep(unit, nextX * UnitStats.SubTile + half, nextY * UnitStats.SubTile + half, speed);
 		return true;
+	}
+
+	/// <summary>
+	/// Whether what's left in the battery only just gets the unit back to its grid (with a quarter to spare): on a long
+	/// way out it turns back before running flat, not only at <see cref="PowerStats.ReturnPercent"/>.
+	/// </summary>
+	private bool JustEnoughToGetBack(Unit unit)
+	{
+		int distance = PowerField(unit.Owner).Distance(unit.TileX, unit.TileY);
+		if (distance == FlowField.Unreachable)
+			return false;
+		// Flow-field distance is 10 per tile; a tile is SubTile long; the unit covers Speed per tick.
+		long ticksHome = (long)distance * UnitStats.SubTile / (10L * UnitStats.Speed(unit.Type));
+		long needed = ticksHome * PowerStats.DrainPerTick(unit.Type);
+		return unit.Charge <= needed + needed / 4;
 	}
 
 	/// <summary>Distance to the nearest tile the player's grid powers (built on first use after a change).</summary>

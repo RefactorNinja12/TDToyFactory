@@ -11,14 +11,16 @@ namespace FactoryTD.Sim;
 internal static class GridSearch
 {
 	private static readonly (int DX, int DY)[] Steps = { (1, 0), (0, 1), (-1, 0), (0, -1) };
+	private static readonly (int DX, int DY)[] WestFirst = { (-1, 0), (0, 1), (1, 0), (0, -1) };
 
 	/// <summary>
 	/// The shortest walk from (fromX, fromY) to the first tile where <paramref name="isGoal"/> holds, over
 	/// tiles where <paramref name="walkable"/> holds. The path leaves out the start and ends on the goal;
-	/// empty if the start already is a goal, null if no goal can be reached.
+	/// empty if the start already is a goal, null if no goal can be reached. <paramref name="westFirst"/>: ties go
+	/// the mirrored way (player 1's walks mirror player 0's).
 	/// </summary>
 	public static List<(int X, int Y)> PathTo(int width, int height, int fromX, int fromY,
-		Func<int, int, bool> walkable, Func<int, int, bool> isGoal)
+		Func<int, int, bool> walkable, Func<int, int, bool> isGoal, bool westFirst = false)
 	{
 		if (isGoal(fromX, fromY))
 			return new List<(int X, int Y)>();
@@ -29,7 +31,7 @@ internal static class GridSearch
 		var queue = new Queue<int>();
 		queue.Enqueue(start);
 		int goal = -1;
-		Flood(width, height, queue, (tile, next) =>
+		Flood(width, height, queue, westFirst ? WestFirst : Steps, (tile, next) =>
 		{
 			if (previous[next] >= 0 || !walkable(next % width, next / width))
 				return Visit.Skip;
@@ -64,7 +66,7 @@ internal static class GridSearch
 			queue.Enqueue(source);
 		}
 		int reached = queue.Count;
-		Flood(width, height, queue, (tile, next) =>
+		Flood(width, height, queue, Steps, (tile, next) =>
 		{
 			if (distance[next] >= 0 || !walkable(next % width, next / width))
 				return Visit.Skip;
@@ -78,13 +80,13 @@ internal static class GridSearch
 	private enum Visit { Skip, Enqueue, Stop }
 
 	/// <summary>Breadth-first over the grid from what is queued; <paramref name="visit"/> judges each neighbour.</summary>
-	private static void Flood(int width, int height, Queue<int> queue, Func<int, int, Visit> visit)
+	private static void Flood(int width, int height, Queue<int> queue, (int DX, int DY)[] steps, Func<int, int, Visit> visit)
 	{
 		while (queue.Count > 0)
 		{
 			int tile = queue.Dequeue();
 			int x = tile % width, y = tile / width;
-			foreach (var (dx, dy) in Steps)
+			foreach (var (dx, dy) in steps)
 			{
 				int nx = x + dx, ny = y + dy;
 				if (nx < 0 || ny < 0 || nx >= width || ny >= height)

@@ -17,7 +17,7 @@ public sealed partial class World
 	/// <summary>How much room a unit takes: its radius in sub-tile units (two units keep their radii apart).</summary>
 	public static int UnitRadius(UnitType type) => type switch
 	{
-		UnitType.BrickGolem => UnitStats.SubTile * 2 / 5,
+		UnitType.BrickGolem => UnitStats.SubTile / 2, // the biggest: still fits through a 1-tile gap
 		UnitType.RcCar => UnitStats.SubTile / 3,
 		UnitType.PlasticSoldier => UnitStats.SubTile * 3 / 10,
 		_ => UnitStats.SubTile / 4, // mice: workers and cheese hunters
@@ -82,6 +82,10 @@ public sealed partial class World
 		}
 		int push = System.Math.Min((minimum - distance + 1) / 2, MaxPushPerTick);
 		int px = dx * push / distance, py = dy * push / distance;
+		// Walking into each other: also step aside (each to its own side), or a straight push back would hold
+		// them nose to nose for ever. Player 1 turns the other way round, so mirrored crowds stay mirrored.
+		if ((long)a.MoveX * dx + (long)a.MoveY * dy > 0 && (long)b.MoveX * dx + (long)b.MoveY * dy < 0)
+			(px, py) = a.Owner == 1 ? (px + py, py - px) : (px - py, py + px);
 		if (px == 0 && py == 0)
 			return;
 		Shift(a, -px, -py);

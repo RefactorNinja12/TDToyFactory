@@ -197,6 +197,13 @@ public sealed class Unit
 	public int PushX { get; internal set; }
 	public int PushY { get; internal set; }
 	public int PushTicks { get; internal set; }
+
+	/// <summary>Thrown by a golem's slam: the whole flight in ticks while it is in the air (0 on the ground).</summary>
+	public int AirTicks { get; internal set; }
+
+	/// <summary>Golems: ticks left of the slam's wind-up (hands up), and until the next slam.</summary>
+	public int SlamTicks { get; internal set; }
+	public int SlamCooldown { get; internal set; }
 	internal int AttackCooldown { get; set; }
 
 	/// <summary>Battery charge (golems and cars only, see PowerStats).</summary>
@@ -238,6 +245,28 @@ public sealed class Unit
 		Charge = PowerStats.MaxCharge(type);
 	}
 }
+
+/// <summary>
+/// The golem's ground slam: when an enemy unit comes close it raises both hands, then slams the ground. Every enemy unit
+/// round it takes area damage and is thrown back, outwards from the golem. Distances in sub-tile units.
+/// </summary>
+public static class GolemStats
+{
+	public const int SlamTrigger = UnitStats.SubTile * 3 / 2;
+	public const int SlamRadius = UnitStats.SubTile * 7 / 4;
+	public const int SlamDamage = 5;
+	public const int SlamMaxTargets = 5;
+	public const int SlamWindupTicks = 8;
+	public const int SlamCooldownTicks = 80;
+	public const int ThrowDistance = UnitStats.SubTile * 3 / 2;
+	public const int ThrowTicks = 8;
+
+	/// <summary>Golems weigh more: thrown half as far.</summary>
+	public static int ThrowTicksFor(UnitType type) => type == UnitType.BrickGolem ? ThrowTicks / 2 : ThrowTicks;
+}
+
+/// <summary>A golem's slam: where (sub-tiles) and on which tick.</summary>
+public readonly record struct SlamMark(int X, int Y, long Tick);
 
 /// <summary>The samurai's sword sweep. Distances in sub-tile units.</summary>
 public static class SamuraiStats

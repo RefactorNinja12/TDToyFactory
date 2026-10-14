@@ -231,6 +231,20 @@ public sealed partial class World
 	}
 
 	/// <summary>Creates a unit in the middle of tile (tileX, tileY).</summary>
+	/// <summary>
+	/// The building's middle tile. On an even width that's the west one of the two for player 1 (the right room),
+	/// so both players' units come out and see from mirrored tiles.
+	/// </summary>
+	public static (int X, int Y) MiddleTile(Building building) =>
+		(building.X + (building.Owner == 1 ? building.Width - 1 : building.Width) / 2, building.Y + building.Height / 2);
+
+	/// <summary>A new unit on the building's <see cref="MiddleTile"/>.</summary>
+	internal Unit SpawnFrom(UnitType type, Building building)
+	{
+		var (x, y) = MiddleTile(building);
+		return SpawnUnit(type, building.Owner, x, y);
+	}
+
 	public Unit SpawnUnit(UnitType type, int owner, int tileX, int tileY)
 	{
 		const int half = UnitStats.SubTile / 2;
@@ -264,6 +278,7 @@ public sealed partial class World
 	public void Tick()
 	{
 		TickCount++;
+		ForgetOldSlams();
 		RebuildFieldsIfDirty();
 		UpdateStorage();
 
@@ -334,6 +349,10 @@ public sealed partial class World
 			if (unit.PushTicks > 0)
 			{
 				hash.Add(unit.PushX); hash.Add(unit.PushY); hash.Add(unit.PushTicks);
+			}
+			if (unit.AirTicks != 0 || unit.SlamTicks != 0 || unit.SlamCooldown != 0)
+			{
+				hash.Add(unit.AirTicks); hash.Add(unit.SlamTicks); hash.Add(unit.SlamCooldown);
 			}
 		}
 		hash.Add(_projectiles.Count);

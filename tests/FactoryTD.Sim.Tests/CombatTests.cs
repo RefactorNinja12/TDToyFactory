@@ -66,6 +66,22 @@ public class TargetingTests
 	}
 
 	[Fact]
+	public void TargetBehindAWall_IsIgnored_AndTheUnitHeadsForTheBase()
+	{
+		var s = Scenario.Match().NoWorkers().Instant().Rich();
+		var belt = s.Place(BuildingType.Conveyor, 63, 26); // in the hall, behind player 0's room wall
+		var soldier = s.Spawn(UnitType.PlasticSoldier, 59, 22, owner: 1); // sees the belt, the way leads west
+		var (unit, building) = s.World.SelectTarget(soldier, UnitStats.Sight(soldier.Type), includeCore: false, reachableOnly: true);
+		Assert.Null(unit);
+		Assert.Null(building);
+		Assert.NotNull(s.World.SelectTarget(soldier, UnitStats.Sight(soldier.Type), includeCore: false).Item2);
+
+		s.World.Seconds(5);
+		Assert.True(soldier.TileX < 56, $"stuck at {soldier.TileX},{soldier.TileY}");
+		Assert.Same(belt, s.World.GetBuilding(63, 26));
+	}
+
+	[Fact]
 	public void Soldier_ShootsBuildingsDownBeforeTheCore()
 	{
 		var s = Scenario.Match().NoWorkers().Instant().Rich();

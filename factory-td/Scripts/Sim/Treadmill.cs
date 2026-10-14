@@ -41,7 +41,7 @@ public sealed class Treadmill : Building
 		if (_crafter.Tick(Recipe, UnitStats.BuildTicks(UnitType.CheeseHunter)))
 		{
 			HasTrainee = false;
-			world.SpawnUnit(UnitType.CheeseHunter, Owner, X + Width / 2, Y + Height / 2);
+			world.SpawnFrom(UnitType.CheeseHunter, this);
 		}
 	}
 

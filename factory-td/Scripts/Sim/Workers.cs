@@ -21,7 +21,7 @@ public sealed partial class World
 			var core = _cores[p];
 			if (core == null || core.Health <= 0 || CountUnits(p, UnitType.Builder) > 0)
 				continue;
-			SpawnUnit(UnitType.Builder, p, core.X + core.Width / 2, core.Y + core.Height / 2);
+			SpawnFrom(UnitType.Builder, core);
 		}
 	}
 
@@ -336,8 +336,10 @@ public sealed partial class World
 		unit.MoveY = building.CenterY - unit.Y;
 	}
 
+	/// <summary>Steps from the unit's tile to the nearest tile of the building (the same seen from either room).</summary>
 	private static int TileDistance(Unit unit, Building building) =>
-		System.Math.Abs(building.X - unit.TileX) + System.Math.Abs(building.Y - unit.TileY);
+		System.Math.Abs(System.Math.Clamp(unit.TileX, building.X, building.X + building.Width - 1) - unit.TileX) +
+		System.Math.Abs(System.Math.Clamp(unit.TileY, building.Y, building.Y + building.Height - 1) - unit.TileY);
 
 	/// <summary>The nearest unfinished site of the builder's owner, preferring ones nobody works on yet.</summary>
 	private Building ChooseSite(Unit builder)
@@ -348,8 +350,7 @@ public sealed partial class World
 		{
 			if (building.Owner != builder.Owner || building.IsBuilt)
 				continue;
-			int distance = System.Math.Abs(building.X - builder.TileX) + System.Math.Abs(building.Y - builder.TileY);
-			int score = distance + CrowdPenalty * BuildersOn(building);
+			int score = TileDistance(builder, building) + CrowdPenalty * BuildersOn(building);
 			if (score < bestScore)
 			{
 				best = building;
@@ -371,5 +372,5 @@ public sealed partial class World
 	/// building. The start tile is not included. Null if unreachable.
 	/// </summary>
 	private List<(int X, int Y)> FindPathTo(Unit unit, Building target) =>
-		GridSearch.PathTo(Map.Width, Map.Height, unit.TileX, unit.TileY, (x, y) => !BlocksUnit(unit.Owner, x, y), (x, y) => IsAround(target, x, y));
+		GridSearch.PathTo(Map.Width, Map.Height, unit.TileX, unit.TileY, (x, y) => !BlocksUnit(unit.Owner, x, y), (x, y) => IsAround(target, x, y), unit.Owner == 1);
 }

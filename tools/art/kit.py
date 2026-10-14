@@ -276,10 +276,11 @@ def strip_sheet(cell_fn):
     return sheet
 
 
-def unit_sheet(cell_fn, columns=7, cell=CELL):
-    """Lays out the sheet: rows towards / away / side, columns idle, walk 0-3, act 0-1 (UI/UnitSheets)."""
+def unit_sheet(cell_fn, columns=7, cell=CELL, poses=None):
+    """Lays out the sheet: rows towards / away / side, columns idle, walk 0-3, act 0-1 (UI/UnitSheets), then any
+    extra poses given (the golem's slam)."""
     sheet = Image.new("RGBA", (cell * columns, cell * 3), (0, 0, 0, 0))
-    poses = [("idle", 0)] + [("walk", i) for i in range(4)] + [("act", i) for i in range(2)]
+    poses = poses or [("idle", 0)] + [("walk", i) for i in range(4)] + [("act", i) for i in range(2)]
     for row, facing in enumerate(("toward", "away", "side")):
         for col, (pose, step) in enumerate(poses[:columns]):
             sheet.alpha_composite(cell_fn(facing, pose, step), (col * cell, row * cell))

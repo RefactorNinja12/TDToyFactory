@@ -91,6 +91,21 @@ public class ScenarioTests
 	}
 
 	[Fact]
+	public void BotVsBot_ManyRooms_EndsInTime()
+	{
+		var s = Scenario.Match(obstacles: true, layout: MapLayoutKind.ManyRooms).RealPower().RealFog();
+		var bots = new[] { new BotPlayer(0), new BotPlayer(1) };
+		for (int minute = 0; minute < 25 && s.World.Winner < 0; minute++)
+			s.World.Minutes(1, bots);
+		string state = $"many rooms: winner {s.World.Winner} at {s.World.TickCount / WorldRunner.TicksPerSecond} s, " +
+			$"walls {s.World.Buildings.Count(b => b is Wall)}, towers {s.World.Buildings.Count(b => b is Tower)}, " +
+			$"cores {s.World.GetCore(0)?.Health}/{s.World.GetCore(1)?.Health}, armies {s.World.Units.Count(u => u.Owner == 0 && !UnitStats.IsWorker(u.Type))}/" +
+			$"{s.World.Units.Count(u => u.Owner == 1 && !UnitStats.IsWorker(u.Type))}";
+		_out.WriteLine(state);
+		Assert.True(s.World.Winner >= 0, state);
+	}
+
+	[Fact]
 	public void BotVsBot_FifteenMinutes_HealthyEconomy()
 	{
 		var s = Scenario.Match(obstacles: true).RealPower().RealFog();

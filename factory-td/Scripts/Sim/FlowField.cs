@@ -22,6 +22,12 @@ public sealed class FlowField
 		(1, 1, DiagonalCost), (-1, 1, DiagonalCost), (-1, -1, DiagonalCost), (1, -1, DiagonalCost),
 	};
 
+	// Neighbours mirrored east-west: player 1's units break ties the mirrored way, so mirrored armies walk mirrored.
+	private static readonly (int dx, int dy, int cost)[] MirroredNeighbours =
+		System.Array.ConvertAll(Neighbours, n => (-n.dx, n.dy, n.cost));
+
+	private (int dx, int dy, int cost)[] _steps = Neighbours;
+
 	private readonly int _width;
 	private readonly int _height;
 	private readonly int[] _distance;
@@ -48,6 +54,7 @@ public sealed class FlowField
 	/// <summary>Same, from every tile where <paramref name="isTarget"/> holds (e.g. every powered tile).</summary>
 	public void Build(World world, int owner, int wallPenalty, System.Func<int, int, bool> isTarget)
 	{
+		_steps = owner == 1 ? MirroredNeighbours : Neighbours;
 		System.Array.Fill(_distance, Unreachable);
 		for (int i = 0; i < _open.Length; i++)
 			_open[i] = world.Map[i % _width, i / _width] == TileType.Floor && world.GetBuilding(i % _width, i / _width) is not Wall { IsBuilt: true };
@@ -108,7 +115,7 @@ public sealed class FlowField
 	{
 		int best = Distance(x, y);
 		(int X, int Y) result = (x, y);
-		foreach (var (dx, dy, _) in Neighbours)
+		foreach (var (dx, dy, _) in _steps)
 		{
 			int d = Distance(x + dx, y + dy);
 			if (d < best && (dx == 0 || dy == 0 || (IsOpen(x + dx, y) && IsOpen(x, y + dy))))

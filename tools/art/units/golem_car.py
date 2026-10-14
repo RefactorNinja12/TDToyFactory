@@ -1,5 +1,5 @@
 """
-The brick golem (upright, 64 px cells: stomping walk, act = slamming a fist) and the RC car (a vehicle:
+The brick golem (upright, 80 px cells: stomping walk, act = slamming a fist, slam = both hands up, then down) and the RC car (a vehicle:
 seen from above pointing east and turned by the game; 2 frames of wheels turning and the antenna wobbling).
 
     python tools/art/units/golem_car.py && python tools/art/restyle.py <the files it lists>
@@ -10,10 +10,11 @@ import sys
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from kit import *  # noqa: E402,F403
 
-G = 64
+G = 80                  # bigger than every other unit, but at most ~60 px wide: it still fits a 1-tile gap
 G_FEET = G - 6
 BRICK = (96, 170, 84)
 STOMP = [(4, 0, 0), (0, 0, -2), (0, 4, 0), (0, 0, -2)]   # (left lift, right lift, bob)
+POSES = [("idle", 0)] + [("walk", i) for i in range(4)] + [("act", i) for i in range(2)] + [("slam", i) for i in range(2)]
 
 
 def brick(d, x0, y0, x1, y1, color=BRICK, studs_on=True):
@@ -24,43 +25,61 @@ def brick(d, x0, y0, x1, y1, color=BRICK, studs_on=True):
 
 
 def golem(facing, pose, step):
+    """Taller than before (legs 15, body 30, head 15), hardly wider. slam 0 = both hands raised over the head,
+    slam 1 = both fists down on the ground."""
     img, d = canvas(G, G)
     lift_l, lift_r, bob = STOMP[step] if pose == "walk" else (0, 0, 0)
+    if pose == "slam" and step == 1:
+        bob = 3  # crouched into the slam
     cx = G // 2
-    hip = G_FEET - 12 + bob
+    hip = G_FEET - 15 + bob
+    body_top, head_top = hip - 30, hip - 45
+    side = facing == "side"
     # legs: two brick pillars
-    if facing == "side":
-        brick(d, cx - 6, hip, cx + 2, G_FEET - lift_l, tint(BRICK, -0.2), False)
-        brick(d, cx - 2, hip, cx + 6, G_FEET - lift_r, BRICK, False)
+    if side:
+        brick(d, cx - 7, hip, cx + 2, G_FEET - lift_l, tint(BRICK, -0.2), False)
+        brick(d, cx - 2, hip, cx + 7, G_FEET - lift_r, BRICK, False)
     else:
-        brick(d, cx - 11, hip, cx - 3, G_FEET - lift_l, BRICK, False)
-        brick(d, cx + 3, hip, cx + 11, G_FEET - lift_r, BRICK, False)
-    # arms (the front one slams in the act frames)
-    slam = pose == "act"
-    arm_y = hip - 18
-    if facing == "side":
-        fist = (cx + 10, arm_y - 12) if slam and step == 0 else (cx + 14, hip + 2) if slam else (cx + 6, hip - 2)
-        brick(d, cx - 4, arm_y, cx + 4, hip - 2, tint(BRICK, -0.25), False)
+        brick(d, cx - 12, hip, cx - 3, G_FEET - lift_l, BRICK, False)
+        brick(d, cx + 3, hip, cx + 12, G_FEET - lift_r, BRICK, False)
+    shoulder_y = body_top + 4
+    # where the fists go: (back fist, front fist); None = the back arm hangs as before
+    if pose == "slam" and step == 0:
+        fists = [(cx - 16, head_top - 7), (cx + 16, head_top - 7)] if not side else [(cx + 3, head_top - 8), (cx + 9, head_top - 6)]
+    elif pose == "slam":
+        fists = [(cx - 23, G_FEET - 4), (cx + 23, G_FEET - 4)] if not side else [(cx + 14, G_FEET - 4), (cx + 21, G_FEET - 4)]
+    elif pose == "act":
+        front = (cx + 12, shoulder_y - 14) if step == 0 else (cx + 18, hip + 4)
+        fists = [None, front if side else (front[0] + 6, front[1])]
     else:
-        fist = (cx + 18, arm_y - 10) if slam and step == 0 else (cx + 16, hip + 4) if slam else (cx + 18, hip)
-        brick(d, cx - 22, arm_y + 2, cx - 14, hip + 2 - bob, BRICK, False)
+        fists = [None, (cx + 8, hip - 2) if side else (cx + 22, hip)]
+    # the back arm first (behind the body)
+    if fists[0] is None:
+        if side:
+            brick(d, cx - 4, shoulder_y, cx + 4, hip - 2, tint(BRICK, -0.25), False)
+        else:
+            brick(d, cx - 25, shoulder_y + 2, cx - 16, hip + 2 - bob, BRICK, False)
+    else:
+        sx = cx - (4 if side else 13)
+        d.line((sx, shoulder_y + 2, *fists[0]), fill=tint(BRICK, -0.25), width=7)
+        fx, fy = fists[0]
+        brick(d, fx - 6, fy - 5, fx + 6, fy + 5, tint(BRICK, -0.15), False)
     # body: a big brick with studs; the head: a smaller one with glowing eyes
-    if facing == "side":
-        brick(d, cx - 10, hip - 22, cx + 8, hip + 2)
-        brick(d, cx - 6, hip - 34, cx + 8, hip - 22)
-        if True:
-            d.rectangle((cx + 4, hip - 30, cx + 6, hip - 27), fill=YELLOW)
+    if side:
+        brick(d, cx - 11, body_top, cx + 9, hip + 2)
+        brick(d, cx - 7, head_top, cx + 9, body_top)
+        d.rectangle((cx + 4, head_top + 5, cx + 6, head_top + 9), fill=YELLOW)
     else:
-        brick(d, cx - 14, hip - 22, cx + 14, hip + 2)
-        brick(d, cx - 9, hip - 34, cx + 9, hip - 22)
+        brick(d, cx - 16, body_top, cx + 16, hip + 2)
+        brick(d, cx - 10, head_top, cx + 10, body_top)
         if facing == "toward":
-            for ex in (cx - 5, cx + 3):
-                d.rectangle((ex, hip - 30, ex + 2, hip - 27), fill=YELLOW)
-            d.line((cx - 3, hip - 25, cx + 3, hip - 25), fill=INK)
+            for ex in (cx - 6, cx + 4):
+                d.rectangle((ex, head_top + 5, ex + 2, head_top + 9), fill=YELLOW)
+            d.line((cx - 3, head_top + 11, cx + 3, head_top + 11), fill=INK)
     # the front arm and fist on top
-    fx, fy = fist
-    d.line((cx + (2 if facing == "side" else 12), arm_y + 2, fx, fy), fill=tint(BRICK, -0.1), width=6)
-    brick(d, fx - 5, fy - 4, fx + 5, fy + 5, tint(BRICK, 0.1), False)
+    fx, fy = fists[1]
+    d.line((cx + (2 if side else 13), shoulder_y + 2, fx, fy), fill=tint(BRICK, -0.1), width=7)
+    brick(d, fx - 6, fy - 5, fx + 6, fy + 5, tint(BRICK, 0.1), False)
     return img
 
 
@@ -84,7 +103,7 @@ def rc_car(frame):
 
 def main():
     written = []
-    save(unit_sheet(golem, cell=G), "Units/golem_sheet.png")
+    save(unit_sheet(golem, columns=len(POSES), cell=G, poses=POSES), "Units/golem_sheet.png")
     save(golem("toward", "idle", 0), "Units/golem.png")
     sheet = Image.new("RGBA", (96, 48), (0, 0, 0, 0))
     for frame in range(2):

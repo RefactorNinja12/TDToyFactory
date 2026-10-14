@@ -48,6 +48,6 @@ public sealed class UnitFactory : Building
 				return;
 		}
 		if (_crafter.Tick(Recipe, UnitStats.BuildTicks(Produces)))
-			world.SpawnUnit(Produces, Owner, X + Width / 2, Y + Height / 2);
+			world.SpawnFrom(Produces, this);
 	}
 }

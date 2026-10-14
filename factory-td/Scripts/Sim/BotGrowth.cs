@@ -8,7 +8,8 @@ namespace FactoryTD.Sim;
 public sealed partial class BotPlayer
 {
 	private const int GrowthTicks = World.TicksPerSecond * 20;
-	private const int MaxWallLayers = 4;
+	private const int MaxWallLayers = 3;
+	private const int MaxExitTowers = 3;
 	private const int WallLine = 70;       // left-room x of the first wall layer (the hall's own deposits end at 69)
 	private const int BatteryReserve = 20; // battery towers/fences only with this many in stock
 
@@ -99,12 +100,15 @@ public sealed partial class BotPlayer
 	private bool GrowArmy(World world, int only = -1)
 	{
 		var (ax, ay) = Absolute(30, 30);
-		var spot = FindSpot(world, 3, 2, ax, ay);
+		var spot = FindSpot(world, 3, 2, TileCentre(ax, ay));
 		if (spot == null)
 			return false;
 		for (int i = 0; i < 3; i++)
 		{
 			int kind = only >= 0 ? only : (_armyTurn + i) % 3;
+			// Golems run on batteries: on ManyRooms the way to the enemy is longer than they reach.
+			if (kind == 1 && world.Map.Layout == MapLayoutKind.ManyRooms)
+				continue;
 			int mark = _plan.Count;
 			var powered = kind == SamuraiOutpost ? PlanSamurai(world, spot.Value) : PlanFactory(world, spot.Value, golems: kind == 1);
 			if (powered != null)
@@ -160,6 +164,10 @@ public sealed partial class BotPlayer
 	/// <summary>A tower just inside the door, fed by a belt from its own extractor.</summary>
 	private bool GrowTower(World world)
 	{
+		// The entry room on ManyRooms is small: a few towers there hold the way in; more would only make bot against bot
+		// a stalemate (the waves come one by one), so the rest goes into the army.
+		if (world.Map.Layout == MapLayoutKind.ManyRooms && _towersAdded >= MaxExitTowers)
+			return false;
 		var type = (_towersAdded % 3) switch
 		{
 			0 => BuildingType.FoamTower,
@@ -170,8 +178,8 @@ public sealed partial class BotPlayer
 			type = BuildingType.WaterTower;
 		if (type is BuildingType.LaserTower or BuildingType.WaterTower && !BatteriesToSpare(world))
 			type = BuildingType.FoamTower;
-		var (ax, ay) = Absolute(WallLine - 3, 30); // just behind the walls
-		var spot = FindSpot(world, 1, 1, ax, ay);
+		var (ax, ay) = TowerAnchor(world);
+		var spot = FindSpot(world, 1, 1, TileCentre(ax, ay));
 		if (spot == null)
 			return false;
 		int mark = _plan.Count;
@@ -189,26 +197,24 @@ public sealed partial class BotPlayer
 	}
 
 	/// <summary>
-	/// The next wall layer across the hall, past the bot's own hall deposits (they stay inside). Gates on the middle
-	/// rows let its own army out; electric fence once there are batteries to spare. Taken tiles are left out.
+	/// The next wall layer (see <see cref="WallLayerTiles"/>): an opening for the enemy at alternate ends, so it walks a
+	/// labyrinth instead of beating on the walls, and gates in a straight line for the bot's own army. Electric fence
+	/// from the third layer once there are batteries to spare. Taken tiles are left out.
 	/// </summary>
 	private bool GrowWalls(World world)
 	{
 		if (_wallLayers >= MaxWallLayers)
 			return false;
 		int layer = _wallLayers++;
-		int x = WallLine + layer;
-		const int top = 25, bottom = 36; // the hall's inside
 		var wallType = layer >= 2 && BatteriesToSpare(world) ? BuildingType.ElectricFence : BuildingType.BrickWall;
 		int placed = 0;
 		Step any = null;
-		for (int y = top; y <= bottom; y++)
+		foreach (var (x, y, gate) in WallLayerTiles(world.Map.Layout, layer))
 		{
 			var (tx, ty) = Absolute(x, y);
 			if (!IsFree(world, tx, ty))
 				continue;
-			var type = y is 30 or 31 ? BuildingType.Gate : wallType;
-			any = AddStep(new Step(type, tx, ty, Direction.East, ItemType.None));
+			any = AddStep(new Step(gate ? BuildingType.Gate : wallType, tx, ty, Direction.East, ItemType.None));
 			placed++;
 		}
 		if (wallType == BuildingType.ElectricFence && any != null)
@@ -216,10 +222,48 @@ public sealed partial class BotPlayer
 		return placed > 0;
 	}
 
+	/// <summary>
+	/// Wall layer <paramref name="layer"/> in left-room coordinates, the opening left out. Layers stand one free row
+	/// apart so the enemy can walk from one opening to the next.
+	/// TwoRooms: columns across the hall (x 70, 72, 74; y 25..36), the opening at y 25..26 then 35..36, gates y 30..31.
+	/// ManyRooms: rows across both exits of the entry room (north y 25, 23, 21; south y 36, 38, 40), the first in the
+	/// door gaps (x 64..67), the rest across the side rooms (x 62..68); the opening at alternate ends, gates at x 66.
+	/// </summary>
+	internal static IEnumerable<(int X, int Y, bool Gate)> WallLayerTiles(MapLayoutKind layout, int layer)
+	{
+		bool otherEnd = layer % 2 == 1;
+		if (layout == MapLayoutKind.ManyRooms)
+		{
+			foreach (int y in new[] { 25 - 2 * layer, 36 + 2 * layer })
+			{
+				int x0 = layer == 0 ? 64 : 62, x1 = layer == 0 ? 67 : 68;
+				for (int x = x0; x <= x1; x++)
+				{
+					bool opening = otherEnd ? x >= x1 - 1 : x <= x0 + 1;
+					if (!opening)
+						yield return (x, y, x == 66);
+				}
+			}
+			yield break;
+		}
+		int column = WallLine + 2 * layer;
+		for (int y = 25; y <= 36; y++)
+		{
+			bool opening = otherEnd ? y >= 35 : y <= 26;
+			if (!opening)
+				yield return (column, y, y is 30 or 31);
+		}
+	}
+
+	/// <summary>Where a new tower goes: just behind the walls (on ManyRooms by the north and south exit in turn).</summary>
+	private (int X, int Y) TowerAnchor(World world) => world.Map.Layout == MapLayoutKind.ManyRooms
+		? Absolute(65, _towersAdded % 2 == 0 ? 28 : 33)
+		: Absolute(WallLine - 3, 30);
+
 	/// <summary>A cheese melter with a kitchen beside it, the kitchen's food belted to the toybox.</summary>
 	private bool GrowFood(World world)
 	{
-		foreach (var (x, y) in FreeDeposits(world, ResourceType.Cheese, _core.X, _core.Y))
+		foreach (var (x, y) in FreeDeposits(world, ResourceType.Cheese, Centre(_core)))
 		{
 			foreach (var d in Directions)
 			{
@@ -240,7 +284,7 @@ public sealed partial class BotPlayer
 	/// <summary>Six crop fields with a kitchen at the end, its food belted to the toybox (farmers do the rest).</summary>
 	private bool GrowFarm(World world)
 	{
-		var spot = FindSpot(world, 4, 2, _core.X, _core.Y);
+		var spot = FindSpot(world, 4, 2, Centre(_core));
 		if (spot == null)
 			return false;
 		var (sx, sy) = spot.Value;
@@ -259,6 +303,15 @@ public sealed partial class BotPlayer
 
 	// ---------------------------------------------------------------------------------------------
 	// Search helpers (absolute coordinates).
+
+	// Points searches measure from, in half tiles (centres, so the right bot's are exactly mirrored).
+	private static (int X, int Y) TileCentre(int x, int y) => (2 * x + 1, 2 * y + 1);
+
+	private static (int X, int Y) Centre(Step step)
+	{
+		var (w, h) = BuildingRules.Size(step.Type, step.Facing);
+		return (2 * step.X + w, 2 * step.Y + h);
+	}
 
 	private (int X, int Y) Absolute(int x, int y) => (_mirror ? _width - 1 - x : x, y);
 
@@ -287,7 +340,7 @@ public sealed partial class BotPlayer
 	private bool Feed(World world, ResourceType resource, Step target, bool tap = true)
 	{
 		int tries = 0;
-		foreach (var (x, y) in FreeDeposits(world, resource, target.X, target.Y))
+		foreach (var (x, y) in FreeDeposits(world, resource, Centre(target)))
 		{
 			if (tries++ == FeedTries)
 				break;
@@ -460,7 +513,7 @@ public sealed partial class BotPlayer
 	/// Free, explored deposit tiles of the resource in the bot's room, nearest the point first. Tiles next to a
 	/// belt are left out (an extractor would push its items onto it).
 	/// </summary>
-	private List<(int X, int Y)> FreeDeposits(World world, ResourceType resource, int nearX, int nearY)
+	private List<(int X, int Y)> FreeDeposits(World world, ResourceType resource, (int X, int Y) near)
 	{
 		var found = new List<(int X, int Y, long D)>();
 		var type = ExtractorFor(resource);
@@ -473,10 +526,11 @@ public sealed partial class BotPlayer
 					continue;
 				if (world.CheckLocation(type, x, y, _player) != PlaceError.None || NextToBelt(world, x, y))
 					continue;
-				long dx = x - nearX, dy = y - nearY;
+				long dx = 2 * x + 1 - near.X, dy = 2 * y + 1 - near.Y;
 				found.Add((x, y, dx * dx + dy * dy));
 			}
-		found.Sort((a, b) => a.D != b.D ? a.D.CompareTo(b.D) : a.Y != b.Y ? a.Y.CompareTo(b.Y) : a.X.CompareTo(b.X));
+		int west = _mirror ? -1 : 1; // ties go west for the left bot, east for the right one (mirrored)
+		found.Sort((a, b) => a.D != b.D ? a.D.CompareTo(b.D) : a.Y != b.Y ? a.Y.CompareTo(b.Y) : west * a.X.CompareTo(b.X));
 		return found.ConvertAll(f => (f.X, f.Y));
 	}
 
@@ -498,7 +552,7 @@ public sealed partial class BotPlayer
 	/// The free w x h rectangle (off deposits, with a free ring round it so belts can reach it) whose centre is
 	/// nearest the point, in the bot's room. Null if there is none.
 	/// </summary>
-	private (int X, int Y)? FindSpot(World world, int w, int h, int nearX, int nearY)
+	private (int X, int Y)? FindSpot(World world, int w, int h, (int X, int Y) near)
 	{
 		(int X, int Y)? best = null;
 		long bestDistance = long.MaxValue;
@@ -507,9 +561,11 @@ public sealed partial class BotPlayer
 			{
 				if (!OurGround(world, x, y))
 					continue;
-				long dx = 2 * x + w - 2 * nearX, dy = 2 * y + h - 2 * nearY;
+				long dx = 2 * x + w - near.X, dy = 2 * y + h - near.Y;
 				long distance = dx * dx + dy * dy;
-				if (distance >= bestDistance || _badSpots.Contains((x, y)) || !SpotFits(world, x, y, w, h))
+				// A tie in one row goes west for the left bot and east for the right one (mirrored choices).
+				bool tie = distance == bestDistance && _mirror && y == best.Value.Y;
+				if ((distance >= bestDistance && !tie) || _badSpots.Contains((x, y)) || !SpotFits(world, x, y, w, h))
 					continue;
 				best = (x, y);
 				bestDistance = distance;
@@ -571,8 +627,9 @@ public sealed partial class BotPlayer
 					if (lx * lx + ly * ly > 4L * reach * reach || !IsFree(world, x, y) || world.Map.GetResource(x, y) != ResourceType.None)
 						continue;
 					long dx = 2 * x + 1 - cx2, dy = 2 * y + 1 - cy2;
-					if (dx * dx + dy * dy < bestDistance)
-						(best, bestDistance) = ((x, y), dx * dx + dy * dy);
+					long distance = dx * dx + dy * dy;
+					if (distance < bestDistance || (distance == bestDistance && _mirror && best != null && y == best.Value.Y))
+						(best, bestDistance) = ((x, y), distance);
 				}
 			if (best == null)
 				return;

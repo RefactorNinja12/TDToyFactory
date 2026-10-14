@@ -7,6 +7,9 @@ public sealed partial class BotPlayer
 	// The plan. Coordinates are for the left room: core (6..7, 30..31), bricks (10..13, 22..25),
 	// plastic (10..13, 36..39), batteries (40..42, 46..48), door at x = 61, y = 29..32.
 
+	/// <summary>The north way's pylons on ManyRooms (left coordinates), from the entry room to the centre room.</summary>
+	private static readonly (int X, int Y)[] ManyRoomsPylons = { (66, 24), (65, 17), (65, 10), (72, 8), (73, 15), (74, 22), (76, 28) };
+
 	private void DefineModules()
 	{
 		_pending.Add(new Module(EconomyModule, _ => true, _ =>
@@ -150,6 +153,20 @@ public sealed partial class BotPlayer
 			Place(BuildingType.PlasticExtractor, 13, 37, Direction.East);
 		}));
 
+		// Early defence at the way in: the first wall layer (a labyrinth opening for the enemy, gates for its own army)
+		// and two towers right behind it. After the first soldiers (three minutes in), or as soon as a few attackers have come. Searched spots (BotGrowth).
+		_pending.Add(new Module("utgångsförsvar",
+			w => Built("soldater") && w.TickCount >= 3 * Minute,
+			w =>
+			{
+				if (_reserving)
+					return;
+				GrowWalls(w);
+				GrowTower(w);
+				GrowTower(w);
+			},
+			Emergency: w => Built("soldater") && SoldiersSeen + GolemsSeen + CarsSeen >= 3));
+
 		// Cheese hunters (cheap, early): cheese melters on the cheese patch north of the core fill a treadmill
 		// right above them; builders walk over to be trained by themselves.
 		_pending.Add(new Module("ostjägare", w => Built("soldater") && !FoodCrisis(w) && w.TickCount >= _armyDelayTicks + 2 * Minute, _ =>
@@ -171,17 +188,33 @@ public sealed partial class BotPlayer
 
 		// Golems and cars run flat away from the grid: a chain of pylons through the door and along the
 		// hall (every 8 tiles, the cord range) lets them charge on the way to the enemy.
-		_pending.Add(new Module("frammaster", w => Built("soldater") && Built("ström") && w.TickCount >= _armyDelayTicks + 2 * Minute, _ =>
+		// On ManyRooms the way winds: the chain follows it from the entry room up (and down) through the side rooms and the
+		// middle column to its half of the centre room, never into the enemy's half (pylons there only get shot down and
+		// rebuilt for ever). Every pylon within cord range of the one before.
+		_pending.Add(new Module("frammaster", w => Built("soldater") && Built("ström") && w.TickCount >= _armyDelayTicks + 2 * Minute, w =>
 		{
 			for (int x = 29; x <= 53; x += 8)
 				Place(BuildingType.Pylon, x, 30, Direction.East);
-			for (int x = 60; x <= 92; x += 8)
-				Place(BuildingType.Pylon, x, 30, Direction.East);
+			if (w.Map.Layout != MapLayoutKind.ManyRooms)
+			{
+				for (int x = 60; x <= 92; x += 8)
+					Place(BuildingType.Pylon, x, 30, Direction.East);
+				return;
+			}
+			Place(BuildingType.Pylon, 60, 30, Direction.East);
+			Place(BuildingType.Pylon, 68, 30, Direction.East);
+			foreach (var (x, y) in ManyRoomsPylons)
+			{
+				Place(BuildingType.Pylon, x, y, Direction.East);
+				Place(BuildingType.Pylon, x, 61 - y, Direction.East); // the south way mirrors the north one
+			}
 		}));
 
 		// Golems by the brick patch: bricks -> gear assembler -> workshop, bricks -> belt -> workshop,
 		// and plastic routed from the plastic patch into the gear assembler.
-		_pending.Add(new Module("golems", w => Built("soldater") && !FoodCrisis(w) && w.TickCount >= _armyDelayTicks + 3 * Minute, w =>
+		// Not on ManyRooms: the winding way is longer than a golem's battery reaches (see BotGrowth.GrowArmy).
+		_pending.Add(new Module("golems", w => Built("soldater") && !FoodCrisis(w) && w.TickCount >= _armyDelayTicks + 3 * Minute &&
+			w.Map.Layout != MapLayoutKind.ManyRooms, w =>
 		{
 			Place(BuildingType.GolemWorkshop, 15, 22, Direction.East);
 			var gears = Place(BuildingType.Assembler, 14, 23, Direction.East, ItemType.Gear);
@@ -216,7 +249,8 @@ public sealed partial class BotPlayer
 
 		// Radio cars by the battery patch: batteries -> circuit assembler -> factory, batteries -> belt ->
 		// factory, and plastic/bricks routed in for circuits and gears.
-		_pending.Add(new Module("radiobilar", w => Built("batterier") && !FoodCrisis(w) && w.TickCount >= _armyDelayTicks + 5 * Minute, w =>
+		_pending.Add(new Module("radiobilar", w => Built("batterier") && !FoodCrisis(w) && w.TickCount >= _armyDelayTicks + 5 * Minute &&
+			w.Map.Layout != MapLayoutKind.ManyRooms, w =>
 		{
 			Place(BuildingType.CarFactory, 44, 46, Direction.East);
 			var circuits = Place(BuildingType.Assembler, 43, 46, Direction.East, ItemType.CircuitBoard);

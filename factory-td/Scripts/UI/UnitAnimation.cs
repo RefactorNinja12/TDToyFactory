@@ -19,6 +19,7 @@ public enum PoseKind
 	Idle,
 	Walk, // Step 0..3
 	Act,  // Step 0..1: working (hammering, picking) or attacking
+	Slam, // Step 0: the golem's hands up (winding up), 1: fists on the ground
 }
 
 /// <summary>One picture of a unit: which way it looks, what it does, and which step of that.</summary>
@@ -42,6 +43,15 @@ public sealed class UnitAnimation
 
 	/// <summary>Ticks the attack pose shows after each shot or punch (split over the two action steps).</summary>
 	public const int AttackPoseTicks = 6;
+
+	/// <summary>Ticks the golem's fists stay on the ground after a slam.</summary>
+	public const int SlamDownTicks = 6;
+
+	/// <summary>Highest point of a thrown unit's flight, in sub-tiles (halfway).</summary>
+	public const int MaxLift = UnitStats.SubTile * 2 / 5;
+
+	/// <summary>How far a thrown mouse turns per tick in the air, in degrees.</summary>
+	public const int SpinPerTick = 25;
 
 	/// <summary>Ticks per action step while working (the hammer's rhythm).</summary>
 	public const int WorkStepTicks = 5;
@@ -96,6 +106,10 @@ public sealed class UnitAnimation
 	{
 		if (!_states.TryGetValue(unit.Id, out var state))
 			return new UnitFrame(Facing.Toward, PoseKind.Idle, 0);
+		if (unit.SlamTicks > 0)
+			return new UnitFrame(state.Facing, PoseKind.Slam, 0);
+		if (unit.SlamCooldown > GolemStats.SlamCooldownTicks - SlamDownTicks)
+			return new UnitFrame(state.Facing, PoseKind.Slam, 1);
 		int attackTicks = UnitStats.AttackTicks(unit.Type);
 		int sinceAttack = attackTicks - unit.AttackCooldown;
 		if (unit.AttackCooldown > 0 && sinceAttack < AttackPoseTicks)
@@ -107,6 +121,23 @@ public sealed class UnitAnimation
 			return new UnitFrame(state.Facing, PoseKind.Walk, (int)(state.Walked / StepLength % 4));
 		return new UnitFrame(state.Facing, PoseKind.Idle, 0);
 	}
+
+	/// <summary>
+	/// How high a thrown unit is above the floor (sub-tiles): an arc over its flight, 0 on the ground, highest halfway.
+	/// <paramref name="alpha"/>: how far into the current tick (0..1000), so the arc is smooth between ticks.
+	/// </summary>
+	public static int Lift(Unit unit, int alpha = 0)
+	{
+		if (unit.AirTicks <= 0)
+			return 0;
+		long total = unit.AirTicks * 1000L;
+		long flown = Math.Clamp((unit.AirTicks - unit.PushTicks) * 1000L + alpha, 0, total);
+		return (int)(4 * MaxLift * flown * (total - flown) / (total * total));
+	}
+
+	/// <summary>Degrees a thrown mouse has turned in the air, clockwise when it flies east (0 on the ground).</summary>
+	public static int Spin(Unit unit) =>
+		unit.AirTicks <= 0 ? 0 : (unit.AirTicks - unit.PushTicks) * SpinPerTick * (unit.PushX < 0 ? -1 : 1);
 
 	/// <summary>A builder at an unfinished site, or a farmer in the middle of a harvest.</summary>
 	public static bool IsWorking(Unit unit) => unit.Type switch

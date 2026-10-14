@@ -53,6 +53,11 @@ Hinder (stora leksaker/växter) = `TileType.Obstacle`: stoppar gång och bygge, 
 - Samurajmus (`UnitType.Samurai`, `SamuraiStats` i Unit.cs): närkämpe vars svärd sveper bågen framför sig och träffar
   alla fiender där (max 5, `DamageKind.Slash`: halv mot golems). Byggs i dojon (`BuildingType.Dojo`, en pagod från sidan
   som piratskeppet (`KeepsUpright`): senseimusen vid dörren vänder sig (`Motion.Turn`, speglar) och ropar (`Motion.Pop`)). Boten: modulen "samurajer" + armérotationen.
+- Golem (`GolemStats` i Unit.cs): störst av enheterna (radie 1/2 ruta, kropp ≤ 60 px bred i 80 px-rutor: går genom
+  1-rutsluckor). Söker inte upp enheter, men kommer en fiende inom räckhåll lyfter den händerna (`SlamTicks`) och slår i
+  marken: områdesskada på enheter runt den (inte genom väggar) och de kastas utåt (`Push*` + `AirTicks`). Höjden ritas
+  bara (`UnitAnimation.Lift/Spin`), skuggan ligger kvar på golvet; i luften faller man inte i falluckor förrän man
+  landar. Ringen ritas från `World.RecentSlams`. Enheters räckvidd mot enheter når målets kant (`toEdge`).
 - Enheter: möss ovanifrån som vrids, nosen österut i spriten; golemen står upprätt och vrids aldrig
   (`UI/UnitSheets.cs`, `UI/UnitAnimation.cs`).
 

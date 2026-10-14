@@ -63,8 +63,8 @@ void fragment() {
 			};
 			var (columns, rows) = UnitSheets.Layout(type) switch
 			{
-				UnitLayout.Upright => (UnitSheets.Columns, UnitSheets.Rows),
-				UnitLayout.TopDown => (UnitSheets.Columns, 1),
+				UnitLayout.Upright => (UnitSheets.ColumnsOf(type), UnitSheets.Rows),
+				UnitLayout.TopDown => (UnitSheets.ColumnsOf(type), 1),
 				_ => (UnitSheets.VehicleFrames, 1),
 			};
 			var material = new ShaderMaterial { Shader = shader };
@@ -96,7 +96,9 @@ void fragment() {
 			var position = new Vector2(
 				Mathf.Lerp(unit.PrevX, unit.X, Alpha),
 				Mathf.Lerp(unit.PrevY, unit.Y, Alpha)) * SubTileToPixels;
-			_visible[unit.Type].Add((position.Y, unit, position));
+			// Thrown by a golem: drawn up in the air (sorted by where it is on the floor).
+			float lift = UnitAnimation.Lift(unit, (int)(Alpha * 1000)) * SubTileToPixels;
+			_visible[unit.Type].Add((position.Y, unit, position - new Vector2(0, lift)));
 		}
 
 		foreach (var (type, mesh) in _meshes)
@@ -117,7 +119,8 @@ void fragment() {
 				if (upright)
 				{
 					var (column, row, mirror) = UnitSheets.Cell(frame);
-					mesh.SetInstanceTransform2D(i, new Transform2D(0, position + lift));
+					var shake = frame.Kind == PoseKind.Slam && frame.Step == 1 ? new Vector2(((int)_world.TickCount % 2) * 2 - 1, 0) : Vector2.Zero;
+					mesh.SetInstanceTransform2D(i, new Transform2D(0, position + lift + shake));
 					mesh.SetInstanceCustomData(i, new Color(column, row, mirror ? 1 : 0, 0));
 				}
 				else
@@ -129,7 +132,7 @@ void fragment() {
 					int column = UnitSheets.Layout(type) == UnitLayout.TopDown
 						? UnitSheets.Column(frame)
 						: frame.Kind == PoseKind.Walk ? frame.Step % UnitSheets.VehicleFrames : 0;
-					mesh.SetInstanceTransform2D(i, new Transform2D(angle, position));
+					mesh.SetInstanceTransform2D(i, new Transform2D(angle + Mathf.DegToRad(UnitAnimation.Spin(unit)), position));
 					mesh.SetInstanceCustomData(i, new Color(column, 0, 0, 0));
 				}
 				mesh.SetInstanceColor(i, PlayerTints[unit.Owner % PlayerTints.Length]);

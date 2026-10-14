@@ -57,4 +57,16 @@ public class SeparationTests
 		foreach (var u in s.World.Units)
 			Assert.Equal(TileType.Floor, s.World.Map[u.TileX, u.TileY]);
 	}
+
+	[Fact]
+	public void HeadOn_InOneColumn_TheyStepAsideAndPass()
+	{
+		var s = Scenario.Match().NoWorkers().Rich();
+		var south = s.Place(BuildingType.Conveyor, 20, 34);
+		var north = s.Place(BuildingType.Conveyor, 20, 14);
+		var down = s.Spawn(UnitType.Builder, 20, 20);
+		var up = s.Spawn(UnitType.Builder, 20, 28);
+		(down.Job, up.Job) = (south, north);
+		s.World.Until(() => south.IsBuilt && north.IsBuilt, 30, "both builders get past each other");
+	}
 }

@@ -13,9 +13,14 @@ public sealed partial class World
 		unit.MoveX = unit.MoveY = 0;
 		if (unit.AttackCooldown > 0)
 			unit.AttackCooldown--;
+		if (unit.SlamCooldown > 0)
+			unit.SlamCooldown--;
 		if (Winner >= 0 || _cores[EnemyOf(unit.Owner)] == null)
 			return;
 		if (PowerStats.IsElectric(unit.Type) && !FreePower && TickCharge(unit))
+			return;
+
+		if (unit.Type == UnitType.BrickGolem && TickSlam(unit))
 			return;
 
 		// Enemy buildings in the way are always within range, so they get shot before the unit walks on;
@@ -34,7 +39,8 @@ public sealed partial class World
 		}
 
 		// Nothing in range: go for anything it can see (except the core) before heading on to the core.
-		var (seenUnit, seenBuilding) = SelectTarget(unit, UnitStats.Sight(unit.Type), includeCore: false);
+		// Only what it can walk straight up to: a target behind a wall would hold it at the wall forever.
+		var (seenUnit, seenBuilding) = SelectTarget(unit, UnitStats.Sight(unit.Type), includeCore: false, reachableOnly: true);
 		if (seenUnit != null || seenBuilding != null)
 		{
 			int goalX = seenUnit?.X ?? seenBuilding.CenterX;
@@ -72,8 +78,67 @@ public sealed partial class World
 		bool moved = TryStep(unit, unit.X + unit.PushX, unit.Y + unit.PushY, speed);
 		(unit.MoveX, unit.MoveY) = (moveX, moveY); // keeps facing where it was going
 		unit.PushTicks = moved ? unit.PushTicks - 1 : 0;
+		if (unit.PushTicks == 0)
+			unit.AirTicks = 0; // landed (at once if something solid cut the throw short)
 		unit.Path = null;
 	}
+
+	/// <summary>Where and when golems slammed the ground lately (for the view's shock rings; not simulation state).</summary>
+	public System.Collections.Generic.IReadOnlyList<SlamMark> RecentSlams => _recentSlams;
+	private readonly System.Collections.Generic.List<SlamMark> _recentSlams = new();
+	private const int SlamMarkTicks = 40;
+
+	/// <summary>
+	/// The golem's slam (<see cref="GolemStats"/>): an enemy unit it could walk straight up to comes close, so it raises
+	/// its hands and stands still for the wind-up, then slams. True while it is busy slamming (it does nothing else).
+	/// </summary>
+	private bool TickSlam(Unit golem)
+	{
+		if (golem.SlamTicks > 0)
+		{
+			if (--golem.SlamTicks == 0)
+				Slam(golem);
+			return true;
+		}
+		if (golem.SlamCooldown > 0 || FindNearestEnemy(golem.Owner, golem.X, golem.Y, GolemStats.SlamTrigger, golem) == null)
+			return false;
+		golem.SlamTicks = GolemStats.SlamWindupTicks;
+		return true;
+	}
+
+	/// <summary>Hits every enemy unit round the golem (not behind a wall), in spawn order, and throws it outwards.</summary>
+	private void Slam(Unit golem)
+	{
+		golem.SlamCooldown = GolemStats.SlamCooldownTicks;
+		_recentSlams.Add(new SlamMark(golem.X, golem.Y, TickCount));
+		long radius2 = (long)GolemStats.SlamRadius * GolemStats.SlamRadius;
+		int hits = 0;
+		foreach (var other in _units)
+		{
+			if (hits >= GolemStats.SlamMaxTargets)
+				break;
+			long dx = other.X - golem.X, dy = other.Y - golem.Y;
+			if (other.Owner == golem.Owner || other.Health <= 0 || dx * dx + dy * dy > radius2 || !WalkableLine(golem, other.TileX, other.TileY))
+				continue;
+			other.Health -= GolemStats.SlamDamage * Combat.DamagePercent(DamageKind.Area, UnitStats.Armor(other.Type)) / 100;
+			Throw(other, (int)dx, (int)dy);
+			hits++;
+		}
+	}
+
+	/// <summary>Sends the unit flying straight along (dx, dy) for <see cref="GolemStats.ThrowDistance"/>.</summary>
+	private static void Throw(Unit unit, int dx, int dy)
+	{
+		if (dx == 0 && dy == 0) // right under the golem: a direction picked from its id
+			(dx, dy) = (unit.Id % 4) switch { 0 => (1, 0), 1 => (0, 1), 2 => (-1, 0), _ => (0, -1) };
+		int length = IntMath.Sqrt(dx * dx + dy * dy);
+		int step = GolemStats.ThrowDistance / GolemStats.ThrowTicks;
+		unit.PushX = dx * step / length;
+		unit.PushY = dy * step / length;
+		unit.PushTicks = unit.AirTicks = GolemStats.ThrowTicksFor(unit.Type);
+	}
+
+	private void ForgetOldSlams() => _recentSlams.RemoveAll(m => TickCount - m.Tick > SlamMarkTicks);
 
 	/// <summary>Fires at the target if the unit is ready; false while it reloads.</summary>
 	private bool Attack(Unit unit, Unit targetUnit, Building targetBuilding, DamageKind kind)
@@ -168,17 +233,24 @@ public sealed partial class World
 	/// The closest living unit not owned by <paramref name="owner"/> within <paramref name="range"/>
 	/// (sub-tile units) of the point. Ties go to the oldest unit, so the result is deterministic.
 	/// </summary>
-	public Unit FindNearestEnemy(int owner, int x, int y, int range)
+	public Unit FindNearestEnemy(int owner, int x, int y, int range) => FindNearestEnemy(owner, x, y, range, null);
+
+	/// <summary>
+	/// With a <paramref name="walker"/>: only enemies it can walk straight up to. <paramref name="toEdge"/>: the range
+	/// reaches the edge of the enemy's body, not its centre (a golem is big: mice keep their distance from its middle).
+	/// </summary>
+	private Unit FindNearestEnemy(int owner, int x, int y, int range, Unit walker, bool toEdge = false)
 	{
 		Unit best = null;
-		long bestDistance = (long)range * range;
+		long bestDistance = long.MaxValue;
 		foreach (var unit in _units)
 		{
 			if (unit.Owner == owner || unit.Health <= 0)
 				continue;
 			long dx = unit.X - x, dy = unit.Y - y;
 			long distance = dx * dx + dy * dy;
-			if (distance <= bestDistance && (best == null || distance < bestDistance))
+			long reach = range + (toEdge ? UnitRadius(unit.Type) : 0);
+			if (distance <= reach * reach && (best == null || distance < bestDistance) && (walker == null || WalkableLine(walker, unit.TileX, unit.TileY)))
 			{
 				best = unit;
 				bestDistance = distance;
@@ -192,14 +264,15 @@ public sealed partial class World
 	/// 1. enemy units, 2. enemy towers, 3. any other enemy building, 4. the enemy core last (if included).
 	/// So an attack tears down the base around the core first. Nearest wins within a tier;
 	/// ties go to the oldest unit / earliest-built building (deterministic).
+	/// <paramref name="reachableOnly"/>: only targets it can walk straight up to (<see cref="WalkableLine"/>).
 	/// </summary>
-	internal (Unit, Building) SelectTarget(Unit unit, int range, bool includeCore)
+	internal (Unit, Building) SelectTarget(Unit unit, int range, bool includeCore, bool reachableOnly = false)
 	{
 		long range2 = (long)range * range;
 
 		if (UnitStats.Def(unit.Type).TargetsUnits)
 		{
-			var enemyUnit = FindNearestEnemy(unit.Owner, unit.X, unit.Y, range);
+			var enemyUnit = FindNearestEnemy(unit.Owner, unit.X, unit.Y, range, reachableOnly ? unit : null, toEdge: true);
 			if (enemyUnit != null)
 				return (enemyUnit, null);
 		}
@@ -218,7 +291,7 @@ public sealed partial class World
 					continue;
 				building.ScanMark = mark;
 				long distance = DistanceSquaredTo(building, unit.X, unit.Y);
-				if (distance > range2)
+				if (distance > range2 || (reachableOnly && !WalkableLine(unit, NearestTileX(building, unit.TileX), NearestTileY(building, unit.TileY))))
 					continue;
 
 				if (building is Tower)
@@ -238,6 +311,32 @@ public sealed partial class World
 			}
 		return (null, tower ?? other ?? core);
 	}
+
+	/// <summary>
+	/// Whether nothing blocks the unit on the straight line of tiles from its own to (toX, toY): no wall or
+	/// obstacle, and no squeezing diagonally past a corner. Strict, so walking straight there never gets stuck.
+	/// </summary>
+	private bool WalkableLine(Unit unit, int toX, int toY)
+	{
+		int x = unit.TileX, y = unit.TileY;
+		int ax = System.Math.Abs(toX - x), ay = -System.Math.Abs(toY - y);
+		int sx = System.Math.Sign(toX - x), sy = System.Math.Sign(toY - y);
+		int error = ax + ay;
+		while (x != toX || y != toY)
+		{
+			int e2 = 2 * error, fromX = x, fromY = y;
+			if (e2 >= ay) { error += ay; x += sx; }
+			if (e2 <= ax) { error += ax; y += sy; }
+			if (BlocksUnit(unit.Owner, x, y))
+				return false;
+			if (x != fromX && y != fromY && (BlocksUnit(unit.Owner, x, fromY) || BlocksUnit(unit.Owner, fromX, y)))
+				return false;
+		}
+		return true;
+	}
+
+	private static int NearestTileX(Building building, int x) => System.Math.Clamp(x, building.X, building.X + building.Width - 1);
+	private static int NearestTileY(Building building, int y) => System.Math.Clamp(y, building.Y, building.Y + building.Height - 1);
 
 	private static bool Closer(long distance, Building building, long bestDistance, Building best) =>
 		distance < bestDistance || (distance == bestDistance && building.Serial < best.Serial);
