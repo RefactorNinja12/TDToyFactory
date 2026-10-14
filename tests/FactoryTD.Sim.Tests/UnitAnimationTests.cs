@@ -104,6 +104,20 @@ public class UnitAnimationTests
 	}
 
 	[Fact]
+	public void Wizard_RaisesTheCane_ThenPointsIt_UntilTheBoltFalls()
+	{
+		var s = Scenario.Match().NoWorkers().Instant();
+		var wizard = s.Spawn(UnitType.Wizard, 70, 30);
+		s.Spawn(UnitType.Farmer, 74, 30, owner: 1);
+		var frames = Watch(s, wizard, 12, new UnitAnimation());
+		int raised = frames.FindIndex(f => f.Kind == PoseKind.Act && f.Step == 0);
+		int pointed = frames.FindIndex(f => f.Kind == PoseKind.Act && f.Step == 1);
+		Assert.InRange(raised, 0, 1);
+		Assert.True(pointed > raised);
+		Assert.Equal(WizardStats.BoltDelayTicks + 2, frames.Count(f => f.Kind == PoseKind.Act));
+	}
+
+	[Fact]
 	public void Thrown_FliesUpInAnArc_AndLands()
 	{
 		var unit = new Unit(1, UnitType.Farmer, 0, 0, 0);
@@ -155,6 +169,7 @@ public class UnitAnimationTests
 		foreach (var mouse in new[] { UnitType.Builder, UnitType.Farmer, UnitType.Scout, UnitType.CheeseHunter, UnitType.PlasticSoldier })
 			Assert.Equal(UnitLayout.TopDown, UnitSheets.Layout(mouse));
 		Assert.Equal(UnitLayout.Upright, UnitSheets.Layout(UnitType.BrickGolem));
+		Assert.Equal(UnitLayout.Upright, UnitSheets.Layout(UnitType.Wizard));
 		Assert.Equal(UnitLayout.Vehicle, UnitSheets.Layout(UnitType.RcCar));
 		Assert.Equal(3, UnitSheets.Column(new UnitFrame(Facing.Left, PoseKind.Walk, 2)));
 		Assert.Equal(6, UnitSheets.Column(new UnitFrame(Facing.Away, PoseKind.Act, 1)));

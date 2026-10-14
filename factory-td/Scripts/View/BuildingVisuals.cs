@@ -41,6 +41,7 @@ public static class BuildingVisuals
 		[BuildingType.CheeseMelter] = "res://Assets/Sprites/Buildings/cheese_melter.png",
 		[BuildingType.Treadmill] = "res://Assets/Sprites/Buildings/treadmill.png",
 		[BuildingType.Dojo] = "res://Assets/Sprites/Buildings/dojo.png",
+		[BuildingType.WizardTower] = "res://Assets/Sprites/Buildings/wizard_tower.png",
 		[BuildingType.BrickWall] = "res://Assets/Sprites/Defense/brick_wall.png",
 		[BuildingType.Gate] = "res://Assets/Sprites/Defense/gate.png",
 		[BuildingType.ElectricFence] = "res://Assets/Sprites/Defense/electric_fence.png",
@@ -60,7 +61,7 @@ public static class BuildingVisuals
 		("Ström", new[] { BuildingType.BatteryCharger, BuildingType.Pylon }),
 		("Utforska", new[] { BuildingType.Tent, BuildingType.Lamp }),
 		("Mat", new[] { BuildingType.CropField, BuildingType.Farmhouse, BuildingType.Kitchen, BuildingType.Warehouse }),
-		("Armé", new[] { BuildingType.SoldierFactory, BuildingType.GolemWorkshop, BuildingType.CarFactory, BuildingType.Dojo, BuildingType.Treadmill }),
+		("Armé", new[] { BuildingType.SoldierFactory, BuildingType.GolemWorkshop, BuildingType.CarFactory, BuildingType.Dojo, BuildingType.WizardTower, BuildingType.Treadmill }),
 		("Försvar", new[]
 		{
 			BuildingType.FoamTower, BuildingType.Catapult, BuildingType.WaterTower, BuildingType.LaserTower,

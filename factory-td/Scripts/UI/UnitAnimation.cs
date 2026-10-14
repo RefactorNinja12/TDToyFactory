@@ -44,6 +44,10 @@ public sealed class UnitAnimation
 	/// <summary>Ticks the attack pose shows after each shot or punch (split over the two action steps).</summary>
 	public const int AttackPoseTicks = 6;
 
+	/// <summary>The wizard holds its cast (cane raised, then pointed) until the thunderbolt has fallen.</summary>
+	public static int AttackPoseTicksFor(UnitType type) =>
+		type == UnitType.Wizard ? WizardStats.BoltDelayTicks + 2 : AttackPoseTicks;
+
 	/// <summary>Ticks the golem's fists stay on the ground after a slam.</summary>
 	public const int SlamDownTicks = 6;
 
@@ -112,8 +116,9 @@ public sealed class UnitAnimation
 			return new UnitFrame(state.Facing, PoseKind.Slam, 1);
 		int attackTicks = UnitStats.AttackTicks(unit.Type);
 		int sinceAttack = attackTicks - unit.AttackCooldown;
-		if (unit.AttackCooldown > 0 && sinceAttack < AttackPoseTicks)
-			return new UnitFrame(state.Facing, PoseKind.Act, sinceAttack * 2 / AttackPoseTicks);
+		int poseTicks = AttackPoseTicksFor(unit.Type);
+		if (unit.AttackCooldown > 0 && sinceAttack < poseTicks)
+			return new UnitFrame(state.Facing, PoseKind.Act, sinceAttack * 2 / poseTicks);
 		bool moving = _tick - state.MovedAt <= StillTicks;
 		if (!moving && IsWorking(unit))
 			return new UnitFrame(state.Facing, PoseKind.Act, (int)(_tick / WorkStepTicks % 2));

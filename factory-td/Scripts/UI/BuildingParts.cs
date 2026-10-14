@@ -55,6 +55,19 @@ public static class BuildingParts
 			new Part("sensei", 22, 36, Motion.Turn, Speed: 0.25f, Always: true),
 			new Part("sensei_shout", 32, 14, Motion.Pop, Speed: 0.25f, Amount: 0.15f, DY: -4, Always: true),
 		},
+		// The wizard tower, seen from the side and much taller than its footprint (upright, mirrored when facing west).
+		// While a wizard learns: the star on the tip turns, sparks jump between the roof points, the round window
+		// flickers blue and the door flashes as one comes out.
+		[BuildingType.WizardTower] = new[]
+		{
+			new Part("wizard_tower", 0, -26, Motion.Swing, Amount: 0, Always: true),
+			new Part("tower_star", 0, -106, Motion.Spin, Speed: 0.4f),
+			new Part("tower_spark", -16, -60, Motion.Pop, Speed: 0.9f, Amount: 0.3f, DY: -3),
+			new Part("tower_spark", 14, -74, Motion.Pop, Speed: 0.9f, Amount: 0.3f, DY: -3, Phase: 0.35f),
+			new Part("tower_spark", 4, -94, Motion.Pop, Speed: 0.9f, Amount: 0.3f, DY: -3, Phase: 0.7f),
+			new Part("tower_window", 0, -27, Motion.Blink, Speed: 2.5f),
+			new Part("tower_flash", 0, 42, Motion.Pop, Speed: 0.25f, Amount: 0.12f),
+		},
 		[BuildingType.BrickExtractor] = new[]
 		{
 			new Part("brick_ride", 5, 0, Motion.Slide, Speed: 0.8f, DX: 17),
@@ -194,7 +207,7 @@ public static class BuildingParts
 	/// Buildings drawn from the side (the pirate ship): their parts are never turned with the building, only
 	/// mirrored when it faces west; the base sprite under them (water and output) still turns.
 	/// </summary>
-	public static bool KeepsUpright(BuildingType type) => type is BuildingType.SoldierFactory or BuildingType.Dojo;
+	public static bool KeepsUpright(BuildingType type) => type is BuildingType.SoldierFactory or BuildingType.Dojo or BuildingType.WizardTower;
 
 	/// <summary>The time a part is posed at: its building's work clock, or the wall clock if it always moves.</summary>
 	public static float TimeFor(Part part, float workTime, float wallTime) => part.Always ? wallTime : workTime;

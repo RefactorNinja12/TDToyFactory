@@ -36,6 +36,7 @@ public enum BuildingType : byte
 	Trapdoor,
 	Pendulum,
 	Dojo,
+	WizardTower,
 }
 
 /// <summary>Facing / output direction. Clockwise order, matching Godot's y-down rotation.</summary>
@@ -231,6 +232,7 @@ public static class BuildingRules
 		BuildingType.CarFactory,
 		BuildingType.Treadmill,
 		BuildingType.Dojo,
+		BuildingType.WizardTower,
 		BuildingType.FoamTower,
 		BuildingType.Catapult,
 		BuildingType.WaterTower,
@@ -288,6 +290,7 @@ public static class BuildingRules
 	private static readonly ItemStack[] TrapdoorCost = { new(ItemType.Brick, 10), new(ItemType.Gear, 4), new(ItemType.Spring, 2) };
 	private static readonly ItemStack[] PendulumCost = { new(ItemType.Brick, 10), new(ItemType.Gear, 3), new(ItemType.Spring, 4) };
 	private static readonly ItemStack[] DojoCost = { new(ItemType.Brick, 35), new(ItemType.Plastic, 25) };
+	private static readonly ItemStack[] WizardTowerCost = { new(ItemType.Brick, 40), new(ItemType.Plastic, 25), new(ItemType.Battery, 10) };
 	private static readonly ItemStack[] TreadmillCost = { new(ItemType.Brick, 15), new(ItemType.Plastic, 10) };
 
 	public static ItemStack[] Cost(BuildingType type) => type switch
@@ -303,6 +306,7 @@ public static class BuildingRules
 		BuildingType.Assembler => AssemblerCost,
 		BuildingType.SoldierFactory => SoldierFactoryCost,
 		BuildingType.Dojo => DojoCost,
+		BuildingType.WizardTower => WizardTowerCost,
 		BuildingType.FoamTower => FoamTowerCost,
 		BuildingType.Catapult => CatapultCost,
 		BuildingType.WaterTower => WaterTowerCost,
@@ -340,7 +344,7 @@ public static class BuildingRules
 		BuildingType.Pendulum => 100,
 		BuildingType.BrickExtractor or BuildingType.PlasticExtractor or BuildingType.BatteryExtractor or BuildingType.CheeseMelter => 60,
 		BuildingType.Assembler or BuildingType.Kitchen or BuildingType.BatteryCharger => 80,
-		BuildingType.SoldierFactory or BuildingType.GolemWorkshop or BuildingType.CarFactory or BuildingType.Dojo or BuildingType.Toolbox or BuildingType.Warehouse or BuildingType.Farmhouse => 150,
+		BuildingType.SoldierFactory or BuildingType.GolemWorkshop or BuildingType.CarFactory or BuildingType.Dojo or BuildingType.WizardTower or BuildingType.Toolbox or BuildingType.Warehouse or BuildingType.Farmhouse => 150,
 		BuildingType.FoamTower or BuildingType.WaterTower or BuildingType.LaserTower or BuildingType.Treadmill => 100,
 		BuildingType.Catapult => 120,
 		_ => 50,
@@ -362,7 +366,7 @@ public static class BuildingRules
 		BuildingType.FoamTower or BuildingType.WaterTower or BuildingType.LaserTower => 120,
 		BuildingType.Catapult => 140,
 		BuildingType.Toolbox or BuildingType.Warehouse or BuildingType.Farmhouse or BuildingType.Treadmill => 160,
-		BuildingType.SoldierFactory or BuildingType.GolemWorkshop or BuildingType.CarFactory or BuildingType.Dojo => 240,
+		BuildingType.SoldierFactory or BuildingType.GolemWorkshop or BuildingType.CarFactory or BuildingType.Dojo or BuildingType.WizardTower => 240,
 		_ => 60,
 	};
 	// -------------------------------------------------------------------------------------
@@ -379,7 +383,7 @@ public static class BuildingRules
 	{
 		BuildingType.Core or BuildingType.Trapdoor => (2, 2),
 		BuildingType.Pendulum => (4, 1),
-		BuildingType.SoldierFactory or BuildingType.GolemWorkshop or BuildingType.CarFactory or BuildingType.Dojo or BuildingType.Toolbox or BuildingType.Warehouse or BuildingType.Farmhouse or BuildingType.Treadmill => (2, 2),
+		BuildingType.SoldierFactory or BuildingType.GolemWorkshop or BuildingType.CarFactory or BuildingType.Dojo or BuildingType.WizardTower or BuildingType.Toolbox or BuildingType.Warehouse or BuildingType.Farmhouse or BuildingType.Treadmill => (2, 2),
 		_ => (1, 1),
 	};
 
@@ -407,6 +411,7 @@ public static class BuildingRules
 		BuildingType.Assembler => new Assembler(x, y, facing, owner),
 		BuildingType.SoldierFactory => new UnitFactory(type, x, y, facing, owner, UnitType.PlasticSoldier),
 		BuildingType.Dojo => new UnitFactory(type, x, y, facing, owner, UnitType.Samurai),
+		BuildingType.WizardTower => new UnitFactory(type, x, y, facing, owner, UnitType.Wizard),
 		BuildingType.GolemWorkshop => new UnitFactory(type, x, y, facing, owner, UnitType.BrickGolem),
 		BuildingType.CarFactory => new UnitFactory(type, x, y, facing, owner, UnitType.RcCar),
 		BuildingType.Toolbox => new UnitFactory(type, x, y, facing, owner, UnitType.Builder),

@@ -44,9 +44,14 @@ public partial class CombatView : Node2D
 			DrawBuildingHealth(building);
 		}
 
-		foreach (var slam in _world.RecentSlams)
-			if (_world.IsVisible(LocalPlayer, slam.X / UnitStats.SubTile, slam.Y / UnitStats.SubTile))
-				DrawSlam(slam);
+		foreach (var impact in _world.RecentImpacts)
+			if (_world.IsVisible(LocalPlayer, impact.X / UnitStats.SubTile, impact.Y / UnitStats.SubTile))
+			{
+				if (impact.Bolt)
+					DrawBolt(impact);
+				else
+					DrawSlam(impact);
+			}
 
 		foreach (var unit in _world.Units)
 			if (_world.CanSee(LocalPlayer, unit))
@@ -135,7 +140,7 @@ public partial class CombatView : Node2D
 	private static readonly Color SlamColor = new(0.95f, 0.85f, 0.6f);
 
 	/// <summary>The slam: a ring running out over the floor to the slam's reach, and dust puffs thrown outwards.</summary>
-	private void DrawSlam(SlamMark slam)
+	private void DrawSlam(ImpactMark slam)
 	{
 		float age = (_world.TickCount - slam.Tick + Alpha) / SlamRingTicks;
 		if (age >= 1)
@@ -152,6 +157,46 @@ public partial class CombatView : Node2D
 			var direction = new Vector2(Mathf.Cos(angle), Mathf.Sin(angle) * 0.7f);
 			DrawCircle(at + direction * reach * (0.2f + 0.6f * age), 4 + 5 * age, new Color(0.75f, 0.68f, 0.55f, 0.6f * fade));
 		}
+	}
+
+	private static readonly Color BoltGlow = new(0.45f, 0.75f, 1f);
+	private static readonly Color BoltCore = new(1f, 1f, 0.92f);
+
+	/// <summary>A thunderbolt that struck: the jagged pillar falling onto the spot, a flash, sparks over a small ring.</summary>
+	private void DrawBolt(ImpactMark bolt)
+	{
+		float age = _world.TickCount - bolt.Tick + Alpha;
+		var at = new Vector2(bolt.X, bolt.Y) * SubTileToPixels;
+		if (BoltLook.Striking(age))
+		{
+			DrawPillar(at, bolt.Tick + (long)age, age, BoltLook.StrikeFade(age));
+			DrawCircle(at, 16, new Color(BoltCore, 0.7f * BoltLook.StrikeFade(age)));
+		}
+		float fade = BoltLook.SparkFade(age);
+		if (fade <= 0)
+			return;
+		float radius = WizardStats.BoltRadius * SubTileToPixels;
+		DrawArc(at, radius * (0.5f + 0.5f * (1 - fade)), 0, Mathf.Tau, 28, new Color(BoltGlow, 0.7f * fade), 2);
+		foreach (var spark in BoltLook.Sparks(at.X, at.Y, age, radius))
+		{
+			var points = new Vector2[spark.Length];
+			for (int i = 0; i < spark.Length; i++)
+				points[i] = new Vector2(spark[i].X, spark[i].Y);
+			DrawPolyline(points, new Color(BoltGlow, fade), 3);
+			DrawPolyline(points, new Color(BoltCore, fade), 1);
+		}
+	}
+
+	/// <summary>The bolt's pillar from the sky down to the spot: a wide blue glow round a bright core.</summary>
+	private void DrawPillar(Vector2 at, long tick, float age, float brightness)
+	{
+		var pillar = BoltLook.Pillar(at.X, at.Y, tick, age);
+		var points = new Vector2[pillar.Count];
+		for (int i = 0; i < pillar.Count; i++)
+			points[i] = new Vector2(pillar[i].X, pillar[i].Y);
+		DrawPolyline(points, new Color(BoltGlow, 0.35f * brightness), 12);
+		DrawPolyline(points, new Color(BoltGlow, 0.8f * brightness), 6);
+		DrawPolyline(points, new Color(BoltCore, brightness), 2.5f);
 	}
 
 	private void DrawProjectile(Projectile shot)
@@ -198,6 +243,20 @@ public partial class CombatView : Node2D
 				float fade = SlashLook.Fade(t);
 				DrawArc(from, radius, start, end, 10, new Color(1f, 1f, 1f, 0.35f * fade), 7);
 				DrawArc(from, radius, start, end, 10, new Color(1f, 1f, 1f, fade), 2);
+				break;
+			case DamageKind.Lightning:
+				// Gathering over the spot: crackles on the floor that grow until it strikes (a single bolt at a building
+				// strikes in its last tick here; the area one is drawn from the world's impacts).
+				float w = BoltLook.Warning(shot.TotalTicks, shot.TicksLeft, Alpha);
+				float r = Mathf.Max(shot.AreaRadius * SubTileToPixels, 20) * (0.35f + 0.65f * w);
+				for (int i = 0; i < 6; i++)
+				{
+					float a = Mathf.Tau * i / 6 + (_world.TickCount % 6) * 0.5f;
+					DrawArc(to, r, a, a + 0.5f, 4, new Color(BoltGlow, 0.3f + 0.6f * w), 2);
+				}
+				DrawCircle(to - new Vector2(0, 26), 4 + 8 * w, new Color(BoltGlow, 0.25f * w));
+				if (shot.AreaRadius == 0 && shot.TicksLeft <= 1)
+					DrawPillar(to, _world.TickCount, 1, 1);
 				break;
 			case DamageKind.Water:
 				DrawCircle(p, 5, WaterColor);

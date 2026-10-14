@@ -78,6 +78,18 @@ public class BuildingPartsTests
 	}
 
 	[Fact]
+	public void WizardTower_StandsUpright_OnlyTheTowerIsStill_TheMagicMovesWhileItWorks()
+	{
+		Assert.True(BuildingParts.KeepsUpright(BuildingType.WizardTower));
+		var parts = BuildingParts.For(BuildingType.WizardTower);
+		Assert.Equal(new[] { "wizard_tower" }, parts.Where(p => p.Always).Select(p => p.Sprite));
+		Assert.Equal(new[] { "tower_flash", "tower_spark", "tower_star", "tower_window" },
+			parts.Where(p => !p.Always).Select(p => p.Sprite).Distinct().OrderBy(n => n));
+		var tower = parts.Single(p => p.Sprite == "wizard_tower");
+		Assert.True(tower.Y < 0, "rises above its footprint");
+	}
+
+	[Fact]
 	public void Float_BobsAndRocks_AQuarterBeatApart_AndAlwaysPartsUseTheWallClock()
 	{
 		var ship = new Part("x", 0, 0, Motion.Float, DY: 3, Amount: 0.05f, Always: true);
@@ -97,13 +109,15 @@ public class BuildingPartsTests
 		{
 			var (w, h) = BuildingRules.Size(type);
 			float halfW = w * 32, halfH = h * 32;
+			// Seen from the side, a building may rise up to a tile above its footprint (the tall wizard tower), never more.
+			float top = BuildingParts.KeepsUpright(type) ? halfH + 64 : halfH;
 			foreach (var part in BuildingParts.For(type))
 			{
 				Assert.True(ArtFiles.Exists($"Parts/{part.Sprite}.png"), $"{type}: no sprite Parts/{part.Sprite}.png");
 				for (float t = 0; t < 4; t += 0.05f)
 				{
 					var pose = BuildingParts.PoseAt(part, t);
-					Assert.True(MathF.Abs(pose.X) <= halfW && MathF.Abs(pose.Y) <= halfH,
+					Assert.True(MathF.Abs(pose.X) <= halfW && pose.Y <= halfH && -pose.Y <= top,
 						$"{type} {part.Sprite} leaves the building at t={t}: ({pose.X}, {pose.Y})");
 				}
 			}

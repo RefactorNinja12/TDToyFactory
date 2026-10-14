@@ -31,7 +31,7 @@ public class GolemSlamTests
 		Assert.Equal(0, golem.SlamTicks);
 		Assert.Equal(FullHealth - PlasticHit, farmer.Health);
 		Assert.Equal(GolemStats.SlamCooldownTicks, golem.SlamCooldown);
-		Assert.Single(s.World.RecentSlams);
+		Assert.Single(s.World.RecentImpacts);
 	}
 
 	[Fact]

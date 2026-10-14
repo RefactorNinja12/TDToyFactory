@@ -53,6 +53,12 @@ Hinder (stora leksaker/växter) = `TileType.Obstacle`: stoppar gång och bygge, 
 - Samurajmus (`UnitType.Samurai`, `SamuraiStats` i Unit.cs): närkämpe vars svärd sveper bågen framför sig och träffar
   alla fiender där (max 5, `DamageKind.Slash`: halv mot golems). Byggs i dojon (`BuildingType.Dojo`, en pagod från sidan
   som piratskeppet (`KeepsUpright`): senseimusen vid dörren vänder sig (`Motion.Turn`, speglar) och ropar (`Motion.Pop`)). Boten: modulen "samurajer" + armérotationen.
+- Trollkarlsmus (`UnitType.Wizard`, `WizardStats` i Unit.cs): gammal mus med blå mantel, spetsig hatt, käpp och vitt
+  skägg, upprätt som golemen. Kallar ner en blixt (`DamageKind.Lightning`, dubbelt mot plast) på platsen där målet stod:
+  en projektil som inte följer målet, liten yta, de träffade kastas bakåt (samma kast som golemens slag). Mot byggnader
+  en enkel blixt på 50 %. Lite dyr (2 batterier + kretskort + fjäder). Tornet (`BuildingType.WizardTower`) ses från
+  sidan och reser sig en ruta över sin yta (`KeepsUpright`; delar får gå så högt). Blixtens utseende: `UI/BoltLook.cs`.
+  Boten: modulen "trollkarlar" bygger en utpost vid batterifältet (inte i armérotationen: två batterimatningar).
 - Golem (`GolemStats` i Unit.cs): störst av enheterna (radie 1/2 ruta, kropp ≤ 60 px bred i 80 px-rutor: går genom
   1-rutsluckor). Söker inte upp enheter, men kommer en fiende inom räckhåll lyfter den händerna (`SlamTicks`) och slår i
   marken: områdesskada på enheter runt den (inte genom väggar) och de kastas utåt (`Push*` + `AirTicks`). Höjden ritas

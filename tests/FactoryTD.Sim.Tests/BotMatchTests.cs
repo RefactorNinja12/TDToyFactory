@@ -28,7 +28,7 @@ public class BotGrowthMatchTests
 		var buildings = new Dictionary<int, int>();
 		var towers = new Dictionary<int, int>();
 		var armies = new Dictionary<int, int>();
-		int walls = 0;
+		int walls = 0, wizards = 0;
 		var log = new System.Text.StringBuilder();
 		for (int minute = 5; minute <= 25; minute += 5)
 		{
@@ -36,6 +36,7 @@ public class BotGrowthMatchTests
 			for (int m = 0; m < 5; m++)
 			{
 				s.World.Minutes(1, bot);
+				wizards += s.World.CountUnits(1, UnitType.Wizard);
 				foreach (var unit in s.World.Units)
 					if (unit.Owner == 1 && !UnitStats.IsWorker(unit.Type))
 						unit.Health = 0;
@@ -55,6 +56,8 @@ public class BotGrowthMatchTests
 		Assert.True(armies[25] >= armies[10] + 2, $"army factories {armies[10]} -> {armies[25]}");
 		Assert.True(walls >= 10, $"walls {walls}");
 		Assert.True(s.World.CountBuildings(1, BuildingType.Dojo) >= 1, $"no dojo{log} | {string.Join(",", bot.ModulesBuilt)}");
+		Assert.True(s.World.CountBuildings(1, BuildingType.WizardTower) >= 1, $"no wizard tower{log} | {string.Join(",", bot.ModulesBuilt)}");
+		Assert.True(wizards >= 1, $"no wizard trained{log}");
 	}
 }
 

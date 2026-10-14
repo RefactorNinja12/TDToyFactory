@@ -5,6 +5,8 @@ Army factories (2x2 = 128 px, output east):
   car     - a slot-car track round a paint booth: two cars lap it, a mouse waves the chequered flag
   dojo    - a pagoda seen from the side (three curved red roofs, gold spire) on a gravel yard; parts: the pagoda, the
             sensei mouse by the door (looks right and left, shouts now and then), a trainee, lanterns, the sliding door
+  wizard  - a tall tower of stacked toy blocks seen from the side, a pointy roof with a star on top, on a mossy yard;
+            parts: the tower, the star (turns), sparks between the roof points, a flickering window, a flash at the door
 
     python tools/art/buildings/army.py && python tools/art/restyle.py <the files it lists>
 """
@@ -281,9 +283,80 @@ def dojo():
     out(door, "Parts/dojo_door.png")
 
 
+TOWER_BLUE = (70, 110, 214)
+TOWER_PURPLE = (140, 90, 200)
+MOSS = (110, 150, 110)
+GLOW = (150, 220, 255)
+
+
+def wizard_tower():
+    """
+    The wizard tower: a mossy yard with a path to the output (turns with the building), and the tower itself as a part
+    seen from the side, much taller than its 2x2 footprint: toy blocks stacked in blue and purple, narrowing upwards,
+    a round window, a door, a balcony and a pointy purple roof. Parts: the star on the tip (turns while it works), sparks
+    jumping between the roof points, the window flickering blue, a flash at the door when a wizard comes out.
+    """
+    img, d = canvas(128, 128)
+    baseplate(img, d, color=MOSS)
+    for x, y in ((16, 18), (100, 24), (22, 96), (98, 100)):
+        d.ellipse((x, y, x + 9, y + 6), fill=STONE)                                    # stepping stones
+    box(d, (64, 58, 127, 70), STONE, radius=1, bevel=1)                                # the path to the output
+    chute(d, 128, 128)
+    out(img, "Buildings/wizard_tower.png")
+
+    tower, t_ = part(72, 170)
+    cx = 36
+    # stacked blocks, wider at the bottom, alternating colours, studs on each
+    y, rows = 168, [(28, 22), (26, 20), (24, 20), (22, 18), (20, 18)]
+    for i, (half, h) in enumerate(rows):
+        color = TOWER_BLUE if i % 2 == 0 else TOWER_PURPLE
+        box(t_, (cx - half, y - h, cx + half, y), color, radius=2, bevel=2)
+        for sx in range(cx - half + 5, cx + half - 2, 8):
+            stud(t_, sx, y - h + 3, color, 2)
+        y -= h
+    # the balcony under the roof
+    box(t_, (cx - 25, y - 4, cx + 25, y + 2), WOOD, radius=1, bevel=1)
+    for x in range(cx - 23, cx + 24, 6):
+        t_.line((x, y - 10, x, y - 4), fill=tint(WOOD, -0.2), width=2)
+    t_.line((cx - 25, y - 10, cx + 25, y - 10), fill=tint(WOOD, -0.2), width=2)
+    # the pointy roof, its tip bent a little (the star sits on the tip, a part)
+    roof_base = y - 10
+    t_.polygon([(cx - 26, roof_base), (cx + 26, roof_base), (cx + 4, 12), (cx - 2, 8)], fill=TOWER_PURPLE)
+    t_.polygon([(cx - 26, roof_base), (cx - 8, roof_base), (cx - 2, 8)], fill=tint(TOWER_PURPLE, -0.2))
+    for k, ry in enumerate(range(roof_base - 12, 20, -12)):                            # little stars on the roof
+        t_.point((cx - 6 + (k % 2) * 10, ry), fill=YELLOW)
+    # the round window (dark: the glow is a part) and the door
+    t_.ellipse((cx - 8, 76, cx + 8, 92), fill=tint(DARK, -0.1))
+    t_.ellipse((cx - 8, 76, cx + 8, 92), outline=tint(WOOD, -0.2), width=2)
+    t_.rounded_rectangle((cx - 9, 140, cx + 9, 167), radius=8, fill=tint(WOOD, -0.25))
+    t_.line((cx, 142, cx, 167), fill=tint(WOOD, -0.45))
+    disc(t_, cx + 5, 155, 1, YELLOW, shine=False)
+    out(tower, "Parts/wizard_tower.png")
+
+    star_img, sd = canvas(18, 18)
+    sd.polygon([(9, 0), (11, 7), (18, 9), (11, 11), (9, 18), (7, 11), (0, 9), (7, 7)], fill=YELLOW)
+    sd.point((9, 9), fill=WHITE)
+    out(star_img, "Parts/tower_star.png")
+
+    spark, kd = canvas(12, 16)
+    kd.polygon([(7, 0), (1, 9), (5, 9), (3, 15), (11, 5), (7, 5), (9, 0)], fill=(250, 240, 150))  # a little bolt
+    out(spark, "Parts/tower_spark.png")
+
+    window, wd = canvas(14, 14)
+    wd.ellipse((0, 0, 13, 13), fill=GLOW)
+    wd.ellipse((3, 3, 10, 10), fill=WHITE)
+    out(window, "Parts/tower_window.png")
+
+    flash, fd = canvas(26, 30)
+    fd.ellipse((0, 2, 25, 29), fill=GLOW)
+    fd.ellipse((6, 8, 19, 23), fill=WHITE)
+    out(flash, "Parts/tower_flash.png")
+
+
 if __name__ == "__main__":
     soldier_factory()
     golem_workshop()
     car_factory()
     dojo()
+    wizard_tower()
     print(" ".join(WRITTEN))

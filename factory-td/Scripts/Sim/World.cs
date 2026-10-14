@@ -284,7 +284,7 @@ public sealed partial class World
 	public void Tick()
 	{
 		TickCount++;
-		ForgetOldSlams();
+		ForgetOldImpacts();
 		RebuildFieldsIfDirty(onlyNeeded: true);
 		UpdateStorage();
 

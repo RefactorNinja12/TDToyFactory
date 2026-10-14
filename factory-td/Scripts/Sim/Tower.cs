@@ -10,6 +10,7 @@ public enum DamageKind : byte
 	Bullet, // soldiers and cars
 	Punch,  // golems (short range)
 	Slash,  // the samurai's sword sweep; golems shrug it off
+	Lightning, // the wizard's thunderbolt: falls on a spot, hits the area there; strong vs plastic
 }
 
 public sealed record TowerStats(
@@ -150,7 +151,7 @@ public static class Combat
 	public static int DamagePercent(DamageKind kind, ArmorClass armor) => (kind, armor) switch
 	{
 		// Each armor class has one weakness...
-		(DamageKind.Area, ArmorClass.Plastic) => 200,
+		(DamageKind.Area or DamageKind.Lightning, ArmorClass.Plastic) => 200,
 		(DamageKind.Water, ArmorClass.Electronic) => 300,
 		(DamageKind.Laser, ArmorClass.Brick) => 200,
 		// ...and bricks shrug off the light stuff, so golems need lasers (or catapults).

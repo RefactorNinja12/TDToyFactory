@@ -12,6 +12,7 @@ public enum UnitType : byte
 	Scout,
 	CheeseHunter,
 	Samurai,
+	Wizard,
 }
 
 /// <summary>What a unit is made of; decides which tower hurts it most.</summary>
@@ -104,6 +105,14 @@ public static class UnitStats
 		TargetsUnits: true, BuildingDamagePercent: 100,
 		Recipe: new ItemStack[] { new(ItemType.Plastic, 3), new(ItemType.Spring, 1), new(ItemType.Gear, 1) }, BuildTicks: 180);
 
+	// Wizard mouse: a cute old caster that calls a thunderbolt down on a spot (WizardStats): a small area, double against
+	// plastic, units thrown back. Long range, slow to cast, fragile, and slightly expensive (end of the electronics chain).
+	private static readonly UnitDef Wizard = new(
+		ArmorClass.Plastic, MaxHealth: 22, Speed: 20, Damage: 8, AttackTicks: 45,
+		Range: SubTile * 5, Sight: SubTile * 7, ShotTravelTicks: WizardStats.BoltDelayTicks,
+		TargetsUnits: true, BuildingDamagePercent: 50,
+		Recipe: new ItemStack[] { new(ItemType.Battery, 2), new(ItemType.CircuitBoard, 1), new(ItemType.Spring, 1) }, BuildTicks: 220);
+
 	/// <summary>Most scouts a player can have, and how many each tent houses.</summary>
 	public const int MaxScouts = 6;
 	public const int ScoutsPerTent = 2;
@@ -155,6 +164,7 @@ public static class UnitStats
 		UnitType.Scout => Scout,
 		UnitType.CheeseHunter => CheeseHunter,
 		UnitType.Samurai => Samurai,
+		UnitType.Wizard => Wizard,
 		_ => PlasticSoldier,
 	};
 
@@ -261,12 +271,24 @@ public static class GolemStats
 	public const int ThrowDistance = UnitStats.SubTile * 3 / 2;
 	public const int ThrowTicks = 8;
 
-	/// <summary>Golems weigh more: thrown half as far.</summary>
-	public static int ThrowTicksFor(UnitType type) => type == UnitType.BrickGolem ? ThrowTicks / 2 : ThrowTicks;
+	/// <summary>Golems weigh more: thrown half as far (by a slam or a thunderbolt).</summary>
+	public static int ThrowTicksFor(UnitType type, int ticks = ThrowTicks) => type == UnitType.BrickGolem ? ticks / 2 : ticks;
 }
 
-/// <summary>A golem's slam: where (sub-tiles) and on which tick.</summary>
-public readonly record struct SlamMark(int X, int Y, long Tick);
+/// <summary>
+/// The wizard's thunderbolt: cast at the spot where the target stands, it falls after <see cref="BoltDelayTicks"/> (time
+/// to step aside) and hits every enemy unit within <see cref="BoltRadius"/>, throwing them back a little. Sub-tiles.
+/// </summary>
+public static class WizardStats
+{
+	public const int BoltDelayTicks = 6;
+	public const int BoltRadius = UnitStats.SubTile * 9 / 10;
+	public const int ThrowDistance = UnitStats.SubTile * 3 / 4;
+	public const int ThrowTicks = 4;
+}
+
+/// <summary>A golem's slam or a thunderbolt striking: where (sub-tiles) and on which tick (for the view's effects).</summary>
+public readonly record struct ImpactMark(int X, int Y, long Tick, bool Bolt);
 
 /// <summary>The samurai's sword sweep. Distances in sub-tile units.</summary>
 public static class SamuraiStats

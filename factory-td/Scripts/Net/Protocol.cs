@@ -39,7 +39,7 @@ public readonly record struct MatchSettings(int Seed, MapTheme Theme = MapTheme.
 public static class Protocol
 {
 	/// <summary>Bump when a message layout changes (2: Start carries the map, 3: and its layout).</summary>
-	public const int Version = 3;
+	public const int Version = 4;
 
 	public const int DefaultPort = 7777;
 	public const int NonceSize = 16, ChallengeSize = 32, ProofSize = 32;

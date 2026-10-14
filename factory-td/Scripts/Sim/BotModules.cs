@@ -236,6 +236,16 @@ public sealed partial class BotPlayer
 			},
 			Emergency: w => Built("soldater") && !FoodCrisis(w) && SoldiersSeen >= 8));
 
+		// Wizards behind the army: slightly expensive (batteries, circuit boards), so once batteries come in and the army
+		// is going. A searched spot (BotGrowth).
+		_pending.Add(new Module("trollkarlar",
+			w => Built("batterier") && Built("soldater") && !FoodCrisis(w) && w.TickCount >= _armyDelayTicks + 8 * Minute,
+			w =>
+			{
+				if (!_reserving)
+					GrowArmy(w, only: WizardOutpost);
+			}));
+
 		// Batteries into lasers once golems show up (or anyway, a bit later).
 		_pending.Add(new Module("lasertorn",
 			w => Built("batterier") && w.TickCount >= _armyDelayTicks + 4 * Minute,

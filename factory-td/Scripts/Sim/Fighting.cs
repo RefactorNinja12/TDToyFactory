@@ -84,9 +84,10 @@ public sealed partial class World
 	}
 
 	/// <summary>Where and when golems slammed the ground lately (for the view's shock rings; not simulation state).</summary>
-	public System.Collections.Generic.IReadOnlyList<SlamMark> RecentSlams => _recentSlams;
-	private readonly System.Collections.Generic.List<SlamMark> _recentSlams = new();
-	private const int SlamMarkTicks = 40;
+	/// <summary>Slams and thunderbolts lately (for the view's effects; not simulation state).</summary>
+	public System.Collections.Generic.IReadOnlyList<ImpactMark> RecentImpacts => _recentImpacts;
+	private readonly System.Collections.Generic.List<ImpactMark> _recentImpacts = new();
+	private const int ImpactMarkTicks = 40;
 
 	/// <summary>
 	/// The golem's slam (<see cref="GolemStats"/>): an enemy unit it could walk straight up to comes close, so it raises
@@ -110,7 +111,7 @@ public sealed partial class World
 	private void Slam(Unit golem)
 	{
 		golem.SlamCooldown = GolemStats.SlamCooldownTicks;
-		_recentSlams.Add(new SlamMark(golem.X, golem.Y, TickCount));
+		_recentImpacts.Add(new ImpactMark(golem.X, golem.Y, TickCount, Bolt: false));
 		long radius2 = (long)GolemStats.SlamRadius * GolemStats.SlamRadius;
 		int hits = 0;
 		foreach (var other in _units)
@@ -121,24 +122,27 @@ public sealed partial class World
 			if (other.Owner == golem.Owner || other.Health <= 0 || dx * dx + dy * dy > radius2 || !WalkableLine(golem, other.TileX, other.TileY))
 				continue;
 			other.Health -= GolemStats.SlamDamage * Combat.DamagePercent(DamageKind.Area, UnitStats.Armor(other.Type)) / 100;
-			Throw(other, (int)dx, (int)dy);
+			Throw(other, (int)dx, (int)dy, GolemStats.ThrowDistance, GolemStats.ThrowTicks);
 			hits++;
 		}
 	}
 
-	/// <summary>Sends the unit flying straight along (dx, dy) for <see cref="GolemStats.ThrowDistance"/>.</summary>
-	private static void Throw(Unit unit, int dx, int dy)
+	/// <summary>
+	/// Sends the unit flying straight along (dx, dy), <paramref name="distance"/> over <paramref name="ticks"/> (a slam or a
+	/// thunderbolt); golems half as far.
+	/// </summary>
+	private static void Throw(Unit unit, int dx, int dy, int distance, int ticks)
 	{
-		if (dx == 0 && dy == 0) // right under the golem: a direction picked from its id
+		if (dx == 0 && dy == 0) // right under the golem or the bolt: a direction picked from its id
 			(dx, dy) = (unit.Id % 4) switch { 0 => (1, 0), 1 => (0, 1), 2 => (-1, 0), _ => (0, -1) };
 		int length = IntMath.Sqrt(dx * dx + dy * dy);
-		int step = GolemStats.ThrowDistance / GolemStats.ThrowTicks;
+		int step = distance / ticks;
 		unit.PushX = dx * step / length;
 		unit.PushY = dy * step / length;
-		unit.PushTicks = unit.AirTicks = GolemStats.ThrowTicksFor(unit.Type);
+		unit.PushTicks = unit.AirTicks = GolemStats.ThrowTicksFor(unit.Type, ticks);
 	}
 
-	private void ForgetOldSlams() => _recentSlams.RemoveAll(m => TickCount - m.Tick > SlamMarkTicks);
+	private void ForgetOldImpacts() => _recentImpacts.RemoveAll(m => TickCount - m.Tick > ImpactMarkTicks);
 
 	/// <summary>Fires at the target if the unit is ready; false while it reloads.</summary>
 	private bool Attack(Unit unit, Unit targetUnit, Building targetBuilding, DamageKind kind)
@@ -151,6 +155,9 @@ public sealed partial class World
 			unit.SwingCount++;
 		if (unit.Type == UnitType.Samurai && targetUnit != null)
 			Sweep(unit, targetUnit, damage, def.ShotTravelTicks);
+		else if (unit.Type == UnitType.Wizard) // a thunderbolt at the spot: an area against units, a single bolt at a building
+			Fire(new Projectile(DamageKind.Lightning, unit.Owner, damage, targetUnit != null ? WizardStats.BoltRadius : 0,
+				def.ShotTravelTicks, unit.X, unit.Y, targetUnit, targetBuilding));
 		else
 			Fire(new Projectile(kind, unit.Owner, damage, 0, def.ShotTravelTicks, unit.X, unit.Y, targetUnit, targetBuilding));
 		unit.AttackCooldown = def.AttackTicks;
@@ -361,8 +368,8 @@ public sealed partial class World
 			var unit = shot.TargetUnit != null && shot.TargetUnit.Health > 0 ? shot.TargetUnit : null;
 			var building = shot.TargetBuilding != null && IsStanding(shot.TargetBuilding) ? shot.TargetBuilding : null;
 
-			// Single-target shots home in on a unit while it lives.
-			if (unit != null && shot.Kind != DamageKind.Area)
+			// Single-target shots home in on a unit while it lives (area ones fall where they were aimed).
+			if (unit != null && shot.Kind is not (DamageKind.Area or DamageKind.Lightning))
 			{
 				shot.ToX = unit.X;
 				shot.ToY = unit.Y;
@@ -371,14 +378,20 @@ public sealed partial class World
 			if (--shot.TicksLeft > 0)
 				continue;
 
-			if (shot.Kind == DamageKind.Area)
+			if (shot.Kind == DamageKind.Area || (shot.Kind == DamageKind.Lightning && shot.AreaRadius > 0))
 			{
+				bool bolt = shot.Kind == DamageKind.Lightning;
+				if (bolt)
+					_recentImpacts.Add(new ImpactMark(shot.ToX, shot.ToY, TickCount, Bolt: true));
 				long radius2 = (long)shot.AreaRadius * shot.AreaRadius;
 				foreach (var victim in _units)
 				{
 					long dx = victim.X - shot.ToX, dy = victim.Y - shot.ToY;
-					if (victim.Owner != shot.Owner && victim.Health > 0 && dx * dx + dy * dy <= radius2)
-						Hit(victim, shot);
+					if (victim.Owner == shot.Owner || victim.Health <= 0 || dx * dx + dy * dy > radius2)
+						continue;
+					Hit(victim, shot);
+					if (bolt) // the thunderbolt throws everyone it hits back, out from where it struck
+						Throw(victim, (int)dx, (int)dy, WizardStats.ThrowDistance, WizardStats.ThrowTicks);
 				}
 			}
 			else if (unit != null)

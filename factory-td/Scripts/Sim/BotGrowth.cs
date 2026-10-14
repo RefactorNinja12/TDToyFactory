@@ -92,25 +92,34 @@ public sealed partial class BotPlayer
 	}
 
 	private const int SamuraiOutpost = 2;
+	private const int WizardOutpost = 3;
+	private const int ArmyKinds = 3; // in turn; WizardOutpost only when asked for
 
 	/// <summary>
-	/// Soldier, golem and samurai outposts in turn (<paramref name="only"/>: just that kind), on one searched spot;
-	/// a spot none of them can be belted to is not tried again.
+	/// Soldier, golem and samurai outposts in turn (<paramref name="only"/>: just that kind, also a wizard outpost), on one
+	/// searched spot; a spot none of them can be belted to is not tried again. Wizards aren't in the turn: an outpost
+	/// takes two battery feeds, and the battery patch is small, so the bot makes one (module "trollkarlar").
 	/// </summary>
 	private bool GrowArmy(World world, int only = -1)
 	{
-		var (ax, ay) = Absolute(30, 30);
+		// Wizards by the battery patch (their tower and circuit assembler both take batteries): short belts.
+		var (ax, ay) = only == WizardOutpost ? Absolute(36, 44) : Absolute(30, 30);
 		var spot = FindSpot(world, 3, 2, TileCentre(ax, ay));
 		if (spot == null)
 			return false;
-		for (int i = 0; i < 3; i++)
+		for (int i = 0; i < ArmyKinds; i++)
 		{
-			int kind = only >= 0 ? only : (_armyTurn + i) % 3;
+			int kind = only >= 0 ? only : (_armyTurn + i) % ArmyKinds;
 			// Golems run on batteries: on ManyRooms the way to the enemy is longer than they reach.
 			if (kind == 1 && world.Map.Layout == MapLayoutKind.ManyRooms)
 				continue;
 			var mark = Mark();
-			var powered = kind == SamuraiOutpost ? PlanSamurai(world, spot.Value) : PlanFactory(world, spot.Value, golems: kind == 1);
+			var powered = kind switch
+			{
+				SamuraiOutpost => PlanSamurai(world, spot.Value),
+				WizardOutpost => PlanWizards(world, spot.Value),
+				_ => PlanFactory(world, spot.Value, golems: kind == 1),
+			};
 			if (powered != null)
 			{
 				foreach (var step in powered)
@@ -133,15 +142,36 @@ public sealed partial class BotPlayer
 	/// </summary>
 	private Step[] PlanSamurai(World world, (int X, int Y) spot)
 	{
+		var (springs, gears, dojo) = PlanOutpost(spot, ItemType.Gear, BuildingType.Dojo);
+		bool ok = Feed(world, ResourceType.Plastic, springs) && Feed(world, ResourceType.Plastic, gears) &&
+			Feed(world, ResourceType.Brick, gears) && Feed(world, ResourceType.Plastic, dojo);
+		return ok ? new[] { springs, dojo } : null;
+	}
+
+	/// <summary>
+	/// A wizard tower with two assemblers along its home side (springs above, circuit boards below, both facing into it);
+	/// plastic belted to both, batteries to the circuit assembler and the tower. The steps to power, or null.
+	/// </summary>
+	private Step[] PlanWizards(World world, (int X, int Y) spot)
+	{
+		var (springs, circuits, tower) = PlanOutpost(spot, ItemType.CircuitBoard, BuildingType.WizardTower);
+		bool ok = Feed(world, ResourceType.Plastic, springs) && Feed(world, ResourceType.Plastic, circuits) &&
+			Feed(world, ResourceType.Battery, circuits) && Feed(world, ResourceType.Battery, tower);
+		return ok ? new[] { springs, circuits, tower } : null;
+	}
+
+	/// <summary>
+	/// A 2x2 factory with two assemblers along its home side, both facing into it: springs above, <paramref name="lower"/>
+	/// below (the samurai's and the wizard's outposts).
+	/// </summary>
+	private (Step Springs, Step Lower, Step Factory) PlanOutpost((int X, int Y) spot, ItemType lower, BuildingType factory)
+	{
 		var (sx, sy) = spot;
 		int assemblerX = _mirror ? sx + 2 : sx;
 		var into = _mirror ? Direction.West : Direction.East;
 		var springs = AddStep(new Step(BuildingType.Assembler, assemblerX, sy, into, ItemType.Spring));
-		var gears = AddStep(new Step(BuildingType.Assembler, assemblerX, sy + 1, into, ItemType.Gear));
-		var dojo = AddStep(new Step(BuildingType.Dojo, _mirror ? sx : sx + 1, sy, Direction.East, ItemType.None));
-		bool ok = Feed(world, ResourceType.Plastic, springs) && Feed(world, ResourceType.Plastic, gears) &&
-			Feed(world, ResourceType.Brick, gears) && Feed(world, ResourceType.Plastic, dojo);
-		return ok ? new[] { springs, dojo } : null;
+		var second = AddStep(new Step(BuildingType.Assembler, assemblerX, sy + 1, into, lower));
+		return (springs, second, AddStep(new Step(factory, _mirror ? sx : sx + 1, sy, Direction.East, ItemType.None)));
 	}
 
 	/// <summary>A soldier or golem outpost: assembler into a factory, extractors belted in. Steps to power, or null.</summary>
