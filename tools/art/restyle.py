@@ -68,6 +68,8 @@ VIVID = {"cheese.png", "melted_cheese.png", "cheese_melter.png", "clover.png", "
 # (none at the moment).
 SOFT = set()
 # Pictures kept as they are, only outlined: the user's own finished sprites (the palette has no sunflower yellow).
+# Finished pixel art (PixelLab, tools/art/pixellab): copied as it is, no palette or outline.
+AS_IS = {"Units/wizard_sheet.png", "Units/wizard.png", "Units/pirate_sheet.png", "Units/pirate.png"}
 KEEP = {"sunflower.png", "carrot.png", "cabbage.png", "flowers.png", "plantbed.png", "garden_path.png"}
 
 
@@ -234,6 +236,9 @@ def main(only=None):
             dst = os.path.join(SPRITES, rel, name)
             os.makedirs(os.path.dirname(dst), exist_ok=True)
             if rel == "Tiles" and name == "floor_wood.png":
+                continue
+            if os.path.join(rel, name).replace(os.sep, "/") in AS_IS:
+                shutil.copyfile(src, dst)
                 continue
             if rel == "Tiles" and name == "wall.png":
                 shutil.copyfile(src, dst)  # the wall keeps its original look

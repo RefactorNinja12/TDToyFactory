@@ -53,8 +53,8 @@ Hinder (stora leksaker/växter) = `TileType.Obstacle`: stoppar gång och bygge, 
 - Samurajmus (`UnitType.Samurai`, `SamuraiStats` i Unit.cs): närkämpe vars svärd sveper bågen framför sig och träffar
   alla fiender där (max 5, `DamageKind.Slash`: halv mot golems). Byggs i dojon (`BuildingType.Dojo`, en pagod från sidan
   som piratskeppet (`KeepsUpright`): senseimusen vid dörren vänder sig (`Motion.Turn`, speglar) och ropar (`Motion.Pop`)). Boten: modulen "samurajer" + armérotationen.
-- Trollkarlsmus (`UnitType.Wizard`, `WizardStats` i Unit.cs): gammal mus med blå mantel, spetsig hatt, käpp och vitt
-  skägg, upprätt som golemen. Kallar ner en blixt (`DamageKind.Lightning`, dubbelt mot plast) på platsen där målet stod:
+- Trollkarlsmus (`UnitType.Wizard`, `WizardStats` i Unit.cs): gammal musdruid (grön lövmantel med huva, vitt skägg,
+  stav med glödande klot), upprätt som golemen. Kallar ner en blixt (`DamageKind.Lightning`, dubbelt mot plast) på platsen där målet stod:
   en projektil som inte följer målet, liten yta, de träffade kastas bakåt (samma kast som golemens slag). Mot byggnader
   en enkel blixt på 50 %. Lite dyr (2 batterier + kretskort + fjäder). Tornet (`BuildingType.WizardTower`) ses från
   sidan och reser sig en ruta över sin yta (`KeepsUpright`; delar får gå så högt). Blixtens utseende: `UI/BoltLook.cs`.
@@ -64,8 +64,8 @@ Hinder (stora leksaker/växter) = `TileType.Obstacle`: stoppar gång och bygge, 
   marken: områdesskada på enheter runt den (inte genom väggar) och de kastas utåt (`Push*` + `AirTicks`). Höjden ritas
   bara (`UnitAnimation.Lift/Spin`), skuggan ligger kvar på golvet; i luften faller man inte i falluckor förrän man
   landar. Ringen ritas från `World.RecentSlams`. Enheters räckvidd mot enheter når målets kant (`toEdge`).
-- Enheter: möss ovanifrån som vrids, nosen österut i spriten; golemen står upprätt och vrids aldrig
-  (`UI/UnitSheets.cs`, `UI/UnitAnimation.cs`).
+- Enheter: möss ovanifrån som vrids, nosen österut i spriten; golemen, trollkarlen och piraten står upprätt och vrids
+  aldrig (rader mot/bort/sida, `UI/UnitSheets.cs`, `UI/UnitAnimation.cs`). Trollkarlen och piraten är PixelLab-pixelkonst.
 
 ## Kodstruktur
 - `Scripts/Sim/`: `World` (20 tick/s) i partials: `World.cs` (placering, tick-ordning, kontrollsumma), `WorldPower`,
@@ -112,4 +112,6 @@ Hinder (stora leksaker/växter) = `TileType.Obstacle`: stoppar gång och bygge, 
 - `HAND_EDITED` i `kit.py` = sprites användaren gjort klart för hand: skripten skriver aldrig över dem.
   Användarens egna bilder ligger i `tools/art/reference/`; `KEEP`/`SOFT` i restyle styr deras färger.
 - Under luminans 0,2 blir kontursvart, ljusa pasteller blir grå: välj mättade färger. Lagfärger via shader.
+- Färdig pixelkonst från PixelLab ligger i `tools/art/pixellab/<namn>/` (rutor per riktning); skriptet lägger ut dem som
+  ark (`units/wizard.py`) och restyle kopierar dem som de är (`AS_IS`).
 - PixelLab MCP finns för sprites (stil: top-down, cute toy, plastic, bright saturated, clean dark outline, 64x64).

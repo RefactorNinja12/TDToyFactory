@@ -6,7 +6,7 @@ namespace FactoryTD.UI;
 public enum UnitLayout
 {
 	TopDown, // seen from above, nose east, turned the way it goes: one row (idle, walk 1-4, act 1-2) - the mice
-	Upright, // seen from the front, never turned: rows towards / away / side (left = side mirrored) - golem, wizard
+	Upright, // seen from the front, never turned: rows towards / away / side (left = side mirrored) - golem, wizard, pirate
 	Vehicle, // seen from above and turned, one row of wheel frames - the RC car
 }
 
@@ -49,7 +49,7 @@ public static class UnitSheets
 
 	public static UnitLayout Layout(UnitType type) => type switch
 	{
-		UnitType.BrickGolem or UnitType.Wizard => UnitLayout.Upright,
+		UnitType.BrickGolem or UnitType.Wizard or UnitType.PlasticSoldier => UnitLayout.Upright,
 		UnitType.RcCar => UnitLayout.Vehicle,
 		_ => UnitLayout.TopDown,
 	};
@@ -70,7 +70,7 @@ public static class UnitSheets
 	public static int CellSize(UnitType type) => type switch
 	{
 		UnitType.BrickGolem => 80, // the biggest; the body is at most ~60 px wide (fits a 1-tile gap)
-		UnitType.Wizard => 64,
+		UnitType.Wizard or UnitType.PlasticSoldier => 64,
 		_ => 48,
 	};
 

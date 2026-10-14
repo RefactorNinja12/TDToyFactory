@@ -276,6 +276,41 @@ def strip_sheet(cell_fn):
     return sheet
 
 
+UPRIGHT_ROWS = {"toward": "south", "away": "north", "side": "east"}
+
+
+def pixellab_upright(name, cell=64):
+    """
+    Finished upright pixel art (PixelLab, tools/art/pixellab/<name>/: idle_<dir>, walk_<dir>_0..3, act_<dir>_0..1 for
+    south, north and east) as a cell function for unit_sheet: bigger canvases are cropped round their centre (where the
+    character is), and every row stands on its idle frame's feet at the feet line (UI/UnitSheets.FeetY = cell - 6).
+    """
+    folder = os.path.join(HERE, "pixellab", name)
+
+    def frame(file):
+        img = Image.open(os.path.join(folder, file + ".png")).convert("RGBA")
+        w, h = img.size
+        return img.crop(((w - cell) // 2, (h - cell) // 2, (w - cell) // 2 + cell, (h - cell) // 2 + cell))
+
+    def cell_fn(facing, pose, step):
+        d = UPRIGHT_ROWS[facing]
+        img = frame({"idle": f"idle_{d}", "walk": f"walk_{d}_{step}", "act": f"act_{d}_{step}"}[pose])
+        shift = (cell - 6) - (frame(f"idle_{d}").getbbox()[3] - 1)
+        out = Image.new("RGBA", (cell, cell), (0, 0, 0, 0))
+        out.paste(img, (0, shift), img)
+        return out
+
+    return cell_fn
+
+
+def write_pixellab_upright(name, cell=64):
+    """Writes Units/<name>_sheet.png and the idle icon Units/<name>.png; returns their paths (for restyle)."""
+    cell_fn = pixellab_upright(name, cell)
+    save(unit_sheet(cell_fn, cell=cell), f"Units/{name}_sheet.png")
+    save(cell_fn("toward", "idle", 0), f"Units/{name}.png")
+    return [f"Units/{name}_sheet.png", f"Units/{name}.png"]
+
+
 def unit_sheet(cell_fn, columns=7, cell=CELL, poses=None):
     """Lays out the sheet: rows towards / away / side, columns idle, walk 0-3, act 0-1 (UI/UnitSheets), then any
     extra poses given (the golem's slam)."""

@@ -4,7 +4,6 @@ The mice seen from above (nose east, turned by the game), on two legs:
   farmer        - straw hat, blue overalls, a carrot; act = picking (reach down, lift)
   scout         - green cap, binoculars; act = looking through them
   cheese_hunter - red headband, boxing gloves; act = punching (wind up, hit)
-  pirate        - tricorn, eye patch, striped shirt, flintlock; act = aim, fire (puff)
   samurai       - red kabuto with a gold crest, dark gi, katana; act = sword drawn back, swept across (slash)
 
     python tools/art/units/mice.py && python tools/art/restyle.py <the files it lists>
@@ -55,11 +54,6 @@ def headband(d, hx, hy):
     d.line((hx - 7, hy, hx - 12, hy + 2), fill=RED, width=2)
 
 
-def tricorn(d, hx, hy):
-    d.polygon([(hx + 5, hy), (hx - 6, hy - 7), (hx - 3, hy), (hx - 6, hy + 7)], fill=HAT)
-    d.line((hx + 4, hy, hx - 4, hy - 5), fill=tint(YELLOW, -0.2))
-    d.line((hx + 4, hy, hx - 4, hy + 5), fill=tint(YELLOW, -0.2))
-    disc(d, hx, hy, 2, WHITE, shine=False)
 
 
 # ---- held things and actions (hand = (x, y) of the right hand, the south side) ----
@@ -120,24 +114,10 @@ def back_glove(d, info):
     disc(d, bx + 3 + swing, cy - 10, 4, RED)
 
 
-def pistol(d, x, y, pose, step):
-    d.rectangle((x - 1, y - 1, x + 2, y + 2), fill=WOOD)
-    d.rectangle((x + 2, y - 1, x + 9, y), fill=STEEL)           # barrel, pointing forward
 
 
-def aiming(info):
-    bx, cy = info["body"]
-    return {"hand": (bx + 15, cy + 5)}
 
 
-def patch_and_puff(d, info):
-    hx, hy = info["head"]
-    d.line((hx - 6, hy - 6, hx + 5, hy + 1), fill=INK)          # the eye patch's strap
-    d.ellipse((hx + 2, hy - 5, hx + 6, hy - 1), fill=INK)       # the patch over the left eye
-    if info["pose"] == "act" and info["step"] == 1:
-        x, y = info["hand"]
-        for dx, dy, r in ((13, 0, 3), (15, -2, 2), (15, 2, 2)):
-            d.ellipse((x + dx - r, y + dy - r, x + dx + r, y + dy + r), fill=WHITE)
 
 
 KABUTO = (176, 44, 52)
@@ -181,8 +161,6 @@ def main():
                                               extra=binocular_eyes))
     write("cheese_hunter", lambda p, s: topdown_mouse(p, s, hat=headband, shirt=YELLOW, held=glove, act=punching,
                                                       extra=back_glove))
-    write("pirate", lambda p, s: topdown_mouse(p, s, hat=tricorn, shirt=WHITE, stripes=RED, held=pistol, act=aiming,
-                                               extra=patch_and_puff))
     write("samurai", lambda p, s: topdown_mouse(p, s, hat=kabuto, shirt=GI, held=katana, act=swinging, extra=slash))
     print(" ".join(WRITTEN))
 

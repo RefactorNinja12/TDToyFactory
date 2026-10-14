@@ -166,10 +166,11 @@ public class UnitAnimationTests
 	[Fact]
 	public void Mice_AreTopDown_TheGolemUpright_TheCarAVehicle()
 	{
-		foreach (var mouse in new[] { UnitType.Builder, UnitType.Farmer, UnitType.Scout, UnitType.CheeseHunter, UnitType.PlasticSoldier })
+		foreach (var mouse in new[] { UnitType.Builder, UnitType.Farmer, UnitType.Scout, UnitType.CheeseHunter })
 			Assert.Equal(UnitLayout.TopDown, UnitSheets.Layout(mouse));
 		Assert.Equal(UnitLayout.Upright, UnitSheets.Layout(UnitType.BrickGolem));
 		Assert.Equal(UnitLayout.Upright, UnitSheets.Layout(UnitType.Wizard));
+		Assert.Equal(UnitLayout.Upright, UnitSheets.Layout(UnitType.PlasticSoldier));
 		Assert.Equal(UnitLayout.Vehicle, UnitSheets.Layout(UnitType.RcCar));
 		Assert.Equal(3, UnitSheets.Column(new UnitFrame(Facing.Left, PoseKind.Walk, 2)));
 		Assert.Equal(6, UnitSheets.Column(new UnitFrame(Facing.Away, PoseKind.Act, 1)));
