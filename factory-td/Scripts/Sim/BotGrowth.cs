@@ -109,7 +109,7 @@ public sealed partial class BotPlayer
 			// Golems run on batteries: on ManyRooms the way to the enemy is longer than they reach.
 			if (kind == 1 && world.Map.Layout == MapLayoutKind.ManyRooms)
 				continue;
-			int mark = _plan.Count;
+			var mark = Mark();
 			var powered = kind == SamuraiOutpost ? PlanSamurai(world, spot.Value) : PlanFactory(world, spot.Value, golems: kind == 1);
 			if (powered != null)
 			{
@@ -182,7 +182,7 @@ public sealed partial class BotPlayer
 		var spot = FindSpot(world, 1, 1, TileCentre(ax, ay));
 		if (spot == null)
 			return false;
-		int mark = _plan.Count;
+		var mark = Mark();
 		var tower = AddStep(new Step(type, spot.Value.X, spot.Value.Y, Direction.East, ItemType.None));
 		var ammo = Tower.StatsFor(type).Ammo;
 		if (!Feed(world, ResourceOf(ammo), tower))
@@ -270,7 +270,7 @@ public sealed partial class BotPlayer
 				int kx = x + d.DX(), ky = y + d.DY();
 				if (!IsFree(world, kx, ky) || world.Map.GetResource(kx, ky) != ResourceType.None)
 					continue;
-				int mark = _plan.Count;
+				var mark = Mark();
 				AddStep(new Step(BuildingType.CheeseMelter, x, y, Direction.East, ItemType.None));
 				var kitchen = AddStep(new Step(BuildingType.Kitchen, kx, ky, d, ItemType.None));
 				if (RouteToCore(world, kitchen, d))
@@ -288,7 +288,7 @@ public sealed partial class BotPlayer
 		if (spot == null)
 			return false;
 		var (sx, sy) = spot.Value;
-		int mark = _plan.Count;
+		var mark = Mark();
 		int fieldsX = _mirror ? sx + 1 : sx;
 		for (int y = sy; y < sy + 2; y++)
 			for (int x = fieldsX; x < fieldsX + 3; x++)
@@ -344,7 +344,7 @@ public sealed partial class BotPlayer
 		{
 			if (tries++ == FeedTries)
 				break;
-			int mark = _plan.Count;
+			var mark = Mark();
 			var extractor = AddStep(new Step(ExtractorFor(resource), x, y, Direction.East, ItemType.None));
 			if (target == _core ? RouteToCore(world, extractor) : Route(world, extractor, target))
 				return true;
@@ -637,10 +637,20 @@ public sealed partial class BotPlayer
 		}
 	}
 
-	/// <summary>Takes back every step planned from <paramref name="mark"/> on (a piece that didn't fit).</summary>
-	private void Undo(int mark)
+	/// <summary>Where the next steps go in the plan: at the end, or at <see cref="_insertAt"/> while an urgent module is in.</summary>
+	private (int Count, int InsertAt) Mark() => (_plan.Count, _insertAt);
+
+	/// <summary>
+	/// Takes back every step planned since <paramref name="mark"/> (a piece that didn't fit), wherever they went: while an
+	/// urgent module is being put in they are in the middle of the plan, not at its end.
+	/// </summary>
+	private void Undo((int Count, int InsertAt) mark)
 	{
-		for (int i = _plan.Count - 1; i >= mark; i--)
+		int added = _plan.Count - mark.Count;
+		int first = mark.InsertAt >= 0 ? mark.InsertAt : mark.Count;
+		if (mark.InsertAt >= 0)
+			_insertAt = mark.InsertAt;
+		for (int i = first + added - 1; i >= first; i--)
 		{
 			var step = _plan[i];
 			var (w, h) = BuildingRules.Size(step.Type, step.Facing);

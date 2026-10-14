@@ -94,12 +94,16 @@ public class BotEconomyMatchTests
 				maxHunters[p] = System.Math.Max(maxHunters[p], s.World.CountUnits(p, UnitType.CheeseHunter));
 				if (firstBatteryExtractor[p] < 0 && s.World.CountBuildings(p, BuildingType.BatteryExtractor) > 0)
 					firstBatteryExtractor[p] = (int)(s.World.TickCount / WorldRunner.TicksPerSecond);
-				maxCrops[p] = System.Math.Max(maxCrops[p], s.World.Players[p].GetCount(ItemType.Crop));
+				// Crops piling up only says there are too few kitchens while the kitchens can get rid of their food: once the
+				// food store is full, they hold on to what they cooked and stop, and the crops wait in the toybox.
+				bool kitchensStuck = s.World.Buildings.OfType<Kitchen>().Any(k => k.Owner == p && k.Finished > 0);
+				if (!kitchensStuck)
+					maxCrops[p] = System.Math.Max(maxCrops[p], s.World.Players[p].GetCount(ItemType.Crop));
 				maxUnits[p] = System.Math.Max(maxUnits[p], s.World.Units.Count(u => u.Owner == p && !UnitStats.IsWorker(u.Type)));
 			}
 		}
 		for (int p = 0; p < 2; p++)
-			_out.WriteLine($"player {p}: starving {starvingTicks[p] / WorldRunner.TicksPerSecond} s, max stored crops {maxCrops[p]}, " +
+			_out.WriteLine($"player {p}: starving {starvingTicks[p] / WorldRunner.TicksPerSecond} s, max stored crops while the kitchens could deliver {maxCrops[p]}, " +
 				$"kitchens {s.World.CountBuildings(p, BuildingType.Kitchen)}, max army {maxUnits[p]}, " +
 				$"first battery extractor at {firstBatteryExtractor[p]} s, max cheese hunters {maxHunters[p]}, consumers without power {unpoweredTicks[p] * 100 / System.Math.Max(1, factoryTicks[p])}% (first 8 min), " +
 				$"modules {string.Join(",", bots[p].ModulesBuilt)}");
